@@ -14,11 +14,11 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
 .header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:46px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.header-title{font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--accent);}
-.header-co{font-size:0.6rem;color:var(--gold);font-weight:700;letter-spacing:2px;text-transform:uppercase;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);padding:3px 10px;border-radius:20px;}
+.header-title{font-family:'Rajdhani',sans-serif;font-size:1.15rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--accent);}
+.header-co{font-size:0.72rem;color:var(--gold);font-weight:700;letter-spacing:2px;text-transform:uppercase;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);padding:3px 10px;border-radius:20px;}
 .layout{display:grid;grid-template-columns:230px 1fr 280px;gap:10px;padding:10px;flex:1;overflow:hidden;}
 .panel{background:var(--card);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;}
-.panel-header{padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'Rajdhani',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+.panel-header{padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
 .panel-body{padding:10px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
 .scard{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:all 0.15s;border-left:3px solid var(--muted);}
 .scard:hover{background:#131d2e;border-left-color:var(--accent);}
@@ -29,34 +29,34 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 .scard.ok:hover{background:#0a1f12;}
 .scard.bad{border-left-color:var(--red);}
 .scard.bad:hover{background:#1a0808;}
-.slabel{font-size:0.5rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
-.stitle{font-size:0.75rem;font-weight:600;line-height:1.3;}
-.grp-label{font-size:0.5rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:4px 2px 2px;}
+.slabel{font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
+.stitle{font-size:0.85rem;font-weight:600;line-height:1.3;}
+.grp-label{font-size:0.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:4px 2px 2px;}
 .script-center{display:flex;flex-direction:column;overflow:hidden;}
 .sdisplay{flex:1;overflow-y:auto;padding:18px;}
-.phase-tag{display:inline-block;font-size:0.52rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-bottom:12px;background:rgba(59,130,246,0.15);color:var(--accent);border:1px solid rgba(59,130,246,0.3);}
-.sline{font-size:0.95rem;line-height:1.65;color:#e2e8f0;margin-bottom:12px;}
+.phase-tag{display:inline-block;font-size:0.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-bottom:12px;background:rgba(59,130,246,0.15);color:var(--accent);border:1px solid rgba(59,130,246,0.3);}
+.sline{font-size:1.08rem;line-height:1.7;color:#e2e8f0;margin-bottom:12px;}
 .sline .kw{color:var(--accent2);font-weight:700;}
 .sline .emp{color:var(--gold);font-weight:600;}
-.sline .act{color:var(--green);font-style:italic;font-size:0.78rem;}
-.tip{background:rgba(245,158,11,0.07);border:1px dashed var(--gold);border-radius:8px;padding:10px 12px;font-size:0.74rem;color:#cbd5e1;line-height:1.6;margin:6px 0;}
+.sline .act{color:var(--green);font-style:italic;font-size:0.88rem;}
+.tip{background:rgba(245,158,11,0.07);border:1px dashed var(--gold);border-radius:8px;padding:10px 12px;font-size:0.84rem;color:#cbd5e1;line-height:1.6;margin:6px 0;}
 .tip strong{color:var(--gold);}
 .rb{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;}
-.rblabel{font-size:0.5rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:5px;}
-.rbtext{font-size:0.85rem;line-height:1.6;color:#e2e8f0;}
+.rblabel{font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:5px;}
+.rbtext{font-size:0.95rem;line-height:1.65;color:#e2e8f0;}
 .rbtext .kw{color:var(--accent2);font-weight:700;}
 .rbtext .emp{color:var(--gold);}
-.pivot{margin-top:8px;padding-top:8px;border-top:1px dashed #333;font-size:0.72rem;color:var(--green);font-weight:600;}
+.pivot{margin-top:8px;padding-top:8px;border-top:1px dashed #333;font-size:0.82rem;color:var(--green);font-weight:600;}
 .asep-box{background:linear-gradient(135deg,#0f1d35,#111827);border:1px solid rgba(59,130,246,0.4);border-radius:10px;padding:14px;margin:10px 0;}
 .asep-step{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;}
 .asep-step:last-child{margin-bottom:0;}
-.asep-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;font-weight:900;font-size:0.65rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Rajdhani',sans-serif;}
-.asep-c{font-size:0.78rem;line-height:1.5;color:#cbd5e1;}
+.asep-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#000;font-weight:900;font-size:0.72rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Rajdhani',sans-serif;}
+.asep-c{font-size:0.88rem;line-height:1.5;color:#cbd5e1;}
 .asep-c strong{color:var(--accent2);}
 .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
-.chip{background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.3);border-radius:5px;padding:3px 8px;font-size:0.6rem;color:var(--accent2);font-weight:600;}
+.chip{background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.3);border-radius:5px;padding:3px 8px;font-size:0.7rem;color:var(--accent2);font-weight:600;}
 .nav-btns{display:flex;gap:8px;padding:10px 18px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;}
-.btn{padding:8px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;font-size:0.68rem;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:0.15s;font-family:'DM Sans',sans-serif;}
+.btn{padding:8px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;font-size:0.78rem;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:0.15s;font-family:'DM Sans',sans-serif;}
 .btn:hover{background:var(--border);}
 .btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
 .btn-p:hover{background:#2563eb;}
@@ -64,9 +64,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 .btn-d{background:var(--red);color:#fff;border-color:var(--red);}
 .btn-f{width:100%;}
 .dsec{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;}
-.dlabel{font-size:0.5rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;display:block;}
-.dbtn{width:100%;padding:11px 8px;border-radius:7px;border:none;font-weight:700;font-size:0.75rem;text-transform:uppercase;cursor:pointer;letter-spacing:1px;transition:0.15s;font-family:'DM Sans',sans-serif;}
-.dbtn span{display:block;font-size:0.5rem;opacity:0.7;margin-top:2px;}
+.dlabel{font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;display:block;}
+.dbtn{width:100%;padding:11px 8px;border-radius:7px;border:none;font-weight:700;font-size:0.82rem;text-transform:uppercase;cursor:pointer;letter-spacing:1px;transition:0.15s;font-family:'DM Sans',sans-serif;}
+.dbtn span{display:block;font-size:0.6rem;opacity:0.7;margin-top:2px;}
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-thumb{background:#333;border-radius:10px;}
 .mobile-nav{display:none;}
@@ -89,7 +89,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 
 <div class="header">
   <div class="header-title">⚡ LOAN CR PLAYBOOK</div>
-  <div class="header-co">🏢 [YOUR COMPANY NAME]</div>
+  <div class="header-co">🏢 PERSONAL LOAN INTAKE DEPARTMENT</div>
 </div>
 
 <div class="mobile-nav" id="mobile-nav">
@@ -153,7 +153,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
       </div>
       <div class="dsec" style="border-left:3px solid var(--muted);margin-top:4px;">
         <span class="dlabel" style="color:var(--muted)">QUICK REMINDERS</span>
-        <div style="font-size:0.66rem;line-height:1.8;color:#94a3b8;">
+        <div style="font-size:0.76rem;line-height:1.8;color:#94a3b8;">
           <div>🧘 <strong style="color:#e2e8f0;">Stay calm</strong> — energy transfers</div>
           <div>⏸️ <strong style="color:#e2e8f0;">Pause</strong> after punch words</div>
           <div>🎯 <strong style="color:#e2e8f0;">Always pivot</strong> back to script</div>
@@ -173,7 +173,7 @@ intro:{phase:'STEP 1 — INTRODUCTION',color:'var(--green)',next:'verify',conten
 <div class="phase-tag">📞 Opening</div>
 <div class="sline">"Hi <span class='kw'>[First Name]</span> — how's your day going?"</div>
 <div class="tip"><strong>⏸️ WAIT.</strong> Let them answer. Even a "fine" builds connection.</div>
-<div class="sline">"Great. I'm <span class='kw'>[Your Name]</span> calling from <span class='emp'>[YOUR COMPANY NAME]</span> regarding a <span class='kw'>personal lending notice</span> connected to our lender network. Did you receive our letter recently?"</div>
+<div class="sline">"Great. I'm <span class='kw'>[Your Name]</span> calling from <span class='emp'>Personal Loan Intake Department</span> regarding a <span class='kw'>personal lending notice</span> connected to our lender network. Did you receive our letter recently?"</div>
 <div class="tip"><strong>💡 Either answer works</strong> — just move forward: "No worries, let me explain…"</div>
 <div class="sline">"We have a <span class='kw'>fixed-rate personal loan</span> starting at <span class='emp'>6.47% APR</span> — available for a <span class='kw'>limited review window</span>. I just need to confirm a few details to see if you qualify to speak with a <span class='kw'>lending specialist</span>. Takes about 2 minutes."</div>
 `},
@@ -344,7 +344,7 @@ company_name:{phase:'REBUTTAL — "WHAT COMPANY IS THIS?"',color:'var(--gold)',n
 <div class="phase-tag" style="background:rgba(245,158,11,0.15);color:var(--gold);border-color:rgba(245,158,11,0.3);">🏢 "What company is this?"</div>
 <div class="rb">
   <div class="rblabel">OPTION 1 — Direct</div>
-  <div class="rbtext">"This is the <span class='kw'>[YOUR COMPANY NAME]</span> — we match you with a lender based on your area and financial situation. All partners are <span class='emp'>A-rated with the BBB</span>. Once you're qualified, we match you with the right company."</div>
+  <div class="rbtext">"This is the <span class='kw'>Personal Loan Intake Department</span> — we match you with a lender based on your area and financial situation. All partners are <span class='emp'>A-rated with the BBB</span>. Once you're qualified, we match you with the right company."</div>
 </div>
 <div class="rb">
   <div class="rblabel">OPTION 2 — If They Push</div>
