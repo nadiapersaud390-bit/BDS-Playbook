@@ -3,163 +3,426 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Loan CR Playbook</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<title>BDS LOAN CR DASHBOARD</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#060810; --surface:#0d1117; --card:#111827; --border:#1f2937;
-  --accent:#3b82f6; --accent2:#06b6d4; --green:#10b981; --red:#ef4444;
-  --gold:#f59e0b; --purple:#8b5cf6; --text:#f1f5f9; --muted:#64748b;
+  --bg:#060b18;
+  --surface:#0d1424;
+  --card:#111c30;
+  --border:#1e2d4a;
+  --accent:#60a5fa;
+  --accent2:#38bdf8;
+  --green:#34d399;
+  --green-light:rgba(52,211,153,0.15);
+  --red:#f87171;
+  --red-light:rgba(248,113,113,0.15);
+  --gold:#fbbf24;
+  --gold-light:rgba(251,191,36,0.15);
+  --purple:#a78bfa;
+  --purple-light:rgba(167,139,250,0.15);
+  --orange:#fb923c;
+  --cyan:#22d3ee;
+  --text:#e2e8f0;
+  --muted:#64748b;
+  --shadow:0 2px 12px rgba(0,0,0,0.4);
+  --shadow-md:0 4px 24px rgba(0,0,0,0.5);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:46px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.header-title{font-family:'Rajdhani',sans-serif;font-size:1.15rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--accent);}
-.header-co{font-size:0.72rem;color:var(--gold);font-weight:700;letter-spacing:2px;text-transform:uppercase;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);padding:3px 10px;border-radius:20px;}
-.layout{display:grid;grid-template-columns:230px 1fr 280px;gap:10px;padding:10px;flex:1;overflow:hidden;}
-.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;}
-.panel-header{padding:9px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
-.panel-body{padding:10px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
-.scard{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:all 0.15s;border-left:3px solid var(--muted);}
-.scard:hover{background:#131d2e;border-left-color:var(--accent);}
-.scard.active{border-left-color:var(--accent);background:#0f1d35;}
-.scard.warn{border-left-color:var(--gold);}
-.scard.warn:hover{background:#1a1500;}
-.scard.ok{border-left-color:var(--green);}
-.scard.ok:hover{background:#0a1f12;}
-.scard.bad{border-left-color:var(--red);}
-.scard.bad:hover{background:#1a0808;}
-.slabel{font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
-.stitle{font-size:0.85rem;font-weight:600;line-height:1.3;}
-.grp-label{font-size:0.6rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:4px 2px 2px;}
-.script-center{display:flex;flex-direction:column;overflow:hidden;}
-.sdisplay{flex:1;overflow-y:auto;padding:18px;}
-.phase-tag{display:inline-block;font-size:0.62rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-bottom:12px;background:rgba(59,130,246,0.15);color:var(--accent);border:1px solid rgba(59,130,246,0.3);}
-.sline{font-size:1.08rem;line-height:1.7;color:#e2e8f0;margin-bottom:12px;}
-.sline .kw{color:var(--accent2);font-weight:700;}
-.sline .emp{color:var(--gold);font-weight:600;}
-.sline .act{color:var(--green);font-style:italic;font-size:0.88rem;}
-.tip{background:rgba(245,158,11,0.07);border:1px dashed var(--gold);border-radius:8px;padding:10px 12px;font-size:0.84rem;color:#cbd5e1;line-height:1.6;margin:6px 0;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── HERO HEADER ── */
+.hero{background:#0a0e1a;flex-shrink:0;padding:14px 20px 10px;border-bottom:1px solid #1a2540;}
+.hero-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(2.2rem,5vw,4rem);
+  letter-spacing:5px;
+  font-style:italic;
+  line-height:1;
+  margin-bottom:12px;
+  background:linear-gradient(90deg,#ffd700 0%,#ff8c00 40%,#ff4500 70%,#ff6b35 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  text-align:center;
+  filter:drop-shadow(0 0 18px rgba(255,140,0,0.35));
+}
+/* ── CLOCKS ROW ── */
+.clocks-row{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.tz-card{
+  background:#0f1628;border:1px solid #1e2d4a;border-radius:10px;
+  padding:7px 14px;text-align:left;display:flex;align-items:center;gap:8px;min-width:130px;
+}
+.tz-flag{font-size:0.75rem;font-family:'Barlow Condensed',sans-serif;font-weight:800;color:rgba(255,255,255,0.4);letter-spacing:1px;}
+.tz-info{display:flex;flex-direction:column;}
+.tz-label{font-size:0.42rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:1px;}
+.tz-time{font-family:'Barlow Condensed',sans-serif;font-size:1.45rem;font-weight:700;letter-spacing:2px;line-height:1;}
+.tz-et{color:#ffd700;}.tz-ct{color:#7ee8fa;}.tz-mt{color:#c4b5fd;}.tz-pt{color:#6ee7b7;}.tz-ak{color:#fb923c;}.tz-hi{color:#f9a8d4;}
+
+/* ── NAV TABS ── */
+.top-tabs{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;padding:8px 16px;
+  background:#0a0e1a;border-bottom:1px solid #1a2540;flex-shrink:0;
+}
+.tab-btn{
+  padding:11px 10px;border-radius:10px;
+  border:1px solid #1e2d4a;
+  font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;font-weight:800;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer;
+  transition:all 0.18s;background:#0f1628;color:#4a6080;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.tab-btn:hover{background:#162035;color:var(--text);}
+.tab-btn.wide{grid-column:1/-1;}
+.tab-btn.t-script.active{background:#0d1f3c;border-color:#3b6fd4;color:#60a5fa;box-shadow:0 0 12px rgba(59,111,212,0.25);}
+.tab-btn.t-obj.active{background:#1a1200;border-color:var(--gold);color:var(--gold);box-shadow:0 0 12px rgba(251,191,36,0.2);}
+.tab-btn.t-dispo.active{background:#031a0f;border-color:var(--green);color:var(--green);box-shadow:0 0 12px rgba(52,211,153,0.2);}
+.tab-btn.t-tips.active{background:#180f2e;border-color:var(--purple);color:var(--purple);box-shadow:0 0 12px rgba(167,139,250,0.2);}
+.tab-btn.t-asep.active{background:#001a1f;border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 12px rgba(34,211,238,0.2);}
+.tab-btn.t-spanish.active{background:#1a0e00;border-color:var(--orange);color:var(--orange);box-shadow:0 0 12px rgba(251,146,60,0.2);}
+.tab-btn.t-sunday.active{background:#14082a;border-color:#c084fc;color:#c084fc;box-shadow:0 0 12px rgba(192,132,252,0.2);}
+@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
+
+.sub-tab-row{display:flex;flex-wrap:wrap;gap:5px;padding:9px 14px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
+.sub-tab-label{font-size:0.5rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:3px 4px 2px;width:100%;}
+.sub-tab{padding:5px 12px;font-size:0.61rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;transition:all 0.15s;}
+.sub-tab:hover{border-color:var(--accent);color:var(--text);}
+.sub-tab.st-ok{border-color:rgba(52,211,153,0.3);color:var(--green);background:rgba(52,211,153,0.07);}
+.sub-tab.st-ok.active{background:var(--green-light);border-color:var(--green);color:var(--green);font-weight:800;}
+.sub-tab.st-warn{border-color:rgba(251,191,36,0.3);color:var(--gold);background:rgba(251,191,36,0.07);}
+.sub-tab.st-warn.active{background:var(--gold-light);border-color:var(--gold);color:var(--gold);font-weight:800;}
+.sub-tab.st-bad{border-color:rgba(248,113,113,0.3);color:var(--red);background:rgba(248,113,113,0.07);}
+.sub-tab.st-bad.active{background:var(--red-light);border-color:var(--red);color:var(--red);font-weight:800;}
+
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.tab-page{display:none;flex:1;overflow:hidden;flex-direction:column;}
+.tab-page.active{display:flex;}
+.script-view{flex:1;overflow-y:auto;padding:20px 24px;}
+.nav-btns{display:flex;gap:8px;padding:10px 18px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+
+.dispo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px;flex:1;overflow-y:auto;}
+.dsec{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow);}
+.dlabel{font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;display:block;}
+.dbtn{width:100%;padding:14px 8px;border-radius:9px;border:none;font-weight:800;font-size:1rem;text-transform:uppercase;cursor:pointer;letter-spacing:1px;transition:all 0.15s;font-family:'Barlow Condensed',sans-serif;}
+.dbtn span{display:block;font-size:0.62rem;opacity:0.75;margin-top:3px;font-weight:600;font-family:'Nunito',sans-serif;}
+.dbtn:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:var(--shadow-md);}
+
+.phase-tag{display:inline-block;font-size:0.6rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:14px;background:rgba(96,165,250,0.15);color:var(--accent);border:1px solid rgba(96,165,250,0.4);}
+.sline{font-size:1.05rem;line-height:1.75;color:var(--text);margin-bottom:12px;font-weight:500;}
+.sline .kw{color:var(--accent2);font-weight:800;}
+.sline .emp{color:var(--gold);font-weight:700;}
+.sline .act{color:var(--green);font-style:italic;font-size:0.88rem;font-weight:600;}
+.tip{background:rgba(251,191,36,0.08);border:1px dashed rgba(251,191,36,0.5);border-radius:10px;padding:10px 14px;font-size:0.84rem;color:#cbd5e1;line-height:1.6;margin:8px 0;}
 .tip strong{color:var(--gold);}
-.rb{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;}
-.rblabel{font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:5px;}
-.rbtext{font-size:0.95rem;line-height:1.65;color:#e2e8f0;}
+.rb{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+.rblabel{font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+.rbtext{font-size:0.95rem;line-height:1.65;color:#cbd5e1;}
 .rbtext .kw{color:var(--accent2);font-weight:700;}
-.rbtext .emp{color:var(--gold);}
-.pivot{margin-top:8px;padding-top:8px;border-top:1px dashed #333;font-size:0.82rem;color:var(--green);font-weight:600;}
-.asep-box{background:linear-gradient(135deg,#0f1d35,#111827);border:1px solid rgba(59,130,246,0.4);border-radius:10px;padding:14px;margin:10px 0;}
-.asep-step{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;}
+.rbtext .emp{color:var(--gold);font-weight:700;}
+.pivot{margin-top:10px;padding-top:8px;border-top:1px dashed #1e2d4a;font-size:0.84rem;color:var(--green);font-weight:700;}
+.asep-box{background:linear-gradient(135deg,rgba(96,165,250,0.08),rgba(56,189,248,0.05));border:1px solid rgba(96,165,250,0.3);border-radius:12px;padding:16px;margin:10px 0;}
+.asep-step{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;}
 .asep-step:last-child{margin-bottom:0;}
-.asep-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#000;font-weight:900;font-size:0.72rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Rajdhani',sans-serif;}
-.asep-c{font-size:0.88rem;line-height:1.5;color:#cbd5e1;}
+.asep-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#000;font-weight:900;font-size:0.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Bebas Neue',sans-serif;}
+.asep-c{font-size:0.9rem;line-height:1.5;color:#cbd5e1;}
 .asep-c strong{color:var(--accent2);}
 .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
-.chip{background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.3);border-radius:5px;padding:3px 8px;font-size:0.7rem;color:var(--accent2);font-weight:600;}
-.nav-btns{display:flex;gap:8px;padding:10px 18px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;}
-.btn{padding:8px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-weight:600;font-size:0.78rem;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:0.15s;font-family:'DM Sans',sans-serif;}
+.chip{background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.3);border-radius:5px;padding:3px 9px;font-size:0.68rem;color:var(--cyan);font-weight:700;}
+.btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-weight:700;font-size:0.78rem;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all 0.15s;font-family:'Barlow Condensed',sans-serif;}
 .btn:hover{background:var(--border);}
-.btn-p{background:var(--accent);color:#fff;border-color:var(--accent);}
-.btn-p:hover{background:#2563eb;}
-.btn-s{background:var(--green);color:#000;border-color:var(--green);}
+.btn-p{background:var(--accent);color:#000;border-color:var(--accent);}
+.btn-p:hover{background:#93c5fd;color:#000;}
 .btn-d{background:var(--red);color:#fff;border-color:var(--red);}
-.btn-f{width:100%;}
-.dsec{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;}
-.dlabel{font-size:0.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;display:block;}
-.dbtn{width:100%;padding:11px 8px;border-radius:7px;border:none;font-weight:700;font-size:0.82rem;text-transform:uppercase;cursor:pointer;letter-spacing:1px;transition:0.15s;font-family:'DM Sans',sans-serif;}
-.dbtn span{display:block;font-size:0.6rem;opacity:0.7;margin-top:2px;}
-::-webkit-scrollbar{width:3px;}
-::-webkit-scrollbar-thumb{background:#333;border-radius:10px;}
-.mobile-nav{display:none;}
-.mobile-nav-btn{flex:1;padding:10px 4px;font-size:0.52rem;font-weight:700;text-transform:uppercase;border:none;background:#0a0d14;color:#444;cursor:pointer;border-bottom:2px solid transparent;transition:0.15s;letter-spacing:0.5px;}
-.mobile-nav-btn.m-active{color:var(--accent);border-bottom-color:var(--accent);}
-.mobile-nav-btn.m-green{color:var(--green);border-bottom-color:var(--green);}
-@media(max-width:768px){
-  body{overflow:auto;height:auto;min-height:100vh;}
-  .mobile-nav{display:flex;background:#0a0d14;border-bottom:1px solid var(--border);position:sticky;top:46px;z-index:100;}
-  .layout{display:flex;flex-direction:column;gap:0;padding:0;overflow:visible;}
-  .panel{border-radius:0;border-left:none;border-right:none;}
-  .ps{display:none;}
-  .ps.visible{display:flex;}
-  .script-center{min-height:calc(100vh - 100px);}
-  .sdisplay{overflow:visible;}
+.btn-f{flex:1;}
+
+.tips-view{flex:1;overflow-y:auto;padding:16px 20px;}
+.spanish-view,.sunday-view{flex:1;overflow-y:auto;padding:20px 24px;}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:#1e2d4a;border-radius:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+@media(max-width:640px){
+  .hero-title{font-size:2rem;letter-spacing:3px;}
+  .tz-card{min-width:100px;padding:5px 10px;}
+  .tz-time{font-size:1.1rem;}
+  .top-tabs{grid-template-columns:repeat(2,1fr);}
+  .tab-btn.wide{grid-column:1/-1;}
+  .dispo-grid{grid-template-columns:1fr;}
 }
 </style>
 </head>
 <body onload="init()">
 
-<div class="header">
-  <div class="header-title">⚡ LOAN CR PLAYBOOK</div>
-  <div class="header-co">🏢 PERSONAL LOAN INTAKE DEPARTMENT</div>
-</div>
-
-<div class="mobile-nav" id="mobile-nav">
-  <button class="mobile-nav-btn m-active" id="mnav-script" onclick="showPanel('script')">📋 SCRIPT</button>
-  <button class="mobile-nav-btn" id="mnav-scenarios" onclick="showPanel('scenarios')">🎯 SCENARIOS</button>
-  <button class="mobile-nav-btn" id="mnav-dispo" onclick="showPanel('dispo')">✅ DISPO</button>
-</div>
-
-<div class="layout">
-
-  <!-- LEFT -->
-  <div class="panel ps" id="panel-scenarios">
-    <div class="panel-header" style="color:var(--accent)">🎯 SCENARIOS</div>
-    <div class="panel-body">
-      <div class="grp-label">CALL FLOW</div>
-      <div class="scard ok" onclick="loadScenario('intro')"><div class="slabel" style="color:var(--green)">STEP 1</div><div class="stitle">📞 Introduction</div></div>
-      <div class="scard ok" onclick="loadScenario('verify')"><div class="slabel" style="color:var(--green)">STEP 2</div><div class="stitle">✅ Verification</div></div>
-      <div class="scard ok" onclick="loadScenario('transfer')"><div class="slabel" style="color:var(--green)">STEP 3</div><div class="stitle">🔄 Warm Transfer</div></div>
-      <div class="grp-label" style="margin-top:4px;">OBJECTIONS</div>
-      <div class="scard warn" onclick="loadScenario('not_interested')"><div class="slabel" style="color:var(--gold)">OBJECTION</div><div class="stitle">😒 "Not Interested"</div></div>
-      <div class="scard warn" onclick="loadScenario('no_info')"><div class="slabel" style="color:var(--gold)">OBJECTION</div><div class="stitle">❓ "Why no info?"</div></div>
-      <div class="scard warn" onclick="loadScenario('bad_credit')"><div class="slabel" style="color:var(--gold)">OBJECTION</div><div class="stitle">📉 Bad Credit</div></div>
-      <div class="scard warn" onclick="loadScenario('rate_question')"><div class="slabel" style="color:var(--gold)">OBJECTION</div><div class="stitle">💰 Interest Rate?</div></div>
-      <div class="scard warn" onclick="loadScenario('how_info')"><div class="slabel" style="color:var(--gold)">OBJECTION</div><div class="stitle">🔍 How'd you get my info?</div></div>
-      <div class="scard warn" onclick="loadScenario('no_loan')"><div class="slabel" style="color:var(--gold)">OBJECTION</div><div class="stitle">🚫 "Don't need a loan"</div></div>
-      <div class="scard warn" onclick="loadScenario('website')"><div class="slabel" style="color:var(--gold)">OBJECTION</div><div class="stitle">🌐 "Give me the website"</div></div>
-      <div class="scard warn" onclick="loadScenario('spouse')"><div class="slabel" style="color:var(--gold)">OBJECTION</div><div class="stitle">👫 "Need to ask spouse"</div></div>
-      <div class="scard warn" onclick="loadScenario('no_ssn')"><div class="slabel" style="color:var(--gold)">OBJECTION</div><div class="stitle">🔒 Won't give SSN</div></div>
-      <div class="scard warn" onclick="loadScenario('company_name')"><div class="slabel" style="color:var(--gold)">OBJECTION</div><div class="stitle">🏢 "What company is this?"</div></div>
-      <div class="scard" onclick="loadScenario('asep')"><div class="slabel" style="color:var(--accent)">FRAMEWORK</div><div class="stitle">⚙️ A.S.E.P Method</div></div>
-      <div class="scard bad" onclick="loadScenario('dnc')"><div class="slabel" style="color:var(--red)">EXIT</div><div class="stitle">📵 Do Not Call</div></div>
-      <div class="scard" onclick="loadScenario('tips')" style="border-left-color:var(--purple)"><div class="slabel" style="color:var(--purple)">COACHING</div><div class="stitle">💡 Tips to Win</div></div>
-    </div>
+<div class="hero">
+  <div class="hero-title">BDS LOAN CR DASHBOARD</div>
+  <div class="clocks-row">
+    <div class="tz-card"><span class="tz-flag">ET</span><div class="tz-info"><span class="tz-label">EASTERN</span><span class="tz-time tz-et" id="clock-et">--:--</span></div></div>
+    <div class="tz-card"><span class="tz-flag">CT</span><div class="tz-info"><span class="tz-label">CENTRAL</span><span class="tz-time tz-ct" id="clock-ct">--:--</span></div></div>
+    <div class="tz-card"><span class="tz-flag">MT</span><div class="tz-info"><span class="tz-label">MOUNTAIN</span><span class="tz-time tz-mt" id="clock-mt">--:--</span></div></div>
+    <div class="tz-card"><span class="tz-flag">PT</span><div class="tz-info"><span class="tz-label">PACIFIC</span><span class="tz-time tz-pt" id="clock-pt">--:--</span></div></div>
+    <div class="tz-card"><span class="tz-flag">AK</span><div class="tz-info"><span class="tz-label">ALASKA</span><span class="tz-time tz-ak" id="clock-ak">--:--</span></div></div>
+    <div class="tz-card"><span class="tz-flag">HI</span><div class="tz-info"><span class="tz-label">HAWAII</span><span class="tz-time tz-hi" id="clock-hi">--:--</span></div></div>
   </div>
+</div>
 
-  <!-- CENTER -->
-  <div class="script-center ps visible" id="panel-script">
-    <div class="sdisplay" id="sdisplay"></div>
+<div class="top-tabs">
+  <button class="tab-btn t-script active" id="tab-script" onclick="switchTab('script')">&#128203; Script</button>
+  <button class="tab-btn t-obj" id="tab-objections" onclick="switchTab('objections')">&#127919; Objections</button>
+  <button class="tab-btn t-dispo" id="tab-dispo" onclick="switchTab('dispo')">&#9989; Disposition</button>
+  <button class="tab-btn t-tips" id="tab-tips" onclick="switchTab('tips')">&#128161; Tips to Win</button>
+  <button class="tab-btn t-asep" id="tab-asep" onclick="switchTab('asep')">&#9881;&#65039; A.S.E.P</button>
+  <button class="tab-btn t-spanish" id="tab-spanish" onclick="switchTab('spanish')">&#127466;&#127480; Spanish</button>
+  <button class="tab-btn t-sunday wide" id="tab-sunday" onclick="switchTab('sunday')">&#128197; Sunday Protocol</button>
+</div>
+
+<div class="main">
+
+  <!-- SCRIPT -->
+  <div class="tab-page active" id="page-script">
+    <div class="sub-tab-row">
+      <div class="sub-tab-label">CALL FLOW</div>
+      <button class="sub-tab st-ok active" id="stab-intro" onclick="loadScript('intro')">&#128222; Step 1 &middot; Introduction</button>
+      <button class="sub-tab st-ok" id="stab-verify" onclick="loadScript('verify')">&#9989; Step 2 &middot; Verification</button>
+      <button class="sub-tab st-ok" id="stab-transfer" onclick="loadScript('transfer')">&#128260; Step 3 &middot; Warm Transfer</button>
+      <button class="sub-tab st-bad" id="stab-dnc" onclick="loadScript('dnc')">&#128245; DNC &middot; Exit</button>
+    </div>
+    <div class="script-view" id="sdisplay"></div>
     <div class="nav-btns" id="nav-btns"></div>
   </div>
 
-  <!-- RIGHT -->
-  <div class="panel ps" id="panel-dispo">
-    <div class="panel-header" style="color:var(--green)">✅ DISPOSITION</div>
-    <div class="panel-body">
-      <div class="dsec" style="border-left:3px solid var(--green)">
-        <span class="dlabel" style="color:var(--green)">TRANSFERRED ✅</span>
-        <button class="dbtn btn-s" onclick="location.reload()">LIVE TRANSFER DONE<span>Client connected to specialist</span></button>
+  <!-- OBJECTIONS -->
+  <div class="tab-page" id="page-objections">
+    <div class="sub-tab-row">
+      <div class="sub-tab-label">SELECT OBJECTION</div>
+      <button class="sub-tab st-warn active" id="stab-not_interested" onclick="loadObjection('not_interested')">Not Interested</button>
+      <button class="sub-tab st-warn" id="stab-no_info" onclick="loadObjection('no_info')">Why No Info?</button>
+      <button class="sub-tab st-warn" id="stab-bad_credit" onclick="loadObjection('bad_credit')">Bad Credit</button>
+      <button class="sub-tab st-warn" id="stab-rate_question" onclick="loadObjection('rate_question')">Interest Rate?</button>
+      <button class="sub-tab st-warn" id="stab-how_info" onclick="loadObjection('how_info')">How'd You Get My Info?</button>
+      <button class="sub-tab st-warn" id="stab-no_loan" onclick="loadObjection('no_loan')">Don't Need a Loan</button>
+      <button class="sub-tab st-warn" id="stab-website" onclick="loadObjection('website')">Give Me the Website</button>
+      <button class="sub-tab st-warn" id="stab-spouse" onclick="loadObjection('spouse')">Need to Ask Spouse</button>
+      <button class="sub-tab st-warn" id="stab-no_ssn" onclick="loadObjection('no_ssn')">Won't Give SSN</button>
+      <button class="sub-tab st-warn" id="stab-company_name" onclick="loadObjection('company_name')">What Company Is This?</button>
+    </div>
+    <div class="script-view" id="obj-display"></div>
+  </div>
+
+  <!-- DISPOSITION -->
+  <div class="tab-page" id="page-dispo">
+    <div class="dispo-grid">
+      <div class="dsec" style="border-top:4px solid var(--green);">
+        <span class="dlabel" style="color:var(--green)">&#9989; TRANSFERRED</span>
+        <button class="dbtn" style="background:var(--green);color:#fff;" onclick="location.reload()">LIVE TRANSFER DONE<span>Client connected to specialist</span></button>
       </div>
-      <div class="dsec" style="border-left:3px solid var(--gold)">
-        <span class="dlabel" style="color:var(--gold)">CALLBACK 📅</span>
-        <button class="dbtn" style="background:var(--gold);color:#000;" onclick="location.reload()">SET CALLBACK<span>Client requested call back</span></button>
+      <div class="dsec" style="border-top:4px solid var(--gold);">
+        <span class="dlabel" style="color:var(--gold)">&#128197; CALLBACK</span>
+        <button class="dbtn" style="background:var(--gold);color:#fff;" onclick="location.reload()">SET CALLBACK<span>Client requested call back</span></button>
       </div>
-      <div class="dsec" style="border-left:3px solid #8b5cf6">
-        <span class="dlabel" style="color:#8b5cf6">NO ANSWER 📵</span>
-        <button class="dbtn" style="background:#8b5cf6;color:#fff;" onclick="location.reload()">VOICEMAIL / NO ANSWER<span>Log attempt, move on</span></button>
+      <div class="dsec" style="border-top:4px solid var(--purple);">
+        <span class="dlabel" style="color:var(--purple)">&#128245; NO ANSWER</span>
+        <button class="dbtn" style="background:var(--purple);color:#fff;" onclick="location.reload()">VOICEMAIL / NO ANSWER<span>Log attempt, move on</span></button>
       </div>
-      <div class="dsec" style="border-left:3px solid var(--red)">
-        <span class="dlabel" style="color:var(--red)">NOT QUALIFIED ❌</span>
-        <button class="dbtn btn-d" onclick="location.reload()">DQ — END CALL<span>Does not meet criteria</span></button>
+      <div class="dsec" style="border-top:4px solid var(--red);">
+        <span class="dlabel" style="color:var(--red)">&#10060; NOT QUALIFIED</span>
+        <button class="dbtn" style="background:var(--red);color:#fff;" onclick="location.reload()">DQ &mdash; END CALL<span>Does not meet criteria</span></button>
       </div>
-      <div class="dsec" style="border-left:3px solid var(--muted);margin-top:4px;">
-        <span class="dlabel" style="color:var(--muted)">QUICK REMINDERS</span>
-        <div style="font-size:0.76rem;line-height:1.8;color:#94a3b8;">
-          <div>🧘 <strong style="color:#e2e8f0;">Stay calm</strong> — energy transfers</div>
-          <div>⏸️ <strong style="color:#e2e8f0;">Pause</strong> after punch words</div>
-          <div>🎯 <strong style="color:#e2e8f0;">Always pivot</strong> back to script</div>
-          <div>🤐 <strong style="color:#e2e8f0;">Ask & wait</strong> — silence wins</div>
-          <div>📋 <strong style="color:#e2e8f0;">Use their name</strong> to build trust</div>
+      <div class="dsec" style="grid-column:1/-1;border-top:4px solid var(--accent2);">
+        <span class="dlabel" style="color:var(--accent2)">&#128204; QUICK REMINDERS</span>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+          <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:10px;font-size:0.78rem;line-height:1.6;color:#cbd5e1;">&#129496; <strong style="color:var(--text)">Stay calm</strong> &mdash; energy transfers</div>
+          <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:10px;font-size:0.78rem;line-height:1.6;color:#cbd5e1;">&#9208;&#65039; <strong style="color:var(--text)">Pause</strong> after punch words</div>
+          <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:10px;font-size:0.78rem;line-height:1.6;color:#cbd5e1;">&#127919; <strong style="color:var(--text)">Always pivot</strong> back to script</div>
+          <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:10px;font-size:0.78rem;line-height:1.6;color:#cbd5e1;">&#129296; <strong style="color:var(--text)">Ask &amp; wait</strong> &mdash; silence wins</div>
+          <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:10px;font-size:0.78rem;line-height:1.6;color:#cbd5e1;">&#128203; <strong style="color:var(--text)">Use their name</strong> to build trust</div>
+          <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:10px;font-size:0.78rem;line-height:1.6;color:#cbd5e1;">&#128516; <strong style="color:var(--text)">Smile while you talk</strong> &mdash; they feel it</div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPS -->
+  <div class="tab-page" id="page-tips">
+    <div class="tips-view">
+      <div class="rb" style="border-left:4px solid var(--accent2);">
+        <div class="rblabel" style="color:var(--accent2);">&#127897;&#65039; SPEAKING PACE</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:8px;padding:10px;text-align:center;"><div style="color:var(--red);font-size:0.62rem;font-weight:800;">TOO FAST &#10060;</div><div style="font-size:0.65rem;color:var(--muted);margin-top:4px;">They zone out or get suspicious.</div></div>
+          <div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.4);border-radius:8px;padding:10px;text-align:center;"><div style="color:var(--green);font-size:0.62rem;font-weight:800;">JUST RIGHT &#9989;</div><div style="font-size:0.65rem;color:var(--muted);margin-top:4px;">Calm, clear, confident.</div></div>
+          <div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:10px;text-align:center;"><div style="color:var(--gold);font-size:0.62rem;font-weight:800;">TOO SLOW &#9888;&#65039;</div><div style="font-size:0.65rem;color:var(--muted);margin-top:4px;">Sounds unsure. Busy people hang up.</div></div>
+        </div>
+        <div style="font-size:0.8rem;color:var(--muted);">Speak like you're explaining something important to a sharp friend &mdash; not reading a script.</div>
+      </div>
+      <div class="rb" style="border-left:4px solid var(--gold);">
+        <div class="rblabel" style="color:var(--gold);">&#9208;&#65039; THE PAUSE &mdash; YOUR MOST POWERFUL TOOL</div>
+        <div class="rbtext">Pause <strong style="color:var(--gold)">AFTER</strong> your punch word &mdash; not before.<br><br>
+        <span style="color:var(--red);font-weight:700;">WRONG:</span> <em style="color:var(--muted);">"I want to talk to you about&hellip; working capital."</em><br>
+        <span style="color:var(--green);font-weight:700;">RIGHT:</span> "We can get you access to <strong style="color:var(--accent);">working capital.</strong> <span style="color:var(--gold);font-weight:700;">[PAUSE]</span> Does that interest you?"<br><br>
+        Silence after a strong word = confidence.</div>
+      </div>
+      <div class="rb" style="border-left:4px solid var(--purple);">
+        <div class="rblabel" style="color:var(--purple);">&#128074; PUNCH WORDS &mdash; HIT THESE WITH WEIGHT</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;" id="punch-words"></div>
+        <div style="font-size:0.78rem;color:var(--muted);">Slow down slightly on punch words. Drop your voice a touch &mdash; heavier, not louder. Pause 1 beat after.</div>
+      </div>
+      <div class="rb" style="border-left:4px solid var(--green);">
+        <div class="rblabel" style="color:var(--green);">&#129504; MINDSET</div>
+        <div class="rbtext" style="line-height:2;">
+          &#9989; <strong>Speak clearly, calmly</strong> &mdash; they're busy, make it easy to follow<br>
+          &#9989; <strong>Sit up straight</strong> &mdash; posture affects your voice; they hear it<br>
+          &#9989; <strong>Smile while you talk</strong> &mdash; they feel it, they can't see it<br>
+          &#9888;&#65039; <strong style="color:var(--gold);">No filler words</strong> &mdash; no "um", "like" &mdash; silence is better<br>
+          &#9888;&#65039; <strong style="color:var(--gold);">Ask a question &mdash; then WAIT.</strong> First to speak loses.
+        </div>
+      </div>
+      <div class="rb" style="border-left:4px solid var(--accent);">
+        <div class="rblabel" style="color:var(--accent);">&#128260; MICRO-TRUST PHRASES &mdash; USE EVERY 2 QUESTIONS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:10px;text-align:center;font-size:0.85rem;color:var(--gold);font-weight:700;">"Perfect, thank you."</div>
+          <div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:10px;text-align:center;font-size:0.85rem;color:var(--gold);font-weight:700;">"Got it, that helps."</div>
+          <div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:10px;text-align:center;font-size:0.85rem;color:var(--gold);font-weight:700;">"Great to know."</div>
+          <div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:10px;text-align:center;font-size:0.85rem;color:var(--gold);font-weight:700;">"Appreciate that."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ASEP -->
+  <div class="tab-page" id="page-asep">
+    <div class="script-view">
+      <div class="phase-tag" style="background:rgba(34,211,238,0.1);color:var(--cyan);border-color:rgba(34,211,238,0.4);">&#9881;&#65039; Rebuttal Framework</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:14px;">Use for <strong style="color:var(--text)">every objection</strong> &mdash; 4-step flow.</div>
+      <div class="asep-box">
+        <div class="asep-step">
+          <div class="asep-num">A</div>
+          <div class="asep-c"><strong>ACKNOWLEDGE</strong> &mdash; Validate the concern.<div class="chips"><span class="chip">"I understand, [Name]"</span><span class="chip">"Thanks for asking"</span><span class="chip">"I'm glad you mentioned that"</span></div></div>
+        </div>
+        <div class="asep-step">
+          <div class="asep-num" style="background:var(--gold);">S</div>
+          <div class="asep-c"><strong>SOFTEN</strong> &mdash; Show empathy, don't fight it.<div class="chips"><span class="chip" style="background:var(--gold-light);border-color:#fcd34d;color:var(--gold);">"Most clients had the same question"</span><span class="chip" style="background:var(--gold-light);border-color:#fcd34d;color:var(--gold);">"Totally valid point"</span></div></div>
+        </div>
+        <div class="asep-step">
+          <div class="asep-num" style="background:var(--cyan);">E</div>
+          <div class="asep-c"><strong>EXPLAIN</strong> &mdash; Give the direct rebuttal. Answer the concern.</div>
+        </div>
+        <div class="asep-step">
+          <div class="asep-num" style="background:var(--green);">P</div>
+          <div class="asep-c"><strong>PIVOT</strong> &mdash; Get back into the script with a question.<div class="chips"><span class="chip" style="background:var(--green-light);border-color:#6ee7b7;color:var(--green);">"So going back&hellip;"</span><span class="chip" style="background:var(--green-light);border-color:#6ee7b7;color:var(--green);">"Let me get that confirmed&hellip;"</span><span class="chip" style="background:var(--green-light);border-color:#6ee7b7;color:var(--green);">"Let's see what you qualify for&hellip;"</span></div></div>
+        </div>
+      </div>
+      <div class="tip"><strong>&#9889; RULE:</strong> Always end a rebuttal with a qualifying question to keep moving toward transfer.</div>
+      <div class="tip" style="margin-top:12px;background:rgba(34,211,238,0.07);border-color:rgba(34,211,238,0.4);color:#cbd5e1;">
+        <strong style="color:var(--cyan);">&#128260; FLOW EXAMPLE</strong><br>
+        Client: "I don't want to give my SSN."<br>
+        <strong>A</strong> &rarr; "Completely understand." &nbsp;|&nbsp; <strong>S</strong> &rarr; "Most people ask this." &nbsp;|&nbsp; <strong>E</strong> &rarr; "It's a soft pull, won't affect your score." &nbsp;|&nbsp; <strong>P</strong> &rarr; "Go ahead with your social whenever you're ready. [WAIT]"
+      </div>
+    </div>
+  </div>
+
+  <!-- SPANISH -->
+  <div class="tab-page" id="page-spanish">
+    <div class="spanish-view">
+      <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.4);border-left:4px solid var(--red);border-radius:14px;padding:20px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <span style="font-size:2rem;">&#128680;</span>
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;color:var(--red);letter-spacing:1px;">SPANISH TRANSFER &mdash; CRITICAL PROTOCOL</div>
+            <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">Read before every Spanish call</div>
+          </div>
+        </div>
+        <div style="background:var(--card);border-radius:10px;padding:16px;border:1px solid rgba(248,113,113,0.3);margin-bottom:14px;">
+          <div style="font-size:0.58rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:8px;">&#9888;&#65039; RULE</div>
+          <div style="font-size:1rem;line-height:1.75;color:#cbd5e1;font-weight:600;">
+            If a customer asks for <strong style="color:var(--red);">Spanish support</strong>, do <strong style="color:var(--red);">NOT</strong> handle the call if you don't speak Spanish.<br>
+            Transfer <strong>ONLY</strong> to the designated Spanish-speaking line.
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg,#dc2626,#b91c1c);border-radius:12px;padding:22px;text-align:center;box-shadow:0 4px 20px rgba(220,38,38,0.3);margin-bottom:14px;">
+          <div style="font-size:0.55rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.65);margin-bottom:8px;">&#127466;&#127480; SPANISH LINE &mdash; TRANSFER TO</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:3rem;color:#fff;letter-spacing:5px;line-height:1;">951-480-7594</div>
+          <div style="font-size:0.65rem;color:rgba(255,255,255,0.65);margin-top:6px;font-weight:700;">DEDICATED SPANISH-SPEAKING SPECIALIST LINE</div>
+          <a href="tel:9514807594" style="display:inline-block;margin-top:14px;background:rgba(255,255,255,0.18);border:2px solid rgba(255,255,255,0.45);color:#fff;text-decoration:none;padding:9px 28px;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;font-weight:700;letter-spacing:1.5px;">&#128222; TAP TO CALL</a>
+        </div>
+        <div style="background:var(--card);border-radius:10px;padding:14px;border:1px solid rgba(248,113,113,0.3);">
+          <div style="font-size:0.58rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:8px;">&#9888;&#65039; WHY THIS MATTERS</div>
+          <div style="font-size:0.9rem;line-height:1.7;color:#cbd5e1;">We have had cases where clients were sent to the <strong style="color:var(--red);">wrong queue</strong>, which creates more issues. If you are <strong style="color:var(--text)">unsure</strong>, ask a <strong style="color:var(--accent);">supervisor</strong> before transferring. Do not guess.</div>
+        </div>
+      </div>
+      <div style="background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);border-radius:14px;padding:18px;margin-bottom:16px;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;color:var(--orange);letter-spacing:1px;margin-bottom:10px;">&#128172; WHAT TO SAY TO THE CLIENT</div>
+        <div class="rb" style="margin-bottom:0;">
+          <div class="rblabel" style="color:var(--orange);">ENGLISH &rarr; SPANISH HANDOFF SCRIPT</div>
+          <div class="rbtext">"I want to make sure you get the best help possible. Let me connect you with one of our <span class="kw">Spanish-speaking specialists</span> right now &mdash; they'll be able to walk you through everything clearly."</div>
+          <div class="pivot" style="color:var(--orange);">&rarr; Place on hold &rarr; Dial 951-480-7594 &rarr; Introduce client with name + reference number</div>
+        </div>
+      </div>
+      <div class="rb">
+        <div class="rblabel">&#128203; TRANSFER CHECKLIST</div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;"><input type="checkbox" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer;"> Confirm client is requesting Spanish support</label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;"><input type="checkbox" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer;"> You do NOT speak Spanish (if you do, handle the call)</label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;"><input type="checkbox" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer;"> Dial Spanish line: <strong style="color:var(--red);margin-left:4px;">951-480-7594</strong></label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;"><input type="checkbox" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer;"> Introduce client with name + reference number</label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;"><input type="checkbox" style="width:18px;height:18px;accent-color:var(--green);cursor:pointer;"> Confirm handoff complete before disconnecting</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUNDAY -->
+  <div class="tab-page" id="page-sunday">
+    <div class="sunday-view">
+      <div style="background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.3);border-radius:16px;padding:20px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <span style="font-size:2rem;">&#128197;</span>
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:800;color:var(--purple);letter-spacing:1px;">SUNDAY PROTOCOL</div>
+            <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">Special instructions for Sunday operations</div>
+          </div>
+        </div>
+        <div style="background:var(--card);border-radius:12px;padding:16px;border:1px solid rgba(167,139,250,0.25);margin-bottom:12px;">
+          <div style="font-size:0.58rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--purple);margin-bottom:10px;">&#128680; NO CLOSER AVAILABLE</div>
+          <div style="font-size:1rem;line-height:1.7;color:var(--text);">If you <strong style="color:var(--red);">cannot get a closer on the phone</strong>:</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+            <div style="display:flex;align-items:flex-start;gap:10px;background:rgba(167,139,250,0.08);border-radius:8px;padding:10px;">
+              <span style="font-size:1.1rem;">1&#65039;&#8419;</span>
+              <div style="font-size:0.9rem;color:#cbd5e1;line-height:1.5;"><strong style="color:var(--text)">Leave a note in the file</strong> &mdash; document the call attempt, client name, and reference number</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:10px;background:rgba(167,139,250,0.08);border-radius:8px;padding:10px;">
+              <span style="font-size:1.1rem;">2&#65039;&#8419;</span>
+              <div style="font-size:0.9rem;color:#cbd5e1;line-height:1.5;"><strong style="color:var(--text)">Schedule a callback</strong> for <strong style="color:var(--purple);">first thing Monday morning</strong></div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:10px;background:rgba(167,139,250,0.08);border-radius:8px;padding:10px;">
+              <span style="font-size:1.1rem;">3&#65039;&#8419;</span>
+              <div style="font-size:0.9rem;color:#cbd5e1;line-height:1.5;"><strong style="color:var(--text)">Use the VIP script below</strong> with the client before ending the call</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:14px;padding:22px;margin-bottom:16px;box-shadow:0 4px 20px rgba(124,58,237,0.3);">
+        <div style="font-size:0.55rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.65);margin-bottom:10px;">&#127897;&#65039; SAY THIS TO THE CLIENT</div>
+        <div style="background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.25);border-radius:10px;padding:18px;">
+          <div style="font-size:1.1rem;line-height:1.9;color:#fff;font-weight:600;font-style:italic;">
+            "Our Sunday learning specialists are <strong style="color:#ffd700;">extremely busy</strong> today, but I will <strong style="color:#ffd700;">personally</strong> set you up with a <strong style="color:#ffd700;">VIP appointment</strong> first thing Monday morning so you receive the <strong style="color:#ffd700;">proper time and attention</strong>."
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:0.72rem;color:rgba(255,255,255,0.6);font-weight:600;">&#9888;&#65039; Deliver this confidently &mdash; it reframes the wait as a benefit, not a failure.</div>
+      </div>
+
+      <div class="rb" style="border-left:4px solid var(--purple);">
+        <div class="rblabel" style="color:var(--purple);">&#128203; SUNDAY CHECKLIST</div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;"><input type="checkbox" style="width:18px;height:18px;accent-color:var(--purple);cursor:pointer;"> Attempted to reach closer &mdash; confirmed unavailable</label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;"><input type="checkbox" style="width:18px;height:18px;accent-color:var(--purple);cursor:pointer;"> Left a detailed note in the client's file</label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;"><input type="checkbox" style="width:18px;height:18px;accent-color:var(--purple);cursor:pointer;"> Scheduled callback for <strong style="color:var(--purple);margin-left:4px;">Monday morning</strong></label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;"><input type="checkbox" style="width:18px;height:18px;accent-color:var(--purple);cursor:pointer;"> Delivered VIP script to client</label>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem;"><input type="checkbox" style="width:18px;height:18px;accent-color:var(--purple);cursor:pointer;"> Client confirmed appointment / callback time</label>
+        </div>
+      </div>
+      <div class="tip" style="margin-top:10px;background:rgba(167,139,250,0.08);border-color:rgba(167,139,250,0.4);color:#cbd5e1;">
+        <strong style="color:var(--purple);">&#128161; PRO TIP:</strong> When scheduling the Monday callback, get a specific time window. "Would Monday at 9AM or 10AM work better for you?" &mdash; two options, both move forward.
       </div>
     </div>
   </div>
@@ -167,290 +430,117 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 </div>
 
 <script>
-const S = {
-
-intro:{phase:'STEP 1 — INTRODUCTION',color:'var(--green)',next:'verify',content:`
-<div class="phase-tag">📞 Opening</div>
-<div class="sline">"Hi <span class='kw'>[First Name]</span> — how's your day going?"</div>
-<div class="tip"><strong>⏸️ WAIT.</strong> Let them answer. Even a "fine" builds connection.</div>
+const S={
+intro:{phase:'STEP 1 \u2014 INTRODUCTION',color:'var(--green)',next:'verify',content:`
+<div class="phase-tag">\u{1F4DE} Opening</div>
+<div class="sline">"Hi <span class='kw'>[First Name]</span> \u2014 how's your day going?"</div>
+<div class="tip"><strong>\u23F8\uFE0F WAIT.</strong> Let them answer. Even a "fine" builds connection.</div>
 <div class="sline">"Great. I'm <span class='kw'>[Your Name]</span> calling from <span class='emp'>Personal Loan Intake Department</span> regarding a <span class='kw'>personal lending notice</span> connected to our lender network. Did you receive our letter recently?"</div>
-<div class="tip"><strong>💡 Either answer works</strong> — just move forward: "No worries, let me explain…"</div>
-<div class="sline">"We have a <span class='kw'>fixed-rate personal loan</span> starting at <span class='emp'>6.47% APR</span> — available for a <span class='kw'>limited review window</span>. I just need to confirm a few details to see if you qualify to speak with a <span class='kw'>lending specialist</span>. Takes about 2 minutes."</div>
+<div class="tip"><strong>\u{1F4A1} Either answer works</strong> \u2014 just move forward: "No worries, let me explain\u2026"</div>
+<div class="sline">"We have a <span class='kw'>fixed-rate personal loan</span> starting at <span class='emp'>6.47% APR</span> \u2014 available for a <span class='kw'>limited review window</span>. I just need to confirm a few details to see if you qualify to speak with a <span class='kw'>lending specialist</span>. Takes about 2 minutes."</div>
 `},
-
-verify:{phase:'STEP 2 — VERIFICATION',color:'var(--green)',next:'transfer',content:`
-<div class="phase-tag">✅ Confirming Details</div>
-<div class="sline">"Let me confirm your name — first is <span class='emp'>[spell it]</span>, last is <span class='emp'>[spell it]</span>. Correct?"</div>
-<div class="sline">"Best number is <span class='kw'>(xxx) xxx-xxxx</span> — and your best email?"</div>
+verify:{phase:'STEP 2 \u2014 VERIFICATION',color:'var(--green)',next:'transfer',content:`
+<div class="phase-tag" style="background:#d1fae5;color:var(--green);border-color:#6ee7b7;">\u2705 Confirming Details</div>
+<div class="sline">"Let me confirm your name \u2014 first is <span class='emp'>[spell it]</span>, last is <span class='emp'>[spell it]</span>. Correct?"</div>
+<div class="sline">"Best number is <span class='kw'>(xxx) xxx-xxxx</span> \u2014 and your best email?"</div>
 <div class="sline">"Current home address?"</div>
-<div class="tip"><strong>🔄 Every 2 questions say:</strong> "Perfect, thank you." / "Got it, that helps."</div>
-<div class="sline">"Before transferring, I need to run a <span class='kw'>pre-qualification review</span> — it's a <span class='emp'>non-impacting soft pull</span>. Will NOT affect your credit score."</div>
+<div class="tip"><strong>\u{1F504} Every 2 questions say:</strong> "Perfect, thank you." / "Got it, that helps."</div>
+<div class="sline">"Before transferring, I need to run a <span class='kw'>pre-qualification review</span> \u2014 it's a <span class='emp'>non-impacting soft pull</span>. Will NOT affect your credit score."</div>
 <div class="sline">"Can I get your <span class='kw'>date of birth</span>?"</div>
-<div class="tip"><strong>⚠️ Then casually:</strong> "Okay, and your social." — say it matter-of-fact. Then <strong>WAIT.</strong></div>
-<div class="sline">"<span class='act'>(Submit to underwriting — check eligibility)</span>"</div>
-<div class="sline">"Thanks for your patience — submitting now to our <span class='kw'>lending partner network</span>. Just a moment."</div>
+<div class="tip"><strong>\u26A0\uFE0F Then casually:</strong> "Okay, and your social." \u2014 say it matter-of-fact. Then <strong>WAIT.</strong></div>
+<div class="sline">"<span class='act'>(Submit to underwriting \u2014 check eligibility)</span>"</div>
+<div class="sline">"Thanks for your patience \u2014 submitting now to our <span class='kw'>lending partner network</span>. Just a moment."</div>
 `},
-
-transfer:{phase:'STEP 3 — WARM TRANSFER',color:'var(--accent)',next:null,content:`
-<div class="phase-tag">🔄 Handing Off</div>
-<div class="tip" style="margin-bottom:14px;"><strong>🧘 SLOW DOWN.</strong> Sound relaxed — you're connecting them to a specialist, not passing a problem.</div>
-<div style="border:2px solid var(--green);border-radius:10px;padding:16px;background:rgba(16,185,129,0.06);margin-bottom:14px;">
-  <div style="font-size:0.55rem;font-weight:700;letter-spacing:2px;color:var(--green);margin-bottom:8px;">WARM TRANSFER — SAY CLEARLY & SLOWLY</div>
-  <div class="sline">"Hi <span class='kw'>[Specialist Name]</span> — I have <span class='kw'>[Client Name]</span> on the line, ref number <span class='emp'>[File #]</span>. Initial review complete — they meet preliminary criteria. Can you go over their <span class='kw'>lending options</span>?"</div>
+transfer:{phase:'STEP 3 \u2014 WARM TRANSFER',color:'var(--accent)',next:null,content:`
+<div class="phase-tag">\u{1F504} Handing Off</div>
+<div class="tip" style="margin-bottom:14px;"><strong>\u{1F9D8} SLOW DOWN.</strong> Sound relaxed \u2014 you're connecting them to a specialist, not passing a problem.</div>
+<div style="border:2px solid var(--green);border-radius:12px;padding:18px;background:var(--green-light);margin-bottom:14px;">
+  <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;color:var(--green);margin-bottom:8px;text-transform:uppercase;">Warm Transfer \u2014 Say Clearly &amp; Slowly</div>
+  <div class="sline">"Hi <span class='kw'>[Specialist Name]</span> \u2014 I have <span class='kw'>[Client Name]</span> on the line, ref number <span class='emp'>[File #]</span>. Initial review complete \u2014 they meet preliminary criteria. Can you go over their <span class='kw'>lending options</span>?"</div>
 </div>
-<div class="tip"><strong>📌 Specialist will say:</strong> "Hi, this is [Name], agent ID xxxx with [Lender]. This call may be recorded."</div>
-<div class="tip" style="border-color:var(--green);margin-top:8px;"><strong style="color:var(--green);">✅ YOUR JOB IS DONE.</strong> Confirm handoff, then exit professionally.</div>
+<div class="tip"><strong>\u{1F4CC} Specialist will say:</strong> "Hi, this is [Name], agent ID xxxx with [Lender]. This call may be recorded."</div>
+<div class="tip" style="background:var(--green-light);border-color:var(--green);color:#065f46;margin-top:8px;"><strong style="color:var(--green);">\u2705 YOUR JOB IS DONE.</strong> Confirm handoff, then exit professionally.</div>
 `},
+dnc:{phase:'EXIT \u2014 DO NOT CALL',color:'var(--red)',next:null,content:`
+<div class="phase-tag" style="background:var(--red-light);color:var(--red);border-color:#fca5a5;">\u{1F4F5} "Put me on your Do Not Call list"</div>
+<div style="background:var(--red-light);border:2px solid var(--red);border-radius:12px;padding:18px;margin-bottom:14px;">
+  <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;color:var(--red);margin-bottom:8px;text-transform:uppercase;">\u26A0\uFE0F EXIT SCRIPT</div>
+  <div class="sline" style="color:var(--text);">"I apologize for the call. I'll put you on our <span class='kw'>internal Do Not Call list</span> right now \u2014 you won't be called again. Have a great day."</div>
+  <div style="margin-top:10px;font-size:0.72rem;color:var(--muted);"><strong style="color:var(--gold);">\u26A0\uFE0F NOTE:</strong> Do not argue. Apologize, confirm DNC, end call. Move on immediately.</div>
+</div>
+<div style="display:flex;gap:10px;">
+  <button class="btn btn-d btn-f" onclick="location.reload()">LOG DNC \u2014 END CALL</button>
+  <button class="btn btn-f" onclick="loadScript('intro')">RESET</button>
+</div>
+`}};
 
-asep:{phase:'FRAMEWORK — A.S.E.P METHOD',color:'var(--accent)',next:null,content:`
-<div class="phase-tag">⚙️ Rebuttal Framework</div>
-<div style="font-size:0.75rem;color:#94a3b8;margin-bottom:12px;">Use for <strong style="color:var(--text)">every objection</strong> — 4-step flow.</div>
-<div class="asep-box">
-  <div class="asep-step">
-    <div class="asep-num">A</div>
-    <div class="asep-c"><strong>ACKNOWLEDGE</strong> — Validate the concern.<div class="chips"><span class="chip">"I understand, [Name]"</span><span class="chip">"Thanks for asking"</span><span class="chip">"I'm glad you mentioned that"</span></div></div>
-  </div>
-  <div class="asep-step">
-    <div class="asep-num" style="background:var(--gold);">S</div>
-    <div class="asep-c"><strong>SOFTEN</strong> — Show empathy, don't fight it.<div class="chips"><span class="chip" style="border-color:rgba(245,158,11,0.4);color:var(--gold);">"Most clients had the same question"</span><span class="chip" style="border-color:rgba(245,158,11,0.4);color:var(--gold);">"Totally valid point"</span></div></div>
-  </div>
-  <div class="asep-step">
-    <div class="asep-num" style="background:var(--accent2);">E</div>
-    <div class="asep-c"><strong>EXPLAIN</strong> — Give the direct rebuttal. Answer the concern.</div>
-  </div>
-  <div class="asep-step">
-    <div class="asep-num" style="background:var(--green);">P</div>
-    <div class="asep-c"><strong>PIVOT</strong> — Get back into the script with a question.<div class="chips"><span class="chip" style="border-color:rgba(16,185,129,0.4);color:var(--green);">"So going back…"</span><span class="chip" style="border-color:rgba(16,185,129,0.4);color:var(--green);">"Let me get that confirmed…"</span><span class="chip" style="border-color:rgba(16,185,129,0.4);color:var(--green);">"Let's see what you qualify for…"</span></div></div>
-  </div>
-</div>
-<div class="tip"><strong>⚡ RULE:</strong> Always end a rebuttal with a qualifying question to keep moving toward transfer.</div>
-`},
-
-not_interested:{phase:'REBUTTAL — NOT INTERESTED',color:'var(--gold)',next:null,content:`
-<div class="phase-tag" style="background:rgba(245,158,11,0.15);color:var(--gold);border-color:rgba(245,158,11,0.3);">😒 "Not Interested"</div>
-<div class="rb">
-  <div class="rblabel">OPTION 1 — Reality Check</div>
-  <div class="rbtext">"I understand — I'm not here to push anything. But <span class='kw'>debt affects everything</span> — job applications, insurance, car loans. Takes less than <span class='emp'>5 minutes</span> for a specialist to explain. <span class='emp'>Are you carrying any high-interest debt right now?</span>"</div>
-  <div class="pivot">→ If yes: "Perfect, let me get you qualified so a specialist can walk you through it."</div>
-</div>
-<div class="rb">
-  <div class="rblabel">OPTION 2 — Safety Net</div>
-  <div class="rbtext">"Completely fair — this could just be a <span class='kw'>safety net</span> for unexpected expenses. No collateral needed, and it <span class='emp'>could save you money</span>. Can I at least confirm your details so the option is there if you ever need it?"</div>
-</div>
-`},
-
-no_info:{phase:'REBUTTAL — "WHY NO INFO?"',color:'var(--gold)',next:null,content:`
-<div class="phase-tag" style="background:rgba(245,158,11,0.15);color:var(--gold);border-color:rgba(245,158,11,0.3);">❓ "Why don't you have my information?"</div>
-<div class="rb">
-  <div class="rblabel">RESPONSE</div>
-  <div class="rbtext">"Great question. We pull from <span class='kw'>multiple sources</span> but need to <span class='emp'>confirm everything directly with you</span> for accuracy. This is also a <span class='kw'>limited-time offer</span> — I don't want you to miss the best terms."</div>
-  <div class="pivot">→ Immediately: "So let me start by confirming your name…"</div>
-</div>
-<div class="tip"><strong>🎯 TONE:</strong> Matter-of-fact — not defensive. You're explaining a process, not justifying yourself.</div>
-`},
-
-bad_credit:{phase:'REBUTTAL — BAD CREDIT',color:'var(--gold)',next:null,content:`
-<div class="phase-tag" style="background:rgba(245,158,11,0.15);color:var(--gold);border-color:rgba(245,158,11,0.3);">📉 "My credit score is really bad"</div>
-<div class="rb">
-  <div class="rblabel">OPTION 1 — Reassure</div>
-  <div class="rbtext">"Thank you for sharing that — it doesn't have to be a barrier. <span class='emp'>You may still qualify.</span> We look at more than just your score — the goal is to find something that <span class='kw'>fits your situation</span>."</div>
-  <div class="pivot">→ "Let me submit your details — our system will tell us exactly what you qualify for."</div>
-</div>
-<div class="rb">
-  <div class="rblabel">OPTION 2 — Quick & Direct</div>
-  <div class="rbtext">"More common than you'd think — our network works with <span class='kw'>all credit profiles</span>. We check first, then show options. <span class='emp'>No commitment.</span>"</div>
-  <div class="pivot">→ "Let's run it — can I confirm your date of birth?"</div>
-</div>
-`},
-
-rate_question:{phase:'REBUTTAL — INTEREST RATE?',color:'var(--gold)',next:null,content:`
-<div class="phase-tag" style="background:rgba(245,158,11,0.15);color:var(--gold);border-color:rgba(245,158,11,0.3);">💰 "What's the interest rate?"</div>
-<div class="rb">
-  <div class="rblabel">OPTION 1 — Full Answer</div>
-  <div class="rbtext">"We work with <span class='kw'>25+ lenders</span> — SoFi, Avant, Upstart, OneMain — rates as low as <span class='emp'>5.99% APR</span>. To get your <span class='kw'>exact rate</span>, I need a bit more info. That's what this process does."</div>
-  <div class="pivot">→ "Let me confirm your details and connect you with a specialist for exact numbers."</div>
-</div>
-<div class="rb">
-  <div class="rblabel">OPTION 2 — Quick Deflect</div>
-  <div class="rbtext">"The specialist covers all exact figures once you're <span class='kw'>pre-qualified</span>."</div>
-  <div class="pivot">→ "Speaking of which — can I confirm your DOB?"</div>
-</div>
-<div class="tip"><strong>⚠️ Don't get stuck on rates.</strong> That's the specialist's job. Your job: confirm, qualify, transfer.</div>
-`},
-
-how_info:{phase:'REBUTTAL — "HOW\'D YOU GET MY INFO?"',color:'var(--gold)',next:null,content:`
-<div class="phase-tag" style="background:rgba(245,158,11,0.15);color:var(--gold);border-color:rgba(245,158,11,0.3);">🔍 "How did you get my information?"</div>
-<div class="rb">
-  <div class="rblabel">STAY STEADY — RESPONSE</div>
-  <div class="rbtext">"Smart question. As a <span class='kw'>licensed lending network</span>, we work with financial partners. At some point you may have requested info online about reducing debt or a refinance — your info was <span class='emp'>securely shared</span> through that process. We follow <span class='kw'>strict privacy regulations</span> and only reach out to people who may qualify."</div>
-  <div class="pivot">→ "Our goal is just to show you what's available — <span style="color:var(--gold)">totally your choice from there. Sound fair?"</span></div>
-</div>
-<div class="tip"><strong>🎙️ TONE:</strong> Calm and confident — say it like it's the most normal thing in the world. If you rush, they sense it.</div>
-`},
-
-no_loan:{phase:'REBUTTAL — "DON\'T NEED A LOAN"',color:'var(--gold)',next:null,content:`
-<div class="phase-tag" style="background:rgba(245,158,11,0.15);color:var(--gold);border-color:rgba(245,158,11,0.3);">🚫 "I don't need a loan"</div>
-<div class="rb">
-  <div class="rblabel">OPTION 1 — Safety Net</div>
-  <div class="rbtext">"Honestly, that's the <span class='emp'>best time to explore options</span> — it's about having a <span class='kw'>safety net</span> before you need one. No collateral, could <span class='kw'>save you money</span> vs high-interest alternatives."</div>
-  <div class="pivot">→ "Can I confirm your details so the option is there if you ever need it?"</div>
-</div>
-<div class="rb">
-  <div class="rblabel">OPTION 2 — Consolidation</div>
-  <div class="rbtext">"Fair — but <span class='kw'>consolidating existing debt</span> at a lower rate could put real money back in your pocket monthly. Takes less than 5 minutes to find out."</div>
-  <div class="pivot">→ "What does your current monthly debt look like?"</div>
-</div>
-`},
-
-website:{phase:'REBUTTAL — WEBSITE / LOCATION',color:'var(--gold)',next:null,content:`
-<div class="phase-tag" style="background:rgba(245,158,11,0.15);color:var(--gold);border-color:rgba(245,158,11,0.3);">🌐 "Give me your website" / "Where are you located?"</div>
-<div class="rb">
-  <div class="rblabel">WEBSITE</div>
-  <div class="rbtext">"Absolutely — to send you the <span class='kw'>most secure info</span>, can you confirm your email? Our underwriting team will send credentials directly."</div>
-  <div style="margin-top:7px;font-size:0.72rem;color:#94a3b8;font-style:italic;">If email already given: "That's exactly why I want to connect you with a <span style="color:var(--accent2)">loan specialist</span> — they'll answer everything thoroughly."</div>
-</div>
-<div class="rb">
-  <div class="rblabel">LOCATION</div>
-  <div class="rbtext">"We're headquartered in <span class='kw'>Irvine, California</span>, working with <span class='emp'>25+ reputable lenders</span> across multiple states. All details provided after eligibility is confirmed."</div>
-  <div class="pivot">→ "Let me get you to a specialist — confirm your DOB?"</div>
-</div>
-`},
-
-spouse:{phase:'REBUTTAL — NEED TO ASK SPOUSE',color:'var(--gold)',next:null,content:`
-<div class="phase-tag" style="background:rgba(245,158,11,0.15);color:var(--gold);border-color:rgba(245,158,11,0.3);">👫 "I need to ask my husband/wife first"</div>
-<div class="rb">
-  <div class="rblabel">RESPONSE</div>
-  <div class="rbtext">"Of course — and we wouldn't expect you to decide without them. We're just getting you <span class='kw'>pre-qualified</span> so you and your spouse have the <span class='emp'>exact numbers in front of you</span> before making any decision."</div>
-  <div class="pivot">→ "Would you prefer a callback when you're both free — or pre-qualify now so you have the numbers ready when you talk to them?"</div>
-</div>
-<div class="tip"><strong>💡 TWO OPTIONS — both move forward.</strong> Never leave it open-ended — that's a dead end.</div>
-`},
-
-no_ssn:{phase:'REBUTTAL — WON\'T GIVE SSN',color:'var(--gold)',next:null,content:`
-<div class="phase-tag" style="background:rgba(245,158,11,0.15);color:var(--gold);border-color:rgba(245,158,11,0.3);">🔒 Hesitates on Social Security Number</div>
-<div class="rb">
-  <div class="rblabel">PRIVACY REASSURANCE</div>
-  <div class="rbtext">"Completely understand — <span class='kw'>protecting your info</span> is our top priority. Your SSN is required to <span class='emp'>verify your identity</span> and secure your application. We have strict protocols in place."</div>
-</div>
-<div class="rb">
-  <div class="rblabel">SOFT PULL EXPLANATION</div>
-  <div class="rbtext">"This is only a <span class='kw'>soft pull</span> — <span class='emp'>will NOT count against you</span>, not a hard inquiry. I need it so underwriting can confirm approval — so we're not wasting each other's time."</div>
-  <div class="pivot">→ "Go ahead with your social whenever you're ready." <strong style="color:var(--red)">[STOP TALKING. WAIT.]</strong></div>
-</div>
-<div class="tip"><strong>🤐 SILENCE IS KEY.</strong> First person to speak after "go ahead" loses. Wait it out.</div>
-`},
-
-company_name:{phase:'REBUTTAL — "WHAT COMPANY IS THIS?"',color:'var(--gold)',next:null,content:`
-<div class="phase-tag" style="background:rgba(245,158,11,0.15);color:var(--gold);border-color:rgba(245,158,11,0.3);">🏢 "What company is this?"</div>
-<div class="rb">
-  <div class="rblabel">OPTION 1 — Direct</div>
-  <div class="rbtext">"This is the <span class='kw'>Personal Loan Intake Department</span> — we match you with a lender based on your area and financial situation. All partners are <span class='emp'>A-rated with the BBB</span>. Once you're qualified, we match you with the right company."</div>
-</div>
-<div class="rb">
-  <div class="rblabel">OPTION 2 — If They Push</div>
-  <div class="rbtext">"We're a <span class='kw'>loan intake and matching service</span> based in Irvine, California — working with <span class='emp'>25+ licensed lenders</span>. The specific lender introduces themselves fully during the transfer."</div>
-  <div class="pivot">→ "For now — can I get your date of birth?"</div>
-</div>
-`},
-
-dnc:{phase:'EXIT — DO NOT CALL',color:'var(--red)',next:null,content:`
-<div class="phase-tag" style="background:rgba(239,68,68,0.15);color:var(--red);border-color:rgba(239,68,68,0.3);">📵 "Put me on your Do Not Call list"</div>
-<div style="background:rgba(239,68,68,0.08);border:2px solid var(--red);border-radius:10px;padding:16px;margin-bottom:12px;">
-  <div style="font-size:0.55rem;font-weight:700;letter-spacing:2px;color:var(--red);margin-bottom:8px;">⚠️ EXIT SCRIPT</div>
-  <div class="sline">"I apologize for the call. I'll put you on our <span class='kw'>internal Do Not Call list</span> right now — you won't be called again. Have a great day."</div>
-  <div style="margin-top:10px;font-size:0.7rem;color:#94a3b8;"><strong style="color:var(--gold);">⚠️ NOTE:</strong> Do not argue. Apologize, confirm DNC, end call. Move on immediately.</div>
-</div>
-<div style="display:flex;gap:8px;">
-  <button class="btn btn-d btn-f" onclick="location.reload()">LOG DNC — END CALL</button>
-  <button class="btn btn-f" onclick="loadScenario('intro')">RESET</button>
-</div>
-`},
-
-tips:{phase:'COACHING — TIPS TO WIN',color:'var(--purple)',next:null,content:`
-<div class="phase-tag" style="background:rgba(139,92,246,0.15);color:var(--purple);border-color:rgba(139,92,246,0.3);">💡 Tips to Win</div>
-
-<div class="rb" style="border-left:3px solid var(--accent2);">
-  <div class="rblabel" style="color:var(--accent2);">🎙️ SPEAKING PACE</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
-    <div style="background:#2a0000;border:1px solid var(--red);border-radius:6px;padding:8px;text-align:center;"><div style="color:var(--red);font-size:0.6rem;font-weight:900;">TOO FAST ❌</div><div style="font-size:0.6rem;color:#999;margin-top:3px;">They zone out or get suspicious.</div></div>
-    <div style="background:#002a00;border:2px solid var(--green);border-radius:6px;padding:8px;text-align:center;"><div style="color:var(--green);font-size:0.6rem;font-weight:900;">JUST RIGHT ✅</div><div style="font-size:0.6rem;color:#999;margin-top:3px;">Calm, clear, confident.</div></div>
-    <div style="background:#2a2a00;border:1px solid #666;border-radius:6px;padding:8px;text-align:center;"><div style="color:#888;font-size:0.6rem;font-weight:900;">TOO SLOW ⚠️</div><div style="font-size:0.6rem;color:#999;margin-top:3px;">Sounds unsure. Busy people hang up.</div></div>
-  </div>
-  <div style="font-size:0.78rem;color:#cbd5e1;">Speak like you're explaining something important to a sharp friend — not reading a script.</div>
-</div>
-
-<div class="rb" style="border-left:3px solid var(--gold);">
-  <div class="rblabel" style="color:var(--gold);">⏸️ THE PAUSE — YOUR MOST POWERFUL TOOL</div>
-  <div class="rbtext">Pause <strong style="color:var(--gold)">AFTER</strong> your punch word — not before.<br><br>
-  <span style="color:#666;">WRONG:</span> <em>"I want to talk to you about… working capital."</em><br>
-  <span style="color:var(--green);">RIGHT:</span> "We can get you access to <strong style="color:var(--accent2);">working capital.</strong> <span style="color:var(--gold);">[PAUSE]</span> Does that interest you?"<br><br>
-  Silence after a strong word = confidence.</div>
-</div>
-
-<div class="rb" style="border-left:3px solid var(--purple);">
-  <div class="rblabel" style="color:var(--purple);">👊 PUNCH WORDS — HIT THESE WITH WEIGHT</div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:8px;">
-    ${['PRE-QUALIFIED','FIXED-RATE','SOFT PULL','LENDING SPECIALIST','NO COMMITMENT','LIMITED WINDOW','5.99% APR','NON-IMPACTING','YOUR CHOICE','RIGHT NOW'].map(w=>`<div style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:5px;padding:6px;text-align:center;font-size:0.58rem;font-weight:900;color:#a78bfa;">${w}</div>`).join('')}
-  </div>
-  <div style="font-size:0.75rem;color:#cbd5e1;">Slow down slightly on punch words. Drop your voice a touch — heavier, not louder. Pause 1 beat after.</div>
-</div>
-
-<div class="rb" style="border-left:3px solid var(--green);">
-  <div class="rblabel" style="color:var(--green);">🧠 MINDSET</div>
-  <div class="rbtext" style="line-height:1.9;">
-    ✅ <strong style="color:#e2e8f0;">Speak clearly, calmly</strong> — they're busy, make it easy to follow<br>
-    ✅ <strong style="color:#e2e8f0;">Sit up straight</strong> — posture affects your voice; they hear it<br>
-    ✅ <strong style="color:#e2e8f0;">Smile while you talk</strong> — they feel it, they can't see it<br>
-    ⚠️ <strong style="color:var(--gold);">No filler words</strong> — no "um", "like" — silence is better<br>
-    ⚠️ <strong style="color:var(--gold);">Ask a question — then WAIT.</strong> First to speak loses.
-  </div>
-</div>
-
-<div class="rb" style="border-left:3px solid var(--accent);">
-  <div class="rblabel" style="color:var(--accent);">🔄 MICRO-TRUST PHRASES — USE EVERY 2 QUESTIONS</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:7px;padding:8px;text-align:center;font-size:0.8rem;color:var(--gold);font-weight:600;">"Perfect, thank you."</div>
-    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:7px;padding:8px;text-align:center;font-size:0.8rem;color:var(--gold);font-weight:600;">"Got it, that helps."</div>
-    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:7px;padding:8px;text-align:center;font-size:0.8rem;color:var(--gold);font-weight:600;">"Great to know."</div>
-    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:7px;padding:8px;text-align:center;font-size:0.8rem;color:var(--gold);font-weight:600;">"Appreciate that."</div>
-  </div>
-</div>
-`}
+const OBJ={
+not_interested:{phase:'REBUTTAL \u2014 NOT INTERESTED',color:'var(--gold)',content:`<div class="phase-tag" style="background:var(--gold-light);color:var(--gold);border-color:#fcd34d;">\u{1F612} "Not Interested"</div><div class="rb"><div class="rblabel">OPTION 1 \u2014 Reality Check</div><div class="rbtext">"I understand \u2014 I'm not here to push anything. But <span class='kw'>debt affects everything</span> \u2014 job applications, insurance, car loans. Takes less than <span class='emp'>5 minutes</span> for a specialist to explain. <span class='emp'>Are you carrying any high-interest debt right now?</span>"</div><div class="pivot">\u2192 If yes: "Perfect, let me get you qualified so a specialist can walk you through it."</div></div><div class="rb"><div class="rblabel">OPTION 2 \u2014 Safety Net</div><div class="rbtext">"Completely fair \u2014 this could just be a <span class='kw'>safety net</span> for unexpected expenses. No collateral needed, and it <span class='emp'>could save you money</span>. Can I at least confirm your details so the option is there if you ever need it?"</div></div>`},
+no_info:{phase:'REBUTTAL \u2014 "WHY NO INFO?"',color:'var(--gold)',content:`<div class="phase-tag" style="background:var(--gold-light);color:var(--gold);border-color:#fcd34d;">\u2753 "Why don't you have my information?"</div><div class="rb"><div class="rblabel">RESPONSE</div><div class="rbtext">"Great question. We pull from <span class='kw'>multiple sources</span> but need to <span class='emp'>confirm everything directly with you</span> for accuracy. This is also a <span class='kw'>limited-time offer</span> \u2014 I don't want you to miss the best terms."</div><div class="pivot">\u2192 Immediately: "So let me start by confirming your name\u2026"</div></div><div class="tip"><strong>\u{1F3AF} TONE:</strong> Matter-of-fact \u2014 not defensive. You're explaining a process, not justifying yourself.</div>`},
+bad_credit:{phase:'REBUTTAL \u2014 BAD CREDIT',color:'var(--gold)',content:`<div class="phase-tag" style="background:var(--gold-light);color:var(--gold);border-color:#fcd34d;">\u{1F4C9} "My credit score is really bad"</div><div class="rb"><div class="rblabel">OPTION 1 \u2014 Reassure</div><div class="rbtext">"Thank you for sharing that \u2014 it doesn't have to be a barrier. <span class='emp'>You may still qualify.</span> We look at more than just your score \u2014 the goal is to find something that <span class='kw'>fits your situation</span>."</div><div class="pivot">\u2192 "Let me submit your details \u2014 our system will tell us exactly what you qualify for."</div></div><div class="rb"><div class="rblabel">OPTION 2 \u2014 Quick &amp; Direct</div><div class="rbtext">"More common than you'd think \u2014 our network works with <span class='kw'>all credit profiles</span>. We check first, then show options. <span class='emp'>No commitment.</span>"</div><div class="pivot">\u2192 "Let's run it \u2014 can I confirm your date of birth?"</div></div>`},
+rate_question:{phase:'REBUTTAL \u2014 INTEREST RATE?',color:'var(--gold)',content:`<div class="phase-tag" style="background:var(--gold-light);color:var(--gold);border-color:#fcd34d;">\u{1F4B0} "What's the interest rate?"</div><div class="rb"><div class="rblabel">OPTION 1 \u2014 Full Answer</div><div class="rbtext">"We work with <span class='kw'>25+ lenders</span> \u2014 SoFi, Avant, Upstart, OneMain \u2014 rates as low as <span class='emp'>5.99% APR</span>. To get your <span class='kw'>exact rate</span>, I need a bit more info. That's what this process does."</div><div class="pivot">\u2192 "Let me confirm your details and connect you with a specialist for exact numbers."</div></div><div class="rb"><div class="rblabel">OPTION 2 \u2014 Quick Deflect</div><div class="rbtext">"The specialist covers all exact figures once you're <span class='kw'>pre-qualified</span>."</div><div class="pivot">\u2192 "Speaking of which \u2014 can I confirm your DOB?"</div></div><div class="tip"><strong>\u26A0\uFE0F Don't get stuck on rates.</strong> That's the specialist's job. Your job: confirm, qualify, transfer.</div>`},
+how_info:{phase:"REBUTTAL \u2014 HOW'D YOU GET MY INFO?",color:'var(--gold)',content:`<div class="phase-tag" style="background:var(--gold-light);color:var(--gold);border-color:#fcd34d;">\u{1F50D} "How did you get my information?"</div><div class="rb"><div class="rblabel">STAY STEADY \u2014 RESPONSE</div><div class="rbtext">"Smart question. As a <span class='kw'>licensed lending network</span>, we work with financial partners. At some point you may have requested info online about reducing debt or a refinance \u2014 your info was <span class='emp'>securely shared</span> through that process. We follow <span class='kw'>strict privacy regulations</span> and only reach out to people who may qualify."</div><div class="pivot">\u2192 "Our goal is just to show you what's available \u2014 <span style='color:var(--gold);font-weight:700;'>totally your choice from there. Sound fair?"</span></div></div><div class="tip"><strong>\u{1F399}\uFE0F TONE:</strong> Calm and confident \u2014 say it like it's the most normal thing in the world. If you rush, they sense it.</div>`},
+no_loan:{phase:"REBUTTAL \u2014 DON'T NEED A LOAN",color:'var(--gold)',content:`<div class="phase-tag" style="background:var(--gold-light);color:var(--gold);border-color:#fcd34d;">\u{1F6AB} "I don't need a loan"</div><div class="rb"><div class="rblabel">OPTION 1 \u2014 Safety Net</div><div class="rbtext">"Honestly, that's the <span class='emp'>best time to explore options</span> \u2014 it's about having a <span class='kw'>safety net</span> before you need one. No collateral, could <span class='kw'>save you money</span> vs high-interest alternatives."</div><div class="pivot">\u2192 "Can I confirm your details so the option is there if you ever need it?"</div></div><div class="rb"><div class="rblabel">OPTION 2 \u2014 Consolidation</div><div class="rbtext">"Fair \u2014 but <span class='kw'>consolidating existing debt</span> at a lower rate could put real money back in your pocket monthly. Takes less than 5 minutes to find out."</div><div class="pivot">\u2192 "What does your current monthly debt look like?"</div></div>`},
+website:{phase:'REBUTTAL \u2014 WEBSITE / LOCATION',color:'var(--gold)',content:`<div class="phase-tag" style="background:var(--gold-light);color:var(--gold);border-color:#fcd34d;">\u{1F310} "Give me your website" / "Where are you located?"</div><div class="rb"><div class="rblabel">WEBSITE</div><div class="rbtext">"Absolutely \u2014 to send you the <span class='kw'>most secure info</span>, can you confirm your email? Our underwriting team will send credentials directly."</div><div style="margin-top:7px;font-size:0.72rem;color:var(--muted);font-style:italic;">If email already given: "That's exactly why I want to connect you with a <span style='color:var(--accent);font-weight:700;'>loan specialist</span> \u2014 they'll answer everything thoroughly."</div></div><div class="rb"><div class="rblabel">LOCATION</div><div class="rbtext">"We're headquartered in <span class='kw'>Irvine, California</span>, working with <span class='emp'>25+ reputable lenders</span> across multiple states. All details provided after eligibility is confirmed."</div><div class="pivot">\u2192 "Let me get you to a specialist \u2014 confirm your DOB?"</div></div>`},
+spouse:{phase:'REBUTTAL \u2014 NEED TO ASK SPOUSE',color:'var(--gold)',content:`<div class="phase-tag" style="background:var(--gold-light);color:var(--gold);border-color:#fcd34d;">\u{1F46B} "I need to ask my husband/wife first"</div><div class="rb"><div class="rblabel">RESPONSE</div><div class="rbtext">"Of course \u2014 and we wouldn't expect you to decide without them. We're just getting you <span class='kw'>pre-qualified</span> so you and your spouse have the <span class='emp'>exact numbers in front of you</span> before making any decision."</div><div class="pivot">\u2192 "Would you prefer a callback when you're both free \u2014 or pre-qualify now so you have the numbers ready when you talk to them?"</div></div><div class="tip"><strong>\u{1F4A1} TWO OPTIONS \u2014 both move forward.</strong> Never leave it open-ended \u2014 that's a dead end.</div>`},
+no_ssn:{phase:"REBUTTAL \u2014 WON'T GIVE SSN",color:'var(--gold)',content:`<div class="phase-tag" style="background:var(--gold-light);color:var(--gold);border-color:#fcd34d;">\u{1F512} Hesitates on Social Security Number</div><div class="rb"><div class="rblabel">PRIVACY REASSURANCE</div><div class="rbtext">"Completely understand \u2014 <span class='kw'>protecting your info</span> is our top priority. Your SSN is required to <span class='emp'>verify your identity</span> and secure your application. We have strict protocols in place."</div></div><div class="rb"><div class="rblabel">SOFT PULL EXPLANATION</div><div class="rbtext">"This is only a <span class='kw'>soft pull</span> \u2014 <span class='emp'>will NOT count against you</span>, not a hard inquiry. I need it so underwriting can confirm approval \u2014 so we're not wasting each other's time."</div><div class="pivot">\u2192 "Go ahead with your social whenever you're ready." <strong style="color:var(--red)">[STOP TALKING. WAIT.]</strong></div></div><div class="tip"><strong>\u{1F910} SILENCE IS KEY.</strong> First person to speak after "go ahead" loses. Wait it out.</div>`},
+company_name:{phase:'REBUTTAL \u2014 "WHAT COMPANY IS THIS?"',color:'var(--gold)',content:`<div class="phase-tag" style="background:var(--gold-light);color:var(--gold);border-color:#fcd34d;">\u{1F3E2} "What company is this?"</div><div class="rb"><div class="rblabel">OPTION 1 \u2014 Direct</div><div class="rbtext">"This is the <span class='kw'>Personal Loan Intake Department</span> \u2014 we match you with a lender based on your area and financial situation. All partners are <span class='emp'>A-rated with the BBB</span>. Once you're qualified, we match you with the right company."</div></div><div class="rb"><div class="rblabel">OPTION 2 \u2014 If They Push</div><div class="rbtext">"We're a <span class='kw'>loan intake and matching service</span> based in Irvine, California \u2014 working with <span class='emp'>25+ licensed lenders</span>. The specific lender introduces themselves fully during the transfer."</div><div class="pivot">\u2192 "For now \u2014 can I get your date of birth?"</div></div>`}
 };
 
-function init(){handleResize();loadScenario('intro');}
+function init(){
+  loadScript('intro');
+  loadObjection('not_interested');
+  startClocks();
+  // Punch words
+  const pw=['PRE-QUALIFIED','FIXED-RATE','SOFT PULL','LENDING SPECIALIST','NO COMMITMENT','LIMITED WINDOW','5.99% APR','NON-IMPACTING','YOUR CHOICE','RIGHT NOW'];
+  const el=document.getElementById('punch-words');
+  if(el) el.innerHTML=pw.map(w=>`<div style="background:var(--purple-light);border:1.5px solid #c4b5fd;border-radius:7px;padding:7px;text-align:center;font-size:0.58rem;font-weight:800;color:var(--purple);">${w}</div>`).join('');
+}
 
-function loadScenario(key){
+function startClocks(){
+  const zones=[
+    {id:'clock-et',tz:'America/New_York'},
+    {id:'clock-ct',tz:'America/Chicago'},
+    {id:'clock-mt',tz:'America/Denver'},
+    {id:'clock-pt',tz:'America/Los_Angeles'},
+    {id:'clock-ak',tz:'America/Anchorage'},
+    {id:'clock-hi',tz:'Pacific/Honolulu'}
+  ];
+  function tick(){
+    zones.forEach(z=>{
+      const el=document.getElementById(z.id);
+      if(!el)return;
+      el.textContent=new Date().toLocaleTimeString('en-US',{timeZone:z.tz,hour:'2-digit',minute:'2-digit',hour12:true});
+    });
+  }
+  tick();setInterval(tick,1000);
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+
+function loadScript(key){
   const s=S[key];if(!s)return;
+  document.querySelectorAll('#page-script .sub-tab').forEach(el=>el.classList.toggle('active',el.id==='stab-'+key));
   const d=document.getElementById('sdisplay');
   const nb=document.getElementById('nav-btns');
-  d.innerHTML=`<div style="font-family:'Rajdhani',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:${s.color};margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);">${s.phase}</div>${s.content}`;
+  d.innerHTML=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:${s.color};margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--border);">${s.phase}</div>${s.content}`;
+  d.scrollTop=0;nb.innerHTML='';
+  if(s.next){const b=document.createElement('button');b.className='btn btn-p btn-f';b.innerText='\u2192 NEXT STEP';b.onclick=()=>loadScript(s.next);nb.appendChild(b);}
+  const r=document.createElement('button');r.className='btn';r.innerText='\u21BA RESET';r.onclick=()=>loadScript('intro');nb.appendChild(r);
+}
+
+function loadObjection(key){
+  const o=OBJ[key];if(!o)return;
+  document.querySelectorAll('#page-objections .sub-tab').forEach(el=>el.classList.toggle('active',el.id==='stab-'+key));
+  const d=document.getElementById('obj-display');
+  d.innerHTML=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:${o.color};margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--border);">${o.phase}</div>${o.content}`;
   d.scrollTop=0;
-  nb.innerHTML='';
-  if(s.next){
-    const b=document.createElement('button');
-    b.className='btn btn-p';b.style.flex='1';b.innerText='→ NEXT STEP';
-    b.onclick=()=>loadScenario(s.next);nb.appendChild(b);
-  }
-  const r=document.createElement('button');
-  r.className='btn';r.innerText='↺ RESET';r.onclick=()=>loadScenario('intro');nb.appendChild(r);
-  if(window.innerWidth<=768)showPanel('script');
 }
-
-function showPanel(panel){
-  const map={script:'mnav-script',scenarios:'mnav-scenarios',dispo:'mnav-dispo'};
-  ['panel-script','panel-scenarios','panel-dispo'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('visible');});
-  Object.values(map).forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('m-active','m-green');});
-  const t=document.getElementById('panel-'+panel);const b=document.getElementById(map[panel]);
-  if(t)t.classList.add('visible');
-  if(b)b.classList.add(panel==='dispo'?'m-green':'m-active');
-  if(window.innerWidth<=768)window.scrollTo(0,0);
-}
-
-function handleResize(){
-  if(window.innerWidth>768){['panel-script','panel-scenarios','panel-dispo'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('visible');});}
-}
-window.addEventListener('resize',handleResize);
 </script>
 </body>
 </html>
