@@ -1960,9 +1960,13 @@ async function loadWeeklyAttendance(team){
     weeklyData = {};
     snap.forEach(doc=>{
       const d=doc.data();
-      if(d.team !== team) return; // filter client-side
+      if(d.team !== team) return;
       if(!weeklyData[d.date]) weeklyData[d.date]={};
-      weeklyData[d.date][d.name] = d.status;
+      // Store by exact name AND by lowercase trimmed name for fuzzy matching
+      if(d.name){
+        weeklyData[d.date][d.name] = d.status;
+        weeklyData[d.date][d.name.toLowerCase().trim()] = d.status;
+      }
     });
 
     buildWeekRanges(monthStart);
@@ -2047,16 +2051,34 @@ function renderWeeklyTable(week){
     let p=0,l=0,a=0;
     week.dates.forEach(d=>{
       const dayData = weeklyData[d.date]||{};
-      const status = dayData[agent.name] || '';
-      const cls = status==='P'||status==='Present'?'wk-p'
-        :status==='L'||status==='Late'?'wk-l'
-        :status==='A'||status==='Absent'?'wk-a'
-        :status==='S'||status==='Sick'?'wk-s'
-        :status==='PO'?'wk-po'
-        :status==='OFF'?'wk-off':'wk-blank';
-      const lbl = status==='Present'?'P':status==='Late'?'L':status==='Absent'?'A':status||'';
-      if(lbl==='P') p++; else if(lbl==='L') l++; else if(lbl==='A'||lbl==='S'||lbl==='PO') a++;
-      html += `<td><span class="wk-cell ${cls}">${lbl}</span></td>`;
+      // Try exact name first, then lowercase
+      const rawStatus = dayData[agent.name] || dayData[agent.name.toLowerCase().trim()] || '';
+
+      // Normalize status to short code
+      const s = rawStatus.toLowerCase().trim();
+      let code = '';
+      if(s==='p'||s==='present')                    code='P';
+      else if(s==='l'||s==='late')                  code='L';
+      else if(s==='a'||s==='absent')                code='A';
+      else if(s==='s'||s==='sick')                  code='S';
+      else if(s==='po'||s==='personal out')         code='PO';
+      else if(s==='v'||s==='vacation')              code='V';
+      else if(s==='off')                            code='OFF';
+      else if(rawStatus)                            code=rawStatus.toUpperCase();
+
+      const cls = code==='P'?'wk-p'
+        :code==='L'?'wk-l'
+        :code==='A'?'wk-a'
+        :code==='S'?'wk-s'
+        :code==='PO'?'wk-po'
+        :code==='V'?'wk-l'
+        :code==='OFF'?'wk-off':'wk-blank';
+
+      if(code==='P')                         p++;
+      else if(code==='L')                    l++;
+      else if(code==='A'||code==='S'||code==='PO') a++;
+
+      html += `<td><span class="wk-cell ${cls}">${code}</span></td>`;
     });
     html += `<td style="color:var(--green);font-weight:800;">${p}</td>`;
     html += `<td style="color:var(--gold);font-weight:800;">${l}</td>`;
@@ -2088,8 +2110,17 @@ async function loadMonthlyAttendance(){
     monthlyCache = {};
     snap.forEach(doc=>{
       const d=doc.data();
-      if(!monthlyCache[d.id]) monthlyCache[d.id]={};
-      monthlyCache[d.id][d.date]=d.status;
+      // Index by agent ID
+      if(d.id){
+        if(!monthlyCache[String(d.id)]) monthlyCache[String(d.id)]={};
+        monthlyCache[String(d.id)][d.date]=d.status;
+      }
+      // Also index by name (lowercase) as fallback
+      if(d.name){
+        const key = 'name:'+d.name.toLowerCase().trim();
+        if(!monthlyCache[key]) monthlyCache[key]={};
+        monthlyCache[key][d.date]=d.status;
+      }
     });
 
     renderMonthly(monthlyCache, monthStart, year, monthIdx);
@@ -2165,8 +2196,11 @@ function renderMonthly(attMap, monthStart, year, monthIdx){
 
   let totalP=0,totalL=0,totalA=0;
 
-  allAgents.forEach(agent=>{
-    const agentAtt = attMap&&attMap[agent.userId] ? attMap[agent.userId] : {};
+  allAgents.forEach((agent,i)=>{
+    // Look up by ID first, then by name as fallback
+    const agentAtt = attMap[String(agent.userId)]
+                  || attMap['name:'+agent.name.toLowerCase().trim()]
+                  || {};
     let p=0,l=0,a=0;
     const rowBg = i%2===0 ? '#070e1c' : '#060b18';
     html+=`<tr style="background:${rowBg};"><td style="padding:7px 10px;font-size:0.72rem;color:var(--text);white-space:nowrap;font-weight:600;border-bottom:1px solid #0f1e35;">${agent.name.split(' ').slice(0,2).join(' ')}</td>`;
