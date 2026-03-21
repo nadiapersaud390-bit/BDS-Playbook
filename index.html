@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BDS LOAN CR DASHBOARD</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -178,7 +181,94 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 ::-webkit-scrollbar-thumb{background:#1e2d4a;border-radius:10px;}
 ::-webkit-scrollbar-track{background:transparent;}
 
-@media(max-width:700px){
+/* ── LOGIN SCREEN ── */
+.login-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,#0a0010,#060b18);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:20px;}
+.login-screen.hidden{display:none;}
+.login-logo{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.5rem,8vw,4.5rem);letter-spacing:6px;font-style:italic;background:linear-gradient(90deg,#00e5ff,#7b61ff,#ff61d8,#00e5ff);background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:titleshine 5s linear infinite;margin-bottom:6px;text-align:center;}
+.login-sub{font-size:0.62rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:32px;}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px 24px;width:100%;max-width:320px;box-shadow:0 8px 40px rgba(0,0,0,0.5);}
+.login-field-lbl{font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block;}
+.login-input{width:100%;padding:12px 14px;background:#0a1020;border:1.5px solid #2a3a5a;border-radius:9px;color:var(--text);font-size:1.1rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:3px;outline:none;margin-bottom:14px;transition:border-color 0.15s;}
+.login-input:focus{border-color:var(--accent2);}
+.login-btn{width:100%;padding:14px;border-radius:9px;border:none;background:linear-gradient(90deg,#3b82f6,#38bdf8);color:#000;font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:900;letter-spacing:2.5px;text-transform:uppercase;cursor:pointer;transition:all 0.15s;margin-top:4px;}
+.login-btn:hover{filter:brightness(1.1);}
+.login-btn:disabled{opacity:0.7;cursor:not-allowed;filter:none;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,0.3);border-top-color:#000;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.login-err{font-size:0.75rem;color:var(--red);text-align:center;margin-top:10px;min-height:18px;font-weight:700;}
+.login-hint{font-size:0.62rem;color:var(--muted);text-align:center;margin-top:18px;line-height:1.6;}
+.pw-wrap{display:none;}
+/* ── REP HEADER BAR ── */
+.rep-bar{background:linear-gradient(90deg,#0a0f1e,#0d1424);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;display:none;}
+.rep-bar.show{display:flex;}
+.rep-greeting{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;letter-spacing:1px;color:var(--text);}
+.rep-greeting span{color:var(--accent2);}
+.rep-details{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+.rep-chip{display:flex;align-items:center;gap:5px;background:#0d1424;border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:0.62rem;font-weight:700;color:var(--muted);}
+.rep-chip b{color:var(--text);}
+.rep-chip.shift{border-color:rgba(96,165,250,0.3);color:var(--accent);}
+.rep-chip.lunch{border-color:rgba(52,211,153,0.3);color:var(--green);}
+.rep-chip.brk{border-color:rgba(251,191,36,0.3);color:var(--gold);}
+.rep-chip.ext{border-color:rgba(167,139,250,0.3);color:var(--purple);}
+.logout-btn{padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
+.logout-btn:hover{border-color:var(--red);color:var(--red);}
+.admin-badge{padding:4px 12px;border-radius:20px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);color:var(--gold);font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;}
+/* ── ADMIN PANEL ── */
+.admin-only{display:none;}
+.admin-tab-btn{padding:14px 10px;border-radius:10px;border:1.5px solid rgba(251,191,36,0.4);font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.18s;background:rgba(251,191,36,0.08);color:var(--gold);display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}
+.admin-tab-btn:hover{background:rgba(251,191,36,0.15);}
+.admin-tab-btn.active{background:rgba(251,191,36,0.18);border-color:var(--gold);box-shadow:0 0 14px rgba(251,191,36,0.25);}
+.admin-tab-btn.full{grid-column:1/-1;}
+.admin-section{padding:14px 16px;}
+.admin-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;}
+.admin-card-title{font-size:0.58rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+.goal-split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.goal-side{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;}
+.goal-side-title{font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+.goal-val{font-family:'Bebas Neue',sans-serif;font-size:2rem;line-height:1;}
+.goal-bar{height:8px;background:#0d1424;border-radius:20px;overflow:hidden;margin:6px 0;}
+.goal-fill{height:100%;border-radius:20px;transition:width 0.5s ease;}
+.goal-pct{font-size:0.62rem;font-weight:800;letter-spacing:1px;}
+.online-grid{display:flex;flex-wrap:wrap;gap:6px;}
+.status-chip{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;}
+.status-chip.online{background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);color:var(--green);}
+.status-chip.late-chip{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:var(--gold);}
+.status-chip.absent-chip{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:var(--red);}
+.pulse{width:7px;height:7px;border-radius:50%;animation:atpulse 2s infinite;flex-shrink:0;}
+.pulse.green{background:var(--green);}
+.pulse.amber{background:var(--gold);}
+.pulse.red-p{background:var(--red);}
+@keyframes atpulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+.att-table{width:100%;border-collapse:collapse;font-size:0.75rem;}
+.att-table th{padding:6px 10px;background:#090f1e;border-bottom:2px solid var(--border);font-family:'Barlow Condensed',sans-serif;font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-align:left;}
+.att-table td{padding:7px 10px;border-bottom:1px solid #111c2e;color:#cbd5e1;}
+.att-table tr:hover td{background:#0d1a2e;cursor:pointer;}
+.att-badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:0.68rem;font-weight:800;}
+.att-p{background:var(--green-light);color:var(--green);}
+.att-l{background:var(--gold-light);color:var(--gold);}
+.att-a{background:var(--red-light);color:var(--red);}
+.att-pending{background:rgba(100,116,139,0.15);color:var(--muted);}
+.rep-profile-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:8888;display:none;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;}
+.rep-profile-overlay.open{display:flex;}
+.rep-profile-card{background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:460px;margin:auto;}
+.rep-profile-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.rep-profile-name{font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;letter-spacing:1px;}
+.rep-profile-body{padding:14px 18px;}
+.rp-section{margin-bottom:14px;}
+.rp-section-title{font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.rp-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.rp-stat{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px;text-align:center;}
+.rp-stat-val{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;line-height:1;}
+.rp-stat-lbl{font-size:0.5rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.close-btn{background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 8px;border-radius:6px;}
+.close-btn:hover{color:var(--red);}
+.coach-input{width:100%;padding:9px 12px;background:#0a1020;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.85rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:65px;margin-bottom:8px;transition:border-color 0.15s;}
+.coach-input:focus{border-color:var(--accent2);}
+.save-btn{padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:#000;font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:800;letter-spacing:1px;cursor:pointer;transition:all 0.15s;}
+.mark-absent-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.65rem;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;transition:all 0.15s;}
+.mark-absent-btn:hover{border-color:var(--red);color:var(--red);}
+.note-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:7px;font-size:0.82rem;line-height:1.6;color:#cbd5e1;}
+.note-date{font-size:0.58rem;color:var(--muted);font-weight:700;margin-bottom:3px;}
   .hero-title{font-size:2.2rem;letter-spacing:3px;}
   .tz-card.big{min-width:140px;padding:9px 14px;}
   .tz-time.big-time{font-size:1.4rem;}
@@ -188,7 +278,36 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 }
 </style>
 </head>
-<body onload="init()">
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div class="login-screen" id="login-screen">
+  <div class="login-logo">BDS LOAN CR</div>
+  <div class="login-sub">Agent Dashboard · Enter your Ytel ID to continue</div>
+  <div class="login-card">
+    <label class="login-field-lbl">Ytel ID</label>
+    <input class="login-input" id="login-id" placeholder="Enter your Ytel ID here" maxlength="6" type="tel" oninput="onIdInput(this.value)" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="pw-wrap" id="pw-wrap">
+      <label class="login-field-lbl">Admin Password</label>
+      <input class="login-input" id="login-pw" type="password" placeholder="••••••••" style="letter-spacing:4px;" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">ENTER DASHBOARD</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+  <div class="login-hint">Agents — enter your Ytel ID only<br>Admin — enter 0000 then your password</div>
+</div>
+
+<!-- ── REP HEADER BAR ── -->
+<div class="rep-bar" id="rep-bar">
+  <div>
+    <div class="rep-greeting" id="rep-greeting">Welcome, <span id="rep-name-display">Agent</span></div>
+    <div class="rep-details" style="margin-top:5px;" id="rep-details"></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div id="admin-badge-wrap"></div>
+    <button class="logout-btn" onclick="doLogout()">LOGOUT</button>
+  </div>
+</div>
 
 <div class="hero">
   <div class="hero-title">BDS LOAN CR DASHBOARD</div>
@@ -251,10 +370,199 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   <button class="tab-btn t-dbs" id="tab-dbs" onclick="switchTab('dbs')">&#128274; ACCESS GUIDE</button>
   <button class="tab-btn t-sunday full" id="tab-sunday" onclick="switchTab('sunday')">&#128197; SUNDAY PROTOCOL</button>
   <button class="tab-btn t-lenders full" id="tab-lenders" onclick="switchTab('lenders')">&#129309; LENDERS WE WORK WITH</button>
+  <!-- ADMIN ONLY TABS -->
+  <button class="admin-tab-btn full admin-only" id="tab-admin" onclick="switchAdminTab('overview')">&#9889; ADMIN PANEL</button>
 </div>
 </div>
 
+<!-- REP PROFILE OVERLAY -->
+<div class="rep-profile-overlay" id="rep-profile-overlay">
+  <div class="rep-profile-card">
+    <div class="rep-profile-header">
+      <div>
+        <div class="rep-profile-name" id="rp-name">Agent Name</div>
+        <div style="font-size:0.6rem;color:var(--muted);margin-top:3px;" id="rp-meta">Team · Shift</div>
+      </div>
+      <button class="close-btn" onclick="closeRepProfile()">✕</button>
+    </div>
+    <div class="rep-profile-body">
+      <!-- Sub tabs -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+        <button class="sub-tab st-ok active" id="rpt-perf" onclick="rpTab('perf',this)">📊 Performance</button>
+        <button class="sub-tab st-ok" id="rpt-att" onclick="rpTab('att',this)">📅 Attendance</button>
+        <button class="sub-tab st-ok" id="rpt-coach" onclick="rpTab('coach',this)">📝 Coaching</button>
+        <button class="sub-tab st-ok" id="rpt-audit" onclick="rpTab('audit',this)">🔍 Audit</button>
+      </div>
+      <!-- Performance -->
+      <div id="rp-perf">
+        <div class="rp-section">
+          <div class="rp-section-title">Live Session</div>
+          <div class="rp-stat-grid">
+            <div class="rp-stat"><div class="rp-stat-val" id="rp-live-calls" style="color:var(--accent);">—</div><div class="rp-stat-lbl">Calls</div></div>
+            <div class="rp-stat"><div class="rp-stat-val" id="rp-live-xfer" style="color:var(--green);">—</div><div class="rp-stat-lbl">Transfers</div></div>
+            <div class="rp-stat"><div class="rp-stat-val" id="rp-live-conv" style="color:var(--cyan);">—</div><div class="rp-stat-lbl">Conv %</div></div>
+          </div>
+        </div>
+        <div class="rp-section">
+          <div class="rp-section-title">Today's Status</div>
+          <div id="rp-att-status" style="font-size:0.85rem;color:var(--muted);">Loading...</div>
+        </div>
+      </div>
+      <!-- Attendance -->
+      <div id="rp-att" style="display:none;">
+        <div class="rp-section">
+          <div class="rp-section-title">This Month</div>
+          <div class="rp-stat-grid">
+            <div class="rp-stat"><div class="rp-stat-val" id="rp-att-p" style="color:var(--green);">—</div><div class="rp-stat-lbl">Present</div></div>
+            <div class="rp-stat"><div class="rp-stat-val" id="rp-att-l" style="color:var(--gold);">—</div><div class="rp-stat-lbl">Late</div></div>
+            <div class="rp-stat"><div class="rp-stat-val" id="rp-att-a" style="color:var(--red);">—</div><div class="rp-stat-lbl">Absent</div></div>
+          </div>
+        </div>
+        <div class="rp-section">
+          <div class="rp-section-title">Mark Today</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="mark-absent-btn" onclick="markAgentAbsent('A')">Mark Absent</button>
+            <button class="mark-absent-btn" onclick="markAgentAbsent('S')" style="border-color:rgba(96,165,250,0.3);color:var(--accent);">Mark Sick</button>
+            <button class="mark-absent-btn" onclick="markAgentAbsent('PO')" style="border-color:rgba(167,139,250,0.3);color:var(--purple);">Personal Out</button>
+          </div>
+        </div>
+      </div>
+      <!-- Coaching -->
+      <div id="rp-coach" style="display:none;">
+        <div class="rp-section">
+          <div class="rp-section-title">Add Coaching Note</div>
+          <textarea class="coach-input" id="coach-note-text" placeholder="Type your note here..."></textarea>
+          <button class="save-btn" onclick="saveCoachNote()">SAVE NOTE</button>
+        </div>
+        <div class="rp-section">
+          <div class="rp-section-title">Previous Notes</div>
+          <div id="coach-notes-list" style="font-size:0.78rem;color:var(--muted);">No notes yet.</div>
+        </div>
+      </div>
+      <!-- Audit -->
+      <div id="rp-audit" style="display:none;">
+        <div class="rp-section">
+          <div class="rp-section-title">Login History</div>
+          <div id="audit-list" style="font-size:0.78rem;color:var(--muted);">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="main">
+
+  <!-- ADMIN PANEL -->
+  <div class="tab-page admin-only" id="page-admin">
+    <!-- Admin sub tabs -->
+    <div style="display:flex;gap:6px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--border);flex-wrap:wrap;">
+      <button class="sub-tab st-warn active" id="atab-overview" onclick="switchAdminTab('overview',this)">⚡ Overview</button>
+      <button class="sub-tab st-warn" id="atab-attendance" onclick="switchAdminTab('attendance',this)">📅 Attendance</button>
+      <button class="sub-tab st-warn" id="atab-stats" onclick="switchAdminTab('stats',this)">📊 Agent Stats</button>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div id="admin-overview" class="admin-section">
+      <!-- Goal bars -->
+      <div class="admin-card">
+        <div class="admin-card-title">🎯 DAILY TRANSFER GOAL — TEAM TARGET: 300</div>
+        <div class="goal-split">
+          <div class="goal-side">
+            <div class="goal-side-title" style="color:var(--accent);">🏠 BERBICE</div>
+            <div class="goal-val" id="bb-xfer-val" style="color:var(--accent);">—</div>
+            <div class="goal-bar"><div class="goal-fill" id="bb-xfer-bar" style="width:0%;background:linear-gradient(90deg,var(--accent),var(--cyan));"></div></div>
+            <div class="goal-pct" id="bb-xfer-pct" style="color:var(--accent);">0% of 300</div>
+          </div>
+          <div class="goal-side">
+            <div class="goal-side-title" style="color:var(--purple);">🌴 PROVIDENCE</div>
+            <div class="goal-val" id="pr-xfer-val" style="color:var(--purple);">—</div>
+            <div class="goal-bar"><div class="goal-fill" id="pr-xfer-bar" style="width:0%;background:linear-gradient(90deg,var(--purple),#c084fc);"></div></div>
+            <div class="goal-pct" id="pr-xfer-pct" style="color:var(--purple);">0% of 300</div>
+          </div>
+        </div>
+        <div style="font-size:0.65rem;color:var(--muted);text-align:center;">Upload today's CSV report to update transfer counts</div>
+      </div>
+
+      <!-- Who's online -->
+      <div class="admin-card">
+        <div class="admin-card-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>🟢 WHO'S LOGGED IN TODAY</span>
+          <span id="online-count" style="color:var(--green);font-family:'Bebas Neue',sans-serif;font-size:1.2rem;">0</span>
+        </div>
+        <div class="online-grid" id="online-grid" style="margin-bottom:10px;">
+          <div style="font-size:0.75rem;color:var(--muted);">Loading attendance data...</div>
+        </div>
+        <div class="admin-card-title" style="margin-top:10px;margin-bottom:8px;">🟡 LATE — SHIFT STARTED, NOT LOGGED IN</div>
+        <div class="online-grid" id="late-grid">
+          <div style="font-size:0.75rem;color:var(--muted);">—</div>
+        </div>
+        <div class="admin-card-title" style="margin-top:10px;margin-bottom:8px;">🔴 NOT LOGGED IN TODAY</div>
+        <div class="online-grid" id="absent-grid">
+          <div style="font-size:0.75rem;color:var(--muted);">—</div>
+        </div>
+      </div>
+
+      <!-- Quick stats -->
+      <div class="admin-card">
+        <div class="admin-card-title">📈 TODAY AT A GLANCE</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+          <div class="rp-stat"><div class="rp-stat-val" id="glance-total" style="color:var(--accent);">—</div><div class="rp-stat-lbl">Total Agents</div></div>
+          <div class="rp-stat"><div class="rp-stat-val" id="glance-online" style="color:var(--green);">—</div><div class="rp-stat-lbl">Online</div></div>
+          <div class="rp-stat"><div class="rp-stat-val" id="glance-late" style="color:var(--gold);">—</div><div class="rp-stat-lbl">Late</div></div>
+          <div class="rp-stat"><div class="rp-stat-val" id="glance-absent" style="color:var(--red);">—</div><div class="rp-stat-lbl">Absent</div></div>
+        </div>
+      </div>
+
+      <div style="font-size:0.62rem;color:var(--muted);text-align:center;padding-bottom:8px;">Tap any agent name to open their full profile</div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div id="admin-attendance" class="admin-section" style="display:none;">
+      <div class="admin-card">
+        <div class="admin-card-title" style="display:flex;justify-content:space-between;">
+          <span>📅 DAILY ATTENDANCE SNAPSHOT</span>
+          <span id="att-date" style="color:var(--accent2);font-size:0.62rem;"></span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="att-table">
+            <thead><tr>
+              <th>Agent</th><th>Team</th><th>Shift</th><th>Status</th><th>Login Time</th><th>Action</th>
+            </tr></thead>
+            <tbody id="att-tbody">
+              <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Loading attendance data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENT STATS -->
+    <div id="admin-stats" class="admin-section" style="display:none;">
+      <div class="admin-card">
+        <div class="admin-card-title">📊 AGENT STATS — Upload CSV to populate</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <input class="search-agent" id="stats-search" placeholder="🔍 Search agent..." oninput="filterStatsTable()" style="padding:7px 12px;background:#0d1424;border:1.5px solid #2a3a5a;border-radius:8px;color:#e2e8f0;font-size:0.78rem;font-family:'Nunito',sans-serif;outline:none;flex:1;min-width:140px;">
+          <input type="file" id="stats-csv-upload" accept=".csv" style="display:none;" onchange="handleStatsCSV(this)">
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="att-table" id="stats-table">
+            <thead><tr>
+              <th onclick="sortStats(0)">Agent ▾</th>
+              <th onclick="sortStats(1)">Calls</th>
+              <th onclick="sortStats(2)">CI</th>
+              <th onclick="sortStats(3)">Xfer ✓</th>
+              <th onclick="sortStats(4)">DNC</th>
+              <th onclick="sortStats(5)">NI</th>
+              <th onclick="sortStats(6)">Conv%</th>
+            </tr></thead>
+            <tbody id="stats-tbody">
+              <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No data — do the 5-tap secret on this tab to upload CSV</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- SCRIPT -->
   <div class="tab-page active" id="page-script">
@@ -818,11 +1126,281 @@ pitch_urgency:{phase:'SALES PITCH BOOSTING \u2014 URGENCY &amp; NO COMMITMENT',c
 pitch_softpull:{phase:'SALES PITCH BOOSTING \u2014 SOFT PULL / NO WEBSITE / DATA PRIVACY',color:'var(--purple)',content:`<div class="phase-tag" style="background:var(--purple-light);color:var(--purple);border-color:#c4b5fd;">\u{1F4CA} Soft Pull / No Website / Data Privacy Scripts</div><div class="rb" style="border-left:4px solid var(--accent2);"><div class="rblabel" style="color:var(--accent2);">SOFT PULL CLARIFICATION</div><div class="rbtext">"I completely understand, (Customer's Name). Just to reassure you \u2014 this is only a <span class='kw'>soft credit check</span>. It's not a hard pull and <span class='emp'>won't affect your credit score at all</span>. It's simply used to verify your identity and show you what loan options you could qualify for \u2014 no impact, no commitment."</div></div><div class="rb" style="border-left:4px solid var(--gold);"><div class="rblabel" style="color:var(--gold);">NO WEBSITE / CREDENTIALS CONCERN</div><div class="rbtext">"The reason we don't provide specific lender websites right away is because we <span class='kw'>haven't confirmed which lender will offer you the best deal</span>. Once your profile is reviewed through the soft check, our Loan Specialist will <span class='emp'>guide you through the lender's information step-by-step</span>."</div></div><div class="rb" style="border-left:4px solid var(--green);"><div class="rblabel" style="color:var(--green);">DATA PRIVACY &amp; ENCRYPTION</div><div class="rbtext">"Your information is <span class='kw'>completely protected</span>. Once I input your SSN, it's locked and securely sent to underwriting \u2014 I can't access it again. We use <span class='emp'>bank-level encryption</span> to keep everything safe and confidential."</div></div>`},
 };
 
+// ── APPS SCRIPT BRIDGE URL ──
+const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbwRHqSD3bfazNipFC39EI84zTRhZzcFk988FXcHobCci9mgzv7Axees8NAoJMFq01Fx6g/exec';
+
+// ── ROSTER (loaded live from Google Sheet) ──
+let ROSTER = {}; // keyed by userId
+let rosterLoaded = false;
+
+async function loadRoster() {
+  try {
+    const res = await fetch(BRIDGE_URL + '?action=getRoster');
+    const data = await res.json();
+    if (data.success && data.agents) {
+      ROSTER = {};
+      data.agents.forEach(a => {
+        if (a.userId) {
+          ROSTER[String(a.userId).trim()] = {
+            name: a.name,
+            ytelName: a.ytelName,
+            shift: a.shift || '',
+            lunch: a.lunch || '',
+            brk: '',
+            team: a.team || 'BB',
+            status: a.status || 'Agent'
+          };
+        }
+      });
+      rosterLoaded = true;
+    }
+  } catch(e) {
+    console.error('Roster load failed:', e);
+  }
+}
+
+const ADMIN_ID = '0000';
+const ADMIN_PW = 'admin';
+let currentUser = null;
+let midnightTimer = null;
+
+// ── GREETINGS ──
+function getGreeting(name){
+  const h = new Date().toLocaleString('en-US',{timeZone:'America/Guyana',hour:'numeric',hour12:false});
+  const hr = parseInt(h);
+  if(hr < 12) return `Good morning, ${name}! Let's make today count. 🔥`;
+  if(hr < 17) return `Good afternoon, ${name}! Stay focused, close strong. 💪`;
+  return `Good evening, ${name}! Finish the shift strong. ⚡`;
+}
+
+// ── ID INPUT — show password for admin ──
+function onIdInput(val){
+  document.getElementById('pw-wrap').style.display = val === ADMIN_ID ? 'block' : 'none';
+  document.getElementById('login-err').textContent = '';
+}
+
+// ── LOGIN ──
+async function doLogin(){
+  const id = document.getElementById('login-id').value.trim();
+  const pw = document.getElementById('login-pw') ? document.getElementById('login-pw').value.trim() : '';
+  const errEl = document.getElementById('login-err');
+  errEl.textContent = '';
+
+  // Show loading spinner
+  const btn = document.querySelector('.login-btn');
+  btn.innerHTML = '<span class="spinner"></span>CONNECTING...';
+  btn.disabled = true;
+
+  try {
+    if(id === ADMIN_ID){
+      if(pw !== ADMIN_PW){
+        errEl.textContent = '⚠ Incorrect password.';
+        btn.textContent = 'ENTER DASHBOARD';
+        btn.disabled = false;
+        return;
+      }
+      await auth.signInAnonymously();
+      currentUser = {id:'0000', name:'Admin', isAdmin:true, team:'ADMIN'};
+      sessionStorage.setItem('bds_user_'+getTodayGY(), JSON.stringify(currentUser));
+      showDashboard();
+      return;
+    }
+
+    // Load roster if not loaded yet
+    if(!rosterLoaded) await loadRoster();
+
+    const agentData = ROSTER[id];
+    if(!agentData){
+      errEl.textContent = '⚠ Ytel ID not found. Check your ID and try again.';
+      btn.textContent = 'ENTER DASHBOARD';
+      btn.disabled = false;
+      return;
+    }
+
+    // Check Firebase for admin-edited shift/lunch/break overrides
+    try {
+      const snap = await db.collection('roster').doc(id).get();
+      if(snap.exists){
+        const d = snap.data();
+        if(d.shift) agentData.shift = d.shift;
+        if(d.lunch) agentData.lunch = d.lunch;
+        if(d.brk)   agentData.brk   = d.brk;
+      }
+    } catch(e){}
+
+    await auth.signInAnonymously();
+    currentUser = {id, ...agentData, isAdmin:false};
+
+    // Mark attendance via Apps Script
+    await markAttendanceSheet(agentData);
+
+    // Save session to Firebase
+    const today = getTodayGY();
+    await db.collection('sessions').doc(id+'_'+today).set({
+      id, name:agentData.name, team:agentData.team,
+      loginTime: firebase.firestore.FieldValue.serverTimestamp(),
+      date: today
+    },{merge:true});
+
+    // Save to sessionStorage
+    sessionStorage.setItem('bds_user_'+today, JSON.stringify(currentUser));
+    showDashboard();
+
+  } catch(e) {
+    errEl.textContent = '⚠ Login error. Please try again.';
+    console.error(e);
+  }
+
+  btn.innerHTML = 'ENTER DASHBOARD';
+  btn.disabled = false;
+}
+
+// ── MARK ATTENDANCE IN GOOGLE SHEET ──
+async function markAttendanceSheet(agent) {
+  try {
+    // First check if already marked today
+    const checkRes = await fetch(`${BRIDGE_URL}?action=checkAttendance&name=${encodeURIComponent(agent.name)}&team=${agent.team}`);
+    const checkData = await checkRes.json();
+    if(checkData.marked) return; // already marked — don't overwrite
+
+    // Calculate Present or Late
+    const status = getAttendanceStatus(agent.shift);
+    if(!status) return; // Sunday or no shift
+
+    // Write to sheet
+    await fetch(`${BRIDGE_URL}?action=markAttendance&name=${encodeURIComponent(agent.name)}&team=${agent.team}&status=${status}`);
+
+    // Also save to Firebase for dashboard display
+    const today = getTodayGY();
+    await db.collection('attendance').doc(agent.userId+'_'+today).set({
+      id: agent.userId,
+      name: agent.name,
+      team: agent.team,
+      date: today,
+      status,
+      shift: agent.shift,
+      loginTime: firebase.firestore.FieldValue.serverTimestamp()
+    },{merge:true});
+
+  } catch(e) {
+    console.error('Attendance mark failed:', e);
+  }
+}
+
+// ── CALCULATE PRESENT OR LATE ──
+function getAttendanceStatus(shift) {
+  if(!shift) return 'P';
+  try {
+    const match = shift.match(/(\d+):(\d+)\s*(am|pm)/i);
+    if(!match) return 'P';
+    let h = parseInt(match[1]), m = parseInt(match[2]);
+    const ampm = match[3].toLowerCase();
+    if(ampm==='pm' && h!==12) h+=12;
+    if(ampm==='am' && h===12) h=0;
+    const nowGY = new Date(new Date().toLocaleString('en-US',{timeZone:'America/Guyana'}));
+    const shiftStart = new Date(nowGY.getFullYear(),nowGY.getMonth(),nowGY.getDate(),h,m,0);
+    const diffMins = (nowGY - shiftStart) / 60000;
+    if(diffMins > 15) return 'L';
+    return 'P';
+  } catch(e){ return 'P'; }
+}
+
+function getTodayGY(){
+  return new Date().toLocaleDateString('en-CA',{timeZone:'America/Guyana'});
+}
+
+// ── SHOW DASHBOARD ──
+function showDashboard(){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('rep-bar').classList.add('show');
+
+  const u = currentUser;
+  const firstName = u.name.split(' ')[0];
+
+  document.getElementById('rep-greeting').innerHTML = u.isAdmin
+    ? '⚡ <span>Admin Panel</span> — Full Access'
+    : getGreeting(firstName).replace(firstName, `<span>${firstName}</span>`);
+
+  const details = document.getElementById('rep-details');
+  details.innerHTML = '';
+
+  if(!u.isAdmin){
+    details.innerHTML += `<div class="rep-chip ext">ID: <b>${u.id}</b></div>`;
+    if(u.shift) details.innerHTML += `<div class="rep-chip shift">⏰ <b>${u.shift}</b></div>`;
+    if(u.lunch) details.innerHTML += `<div class="rep-chip lunch">🍽 Lunch: <b>${u.lunch}</b></div>`;
+    if(u.brk)   details.innerHTML += `<div class="rep-chip brk">☕ Break: <b>${u.brk}</b></div>`;
+    const teamName = u.team==='BB' ? 'Berbice' : u.team==='PR' ? 'Providence' : u.team;
+    details.innerHTML += `<div class="rep-chip" style="border-color:rgba(167,139,250,0.3);color:var(--purple);">Team: <b>${teamName}</b></div>`;
+  } else {
+    document.getElementById('admin-badge-wrap').innerHTML = '<div class="admin-badge">⚡ ADMIN</div>';
+    showAdminUI();
+  }
+
+  scheduleMidnightLogout();
+  init();
+}
+
+// ── MIDNIGHT AUTO-LOGOUT ──
+function scheduleMidnightLogout(){
+  const nowGY = new Date(new Date().toLocaleString('en-US',{timeZone:'America/Guyana'}));
+  const midnight = new Date(nowGY.getFullYear(),nowGY.getMonth(),nowGY.getDate()+1,0,0,0);
+  const ms = midnight - nowGY;
+  clearTimeout(midnightTimer);
+  midnightTimer = setTimeout(()=>{ doLogout(true); }, ms);
+}
+
+// ── LOGOUT ──
+function doLogout(auto=false){
+  clearTimeout(midnightTimer);
+  sessionStorage.removeItem('bds_user_'+getTodayGY());
+  currentUser = null;
+  auth.signOut();
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('rep-bar').classList.remove('show');
+  document.getElementById('admin-badge-wrap').innerHTML='';
+  document.getElementById('rep-details').innerHTML='';
+  document.getElementById('login-id').value='';
+  if(document.getElementById('login-pw')) document.getElementById('login-pw').value='';
+  document.getElementById('pw-wrap').style.display='none';
+  document.getElementById('login-err').textContent = auto ? '🔒 Session expired — please log in again.' : '';
+  // Pre-load roster in background for next login
+  loadRoster();
+}
+
+// ── CHECK EXISTING SESSION ──
+async function checkSession(){
+  // Pre-load roster in background
+  loadRoster();
+  const today = getTodayGY();
+  const saved = sessionStorage.getItem('bds_user_'+today);
+  if(saved){
+    try{
+      currentUser = JSON.parse(saved);
+      // Reload Firebase overrides for shift/lunch/break
+      if(!currentUser.isAdmin && currentUser.id){
+        try{
+          const snap = await db.collection('roster').doc(currentUser.id).get();
+          if(snap.exists){
+            const d=snap.data();
+            if(d.shift) currentUser.shift=d.shift;
+            if(d.lunch) currentUser.lunch=d.lunch;
+            if(d.brk)   currentUser.brk=d.brk;
+          }
+        }catch(e){}
+      }
+      showDashboard();
+      return;
+    }catch(e){}
+  }
+  document.getElementById('login-screen').classList.remove('hidden');
+}
+
+window.addEventListener('load',()=>{ checkSession(); });
+
 function init(){
   loadScript('intro');
   loadObjection('not_interested');
   startClocks();
-  // Punch words
   const pw=['FIXED-RATE','5.8% APR','SOFT CREDIT CHECK','LENDING SPECIALIST','LIMITED TIME','LOAN AMOUNTS','MONTHLY PAYMENTS','ELIGIBILITY','LENDING PARTNER NETWORK','PRE-QUALIFICATION'];
   const el=document.getElementById('punch-words');
   if(el) el.innerHTML=pw.map(w=>`<div style="background:var(--purple-light);border:1.5px solid #c4b5fd;border-radius:7px;padding:7px;text-align:center;font-size:0.58rem;font-weight:800;color:var(--purple);">${w}</div>`).join('');
@@ -872,6 +1450,348 @@ function loadObjection(key){
   d.innerHTML=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:${o.color};margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--border);">${o.phase}</div>${o.content}`;
   d.scrollTop=0;
 }
+
+// ── ADMIN PANEL JS ──
+let currentRepProfile = null;
+let statsData = [];
+let statsSortCol = 3;
+let statsSortDir = -1;
+let adminStatsTapCount = 0;
+let adminStatsTapTimer = null;
+
+function showAdminUI(){
+  document.querySelectorAll('.admin-only').forEach(el=>el.style.display='');
+}
+
+function switchAdminTab(tab, btn){
+  // Switch main page to admin
+  document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-admin').classList.add('active');
+  document.querySelectorAll('.tab-btn,.admin-tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-admin').classList.add('active');
+
+  // Switch sub tab
+  ['overview','attendance','stats'].forEach(t=>{
+    const el = document.getElementById('admin-'+t);
+    if(el) el.style.display = t===tab ? '' : 'none';
+    const btn2 = document.getElementById('atab-'+t);
+    if(btn2) btn2.classList.toggle('active', t===tab);
+  });
+
+  if(tab==='overview') loadAdminOverview();
+  if(tab==='attendance') loadAdminAttendance();
+  if(tab==='stats'){
+    // 5-tap secret for CSV upload
+    adminStatsTapCount++;
+    clearTimeout(adminStatsTapTimer);
+    adminStatsTapTimer = setTimeout(()=>{adminStatsTapCount=0;},1800);
+    if(adminStatsTapCount>=5){
+      adminStatsTapCount=0;
+      clearTimeout(adminStatsTapTimer);
+      const tabBtn = document.getElementById('tab-admin');
+      tabBtn.style.borderColor='#34d399';tabBtn.style.color='#34d399';
+      setTimeout(()=>{tabBtn.style.borderColor='';tabBtn.style.color='';},600);
+      document.getElementById('stats-csv-upload').click();
+    }
+  }
+}
+
+// ── LOAD OVERVIEW ──
+async function loadAdminOverview(){
+  const today = getTodayGY();
+  try{
+    const snap = await db.collection('attendance').where('date','==',today).get();
+    const records = [];
+    snap.forEach(doc=>records.push(doc.data()));
+
+    const online = records.filter(r=>r.status==='Present'||r.status==='P');
+    const late   = records.filter(r=>r.status==='Late'||r.status==='L');
+
+    // All agents from roster
+    const allAgents = Object.values(ROSTER || {});
+    const loggedIds = records.map(r=>String(r.id));
+    const notLogged = allAgents.filter(a=>!loggedIds.includes(String(a.userId||''))).slice(0,20);
+
+    // Update counts
+    document.getElementById('glance-total').textContent  = allAgents.length||'—';
+    document.getElementById('glance-online').textContent = online.length;
+    document.getElementById('glance-late').textContent   = late.length;
+    document.getElementById('glance-absent').textContent = notLogged.length;
+    document.getElementById('online-count').textContent  = online.length + late.length;
+
+    // Online grid
+    const og = document.getElementById('online-grid');
+    og.innerHTML = online.length ? online.map(r=>`
+      <div class="status-chip online" onclick="openRepProfile('${r.id}','${r.name}','${r.team||''}','${r.shift||''}')">
+        <span class="pulse green"></span>${r.name.split(' ')[0]} ${r.name.split(' ')[1]||''}
+      </div>`).join('') : '<div style="font-size:0.75rem;color:var(--muted);">No one online yet</div>';
+
+    // Late grid
+    const lg = document.getElementById('late-grid');
+    lg.innerHTML = late.length ? late.map(r=>`
+      <div class="status-chip late-chip" onclick="openRepProfile('${r.id}','${r.name}','${r.team||''}','${r.shift||''}')">
+        <span class="pulse amber"></span>${r.name.split(' ')[0]} ${r.name.split(' ')[1]||''}
+      </div>`).join('') : '<div style="font-size:0.75rem;color:var(--muted);">None</div>';
+
+    // Absent grid
+    const ag2 = document.getElementById('absent-grid');
+    ag2.innerHTML = notLogged.length ? notLogged.map(a=>`
+      <div class="status-chip absent-chip" onclick="openRepProfile('','${a.name}','${a.team||''}','${a.shift||''}')">
+        <span class="pulse red-p"></span>${a.name.split(' ')[0]} ${(a.name.split(' ')[1]||'')}
+      </div>`).join('') : '<div style="font-size:0.75rem;color:var(--green);">Everyone is logged in!</div>';
+
+  }catch(e){ console.error('Admin overview error:',e); }
+}
+
+// ── LOAD ATTENDANCE TABLE ──
+async function loadAdminAttendance(){
+  const today = getTodayGY();
+  document.getElementById('att-date').textContent = new Date().toLocaleDateString('en-US',{timeZone:'America/Guyana',weekday:'long',month:'long',day:'numeric'});
+  try{
+    const snap = await db.collection('attendance').where('date','==',today).get();
+    const records = [];
+    snap.forEach(doc=>records.push(doc.data()));
+
+    const tbody = document.getElementById('att-tbody');
+    if(!records.length){
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No logins recorded yet today.</td></tr>';
+      return;
+    }
+
+    records.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    tbody.innerHTML = records.map(r=>{
+      const statusCls = r.status==='Present'||r.status==='P' ? 'att-p' : r.status==='Late'||r.status==='L' ? 'att-l' : 'att-a';
+      const statusLbl = r.status==='P'?'Present':r.status==='L'?'Late':r.status||'Unknown';
+      const loginTime = r.loginTime ? new Date(r.loginTime.seconds*1000).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Guyana'}) : '—';
+      const team = r.team==='BB'?'Berbice':r.team==='PR'?'Providence':r.team||'—';
+      return `<tr onclick="openRepProfile('${r.id}','${r.name}','${r.team}','${r.shift||''}')">
+        <td style="font-weight:700;">${r.name||'—'}</td>
+        <td style="color:var(--muted);">${team}</td>
+        <td style="color:var(--muted);font-size:0.68rem;">${r.shift||'—'}</td>
+        <td><span class="att-badge ${statusCls}">${statusLbl}</span></td>
+        <td style="color:var(--muted);">${loginTime}</td>
+        <td><button class="mark-absent-btn" onclick="event.stopPropagation();markAgentAbsentDirect('${r.id}','${r.name}','${r.team}')">Edit</button></td>
+      </tr>`;
+    }).join('');
+  }catch(e){ console.error('Attendance load error:',e); }
+}
+
+// ── REP PROFILE ──
+async function openRepProfile(id, name, team, shift){
+  currentRepProfile = {id, name, team, shift};
+  document.getElementById('rp-name').textContent = name;
+  const teamName = team==='BB'?'Berbice':team==='PR'?'Providence':team;
+  document.getElementById('rp-meta').textContent = `${teamName} · ${shift||'No shift set'}`;
+  document.getElementById('rep-profile-overlay').classList.add('open');
+  rpTab('perf', document.getElementById('rpt-perf'));
+  loadRepPerf(id, name, team);
+}
+
+function closeRepProfile(){
+  document.getElementById('rep-profile-overlay').classList.remove('open');
+  currentRepProfile = null;
+}
+
+function rpTab(tab, btn){
+  ['perf','att','coach','audit'].forEach(t=>{
+    const el=document.getElementById('rp-'+t);
+    if(el) el.style.display = t===tab?'':'none';
+    const b=document.getElementById('rpt-'+t);
+    if(b) b.classList.toggle('active',t===tab);
+  });
+  if(tab==='att' && currentRepProfile) loadRepAtt(currentRepProfile.id, currentRepProfile.name);
+  if(tab==='coach' && currentRepProfile) loadRepCoach(currentRepProfile.id);
+  if(tab==='audit' && currentRepProfile) loadRepAudit(currentRepProfile.id);
+}
+
+async function loadRepPerf(id, name, team){
+  const today = getTodayGY();
+  try{
+    const snap = await db.collection('attendance').doc(id+'_'+today).get();
+    const attEl = document.getElementById('rp-att-status');
+    if(snap.exists){
+      const d=snap.data();
+      const s=d.status==='P'||d.status==='Present'?'Present':d.status==='L'||d.status==='Late'?'Late':'Unknown';
+      attEl.innerHTML=`<span class="att-badge ${s==='Present'?'att-p':s==='Late'?'att-l':'att-a'}">${s}</span>`;
+    } else { attEl.innerHTML='<span class="att-badge att-pending">Not logged in</span>'; }
+  }catch(e){}
+  // Live tap data
+  try{
+    const snap2 = await db.collection('taps').doc(id+'_'+today).get();
+    if(snap2.exists){
+      const d=snap2.data();
+      document.getElementById('rp-live-calls').textContent=d.calls||0;
+      document.getElementById('rp-live-xfer').textContent=d.xfer||0;
+      const conv=d.calls>0?Math.round((d.xfer/d.calls)*100)+'%':'0%';
+      document.getElementById('rp-live-conv').textContent=conv;
+    } else {
+      document.getElementById('rp-live-calls').textContent='0';
+      document.getElementById('rp-live-xfer').textContent='0';
+      document.getElementById('rp-live-conv').textContent='0%';
+    }
+  }catch(e){}
+}
+
+async function loadRepAtt(id, name){
+  const today = getTodayGY();
+  const monthStart = today.substring(0,7);
+  try{
+    const snap = await db.collection('attendance').where('id','==',id).get();
+    let p=0,l=0,a=0;
+    snap.forEach(doc=>{
+      const d=doc.data();
+      if(!d.date||!d.date.startsWith(monthStart)) return;
+      if(d.status==='Present'||d.status==='P') p++;
+      else if(d.status==='Late'||d.status==='L') l++;
+      else a++;
+    });
+    document.getElementById('rp-att-p').textContent=p;
+    document.getElementById('rp-att-l').textContent=l;
+    document.getElementById('rp-att-a').textContent=a;
+  }catch(e){}
+}
+
+async function loadRepCoach(id){
+  try{
+    const snap = await db.collection('coaching').where('agentId','==',id).orderBy('createdAt','desc').limit(10).get();
+    const list = document.getElementById('coach-notes-list');
+    if(snap.empty){ list.innerHTML='<div style="color:var(--muted);font-size:0.78rem;">No notes yet.</div>'; return; }
+    list.innerHTML='';
+    snap.forEach(doc=>{
+      const d=doc.data();
+      const date=d.createdAt?new Date(d.createdAt.seconds*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+      list.innerHTML+=`<div class="note-item"><div class="note-date">${date}</div>${d.note}</div>`;
+    });
+  }catch(e){ document.getElementById('coach-notes-list').innerHTML='<div style="color:var(--muted);">Could not load notes.</div>'; }
+}
+
+async function saveCoachNote(){
+  if(!currentRepProfile) return;
+  const note = document.getElementById('coach-note-text').value.trim();
+  if(!note){ alert('Please type a note first.'); return; }
+  try{
+    await db.collection('coaching').add({
+      agentId: currentRepProfile.id,
+      agentName: currentRepProfile.name,
+      note,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('coach-note-text').value='';
+    loadRepCoach(currentRepProfile.id);
+  }catch(e){ alert('Could not save note. Try again.'); }
+}
+
+async function loadRepAudit(id){
+  try{
+    const snap = await db.collection('sessions').where('id','==',id).orderBy('loginTime','desc').limit(15).get();
+    const list = document.getElementById('audit-list');
+    if(snap.empty){ list.innerHTML='<div style="color:var(--muted);">No login history found.</div>'; return; }
+    list.innerHTML='';
+    snap.forEach(doc=>{
+      const d=doc.data();
+      const date=d.loginTime?new Date(d.loginTime.seconds*1000).toLocaleString('en-US',{timeZone:'America/Guyana',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+      list.innerHTML+=`<div class="note-item"><div class="note-date">${d.date||'—'}</div>Logged in at ${date}</div>`;
+    });
+  }catch(e){ document.getElementById('audit-list').innerHTML='<div style="color:var(--muted);">Could not load audit.</div>'; }
+}
+
+async function markAgentAbsent(status){
+  if(!currentRepProfile) return;
+  const {id, name, team, shift} = currentRepProfile;
+  const today = getTodayGY();
+  const labels = {A:'Absent',S:'Sick',PO:'Personal Out'};
+  if(!confirm(`Mark ${name} as ${labels[status]||status} for today?`)) return;
+  try{
+    await db.collection('attendance').doc(id+'_'+today).set({
+      id, name, team, shift, date:today, status,
+      markedBy:'admin', loginTime:firebase.firestore.FieldValue.serverTimestamp()
+    },{merge:true});
+    alert(`✅ ${name} marked as ${labels[status]||status}`);
+    loadRepAtt(id, name);
+  }catch(e){ alert('Could not save. Try again.'); }
+}
+
+async function markAgentAbsentDirect(id, name, team){
+  const status = prompt(`Mark ${name} as:\nA = Absent\nS = Sick\nP = Present\nL = Late\nPO = Personal Out\n\nType the letter:`,'A');
+  if(!status) return;
+  const today = getTodayGY();
+  try{
+    await db.collection('attendance').doc(id+'_'+today).set({
+      id, name, team, date:today, status:status.toUpperCase().trim(),
+      markedBy:'admin', loginTime:firebase.firestore.FieldValue.serverTimestamp()
+    },{merge:true});
+    loadAdminAttendance();
+  }catch(e){ alert('Could not save.'); }
+}
+
+// ── STATS CSV UPLOAD ──
+function handleStatsCSV(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => parseStatsCSV(e.target.result);
+  reader.readAsText(file);
+}
+
+function parseStatsCSV(text){
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim());
+  statsData = [];
+  for(let i=1;i<lines.length;i++){
+    const cols = lines[i].split(',').map(c=>c.replace(/^"|"$/g,'').trim());
+    if(!cols[0]||cols[0].startsWith('TOTAL')) continue;
+    const name = cols[0].replace(/^GUY[P]?\s+/i,'');
+    const calls=parseInt(cols[1])||0, ci=parseInt(cols[2])||0, xfer=parseInt(cols[12])||0, dnc=parseInt(cols[7])||0, ni=parseInt(cols[11])||0;
+    const conv=calls>0?((xfer/calls)*100).toFixed(1):0;
+    statsData.push({name,calls,ci,xfer,dnc,ni,conv:parseFloat(conv)});
+  }
+  // Update goal bars from CSV
+  const bbTotal = statsData.filter(r=>r.name).reduce((s,r)=>s+r.xfer,0);
+  updateGoalBar('bb',bbTotal,300);
+  renderStatsTable();
+}
+
+function updateGoalBar(team, val, goal){
+  const pct = Math.min(Math.round((val/goal)*100),100);
+  const valEl=document.getElementById(team+'-xfer-val');
+  const barEl=document.getElementById(team+'-xfer-bar');
+  const pctEl=document.getElementById(team+'-xfer-pct');
+  if(valEl) valEl.textContent=val;
+  if(barEl) barEl.style.width=pct+'%';
+  if(pctEl) pctEl.textContent=pct+'% of '+goal;
+}
+
+function renderStatsTable(){
+  const q=(document.getElementById('stats-search')||{value:''}).value.toLowerCase();
+  let rows=[...statsData].filter(r=>!q||r.name.toLowerCase().includes(q));
+  const keys=['name','calls','ci','xfer','dnc','ni','conv'];
+  rows.sort((a,b)=>{
+    const av=a[keys[statsSortCol]],bv=b[keys[statsSortCol]];
+    return typeof av==='string'?av.localeCompare(bv)*statsSortDir:(av-bv)*statsSortDir;
+  });
+  const tbody=document.getElementById('stats-tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">No data yet.</td></tr>';return;}
+  tbody.innerHTML=rows.map(r=>{
+    const convColor=r.conv>=5?'var(--green)':r.conv>=2?'var(--gold)':'var(--red)';
+    return `<tr onclick="openRepProfile('',${JSON.stringify(r.name)},'','')">
+      <td style="font-weight:700;">${r.name}</td>
+      <td>${r.calls.toLocaleString()}</td><td>${r.ci.toLocaleString()}</td>
+      <td><span class="att-badge att-p">${r.xfer}</span></td>
+      <td><span class="att-badge att-a">${r.dnc}</span></td>
+      <td><span class="att-badge att-l">${r.ni}</span></td>
+      <td style="color:${convColor};font-weight:800;">${r.conv}%</td>
+    </tr>`;
+  }).join('');
+}
+
+function sortStats(col){
+  statsSortDir = statsSortCol===col ? -statsSortDir : -1;
+  statsSortCol = col;
+  renderStatsTable();
+}
+
+function filterStatsTable(){ renderStatsTable(); }
+
 
 function searchRebuttals(val){
   const resultsEl=document.getElementById('search-results');
