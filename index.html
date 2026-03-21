@@ -1298,7 +1298,7 @@ pitch_softpull:{phase:'SALES PITCH BOOSTING \u2014 SOFT PULL / NO WEBSITE / DATA
 };
 
 // ── APPS SCRIPT BRIDGE URL ──
-const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbx18hajcSyksJi7JXVVzJa_oV-mBvE2xzDmhhKROeEuL2_DgDdXa4AFYSNKU34MMXTZiQ/exec';
+const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbyEXBVyjblAEu2LLTucoeDvH9Hnio9ZiBqvz0WzlVKaucaIH1MFdgGRyUWE_HzJvaJM9g/exec';
 
 // ── JSONP helper — bypasses CORS for Google Apps Script ──
 function callBridge(params) {
@@ -1935,136 +1935,296 @@ function renderAttTable(){
   }).join('');
 }
 
-// ── WEEKLY ATTENDANCE ──
-let weeklyTeam = 'BB';
-let weeklyData  = {};
-let weekRanges  = [];
-let monthlyCache = {}; // cache for monthly data
+// ── WEEKLY ATTENDANCE — merges Google Sheet + Firebase ──
+let weeklyTeam      = 'BB';
+let weeklySheetData = null;
+let weeklyFirebase  = {}; // date -> {agentName -> status} from Firebase
+let weekRanges      = [];
+let monthlyCache    = {};
 
 async function loadWeeklyAttendance(team){
   weeklyTeam = team;
-  const today = getTodayGY();
-  const monthStart = today.substring(0,7);
-
   document.getElementById('wk-bb-btn').classList.toggle('active', team==='BB');
   document.getElementById('wk-pr-btn').classList.toggle('active', team==='PR');
   document.getElementById('weekly-table-wrap').innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;">Loading...</div>';
+  document.getElementById('week-chips').innerHTML='';
 
-  try{
-    // Only query by date — filter team client-side (avoids composite index requirement)
-    const snap = await db.collection('attendance')
+  const today      = getTodayGY();
+  const monthStart = today.substring(0,7);
+
+  // ── Fetch both sources in parallel ──
+  const [sheetResult, firebaseResult] = await Promise.allSettled([
+    callBridge({action:'getWeeklyAttendance', team}),
+    db.collection('attendance')
       .where('date','>=',monthStart+'-01')
       .where('date','<=',monthStart+'-31')
-      .get();
+      .get()
+  ]);
 
-    weeklyData = {};
-    snap.forEach(doc=>{
-      const d=doc.data();
+  // ── Process Firebase ──
+  weeklyFirebase = {};
+  if(firebaseResult.status==='fulfilled'){
+    firebaseResult.value.forEach(doc=>{
+      const d = doc.data();
       if(d.team !== team) return;
-      if(!weeklyData[d.date]) weeklyData[d.date]={};
-      // Store by exact name AND by lowercase trimmed name for fuzzy matching
+      if(!weeklyFirebase[d.date]) weeklyFirebase[d.date]={};
       if(d.name){
-        weeklyData[d.date][d.name] = d.status;
-        weeklyData[d.date][d.name.toLowerCase().trim()] = d.status;
+        weeklyFirebase[d.date][d.name]                      = d.status;
+        weeklyFirebase[d.date][d.name.toLowerCase().trim()] = d.status;
       }
     });
+  }
 
-    buildWeekRanges(monthStart);
-    renderWeekChips();
-    if(weekRanges.length) renderWeeklyTable(weekRanges[weekRanges.length-1]);
-  }catch(e){
-    console.error('Weekly load error:',e);
-    document.getElementById('weekly-table-wrap').innerHTML='<div style="text-align:center;color:var(--red);padding:20px;">Could not load data: '+e.message+'</div>';
+  // ── Process Sheet ──
+  if(sheetResult.status==='fulfilled' && sheetResult.value.success){
+    weeklySheetData = sheetResult.value.weeks || [];
+  } else {
+    console.warn('Sheet weekly load failed — using Firebase only');
+    weeklySheetData = [];
+  }
+
+  // Build week chips
+  const container = document.getElementById('week-chips');
+  if(weeklySheetData.length){
+    container.innerHTML = weeklySheetData.map((w,i)=>
+      `<button class="week-chip${i===weeklySheetData.length-1?' active':''}" onclick="selectSheetWeek(${i},this)">${w.label}</button>`
+    ).join('');
+    renderSheetWeeklyTable(weeklySheetData[weeklySheetData.length-1]);
+  } else {
+    // No sheet data — build weeks from Firebase dates
+    const dates = Object.keys(weeklyFirebase).sort();
+    if(dates.length){
+      buildWeekRangesFromDates(dates, monthStart);
+      container.innerHTML = weekRanges.map((w,i)=>
+        `<button class="week-chip${i===weekRanges.length-1?' active':''}" onclick="selectFirebaseWeek(${i},this)">${w.label}</button>`
+      ).join('');
+      if(weekRanges.length) renderFirebaseWeeklyTable(weekRanges[weekRanges.length-1]);
+    } else {
+      document.getElementById('weekly-table-wrap').innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;">No attendance data found yet for this month.</div>';
+    }
   }
 }
 
-function switchWeeklyTeam(team, btn){
+function switchWeeklyTeam(team){
   loadWeeklyAttendance(team);
 }
 
-function buildWeekRanges(monthStart){
-  const year = parseInt(monthStart.split('-')[0]);
+function selectSheetWeek(idx, btn){
+  document.querySelectorAll('.week-chip').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  if(weeklySheetData && weeklySheetData[idx]) renderSheetWeeklyTable(weeklySheetData[idx]);
+}
+
+function selectFirebaseWeek(idx, btn){
+  document.querySelectorAll('.week-chip').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  if(weekRanges[idx]) renderFirebaseWeeklyTable(weekRanges[idx]);
+}
+
+// ── Normalize any status value to a short code ──
+function normalizeStatus(raw){
+  if(!raw) return '';
+  const s = String(raw).toLowerCase().trim();
+  if(s==='p'||s==='present')        return 'P';
+  if(s==='l'||s==='late')           return 'L';
+  if(s==='a'||s==='absent')         return 'A';
+  if(s==='s'||s==='sick')           return 'S';
+  if(s==='po'||s==='personal out')  return 'PO';
+  if(s==='v'||s==='vacation')       return 'V';
+  if(s==='off')                     return 'OFF';
+  return String(raw).toUpperCase().trim();
+}
+
+function statusClass(code){
+  return code==='P'?'wk-p':code==='L'?'wk-l':code==='A'?'wk-a'
+    :code==='S'?'wk-s':code==='PO'?'wk-po':(code==='V'||code==='OFF')?'wk-off'
+    :code?'wk-off':'wk-blank';
+}
+
+// ── Render from Sheet data (merged with Firebase) ──
+function renderSheetWeeklyTable(week){
+  if(!week) return;
+  document.getElementById('weekly-range-lbl').textContent = week.label;
+
+  const cols         = week.columns || [];
+  const sheetAgents  = [...week.agents].sort((a,b)=>a.name.localeCompare(b.name));
+
+  let html = '<table class="wk-table"><thead><tr>';
+  html += '<th style="text-align:left;min-width:140px;">Agent Name</th><th>Shift</th>';
+  cols.forEach(col=>{ html += `<th>${col.header}</th>`; });
+  html += '<th style="color:var(--green);">P</th><th style="color:var(--gold);">L</th><th style="color:var(--red);">A</th><th>Comments</th>';
+  html += '</tr></thead><tbody>';
+
+  sheetAgents.forEach((agent,i)=>{
+    const rAgent = Object.values(ROSTER).find(r=>
+      r.name.toLowerCase()===agent.name.toLowerCase() ||
+      r.name.toLowerCase().includes(agent.name.toLowerCase().split(' ')[0])
+    );
+    const shift = agent.shift || (rAgent ? rAgent.shift : '—');
+    const rId   = rAgent ? rAgent.userId : '';
+    const rTeam = rAgent ? rAgent.team : weeklyTeam;
+
+    let p=0,l=0,a=0, dayCells='';
+
+    cols.forEach(col=>{
+      // ── MERGE: Sheet value wins; Firebase fills blank cells ──
+      let sheetVal = normalizeStatus(agent.days[col.header]||'');
+
+      // Try to get Firebase value for this day if sheet is blank
+      if(!sheetVal){
+        // Find the date for this column header (Mon/Tue etc.)
+        // We match by looking at weeklyFirebase for any date that matches
+        const dayKey = col.header.toLowerCase().substring(0,3);
+        const dayMap = {mon:1,tue:2,wed:3,thu:4,fri:5,sat:6,sun:0};
+        const targetDow = dayMap[dayKey];
+        if(targetDow !== undefined){
+          const fbDates = Object.keys(weeklyFirebase);
+          const matchDate = fbDates.find(d=>{
+            const dow = new Date(d).getDay();
+            return dow === targetDow;
+          });
+          if(matchDate){
+            const fbDay = weeklyFirebase[matchDate];
+            const fbStatus = fbDay[agent.name] || fbDay[agent.name.toLowerCase().trim()] || '';
+            sheetVal = normalizeStatus(fbStatus);
+          }
+        }
+      }
+
+      const code = sheetVal;
+      const cls  = statusClass(code);
+      if(code==='P') p++;
+      else if(code==='L') l++;
+      else if(code==='A'||code==='S'||code==='PO') a++;
+      dayCells += `<td><span class="wk-cell ${cls}">${code}</span></td>`;
+    });
+
+    html += `<tr>
+      <td onclick="openRepProfile('${rId}','${agent.name}','${rTeam}','${shift}')" style="cursor:pointer;font-weight:700;">${agent.name}</td>
+      <td style="font-size:0.65rem;color:var(--muted);">${shift}</td>
+      ${dayCells}
+      <td style="color:var(--green);font-weight:800;">${p}</td>
+      <td style="color:var(--gold);font-weight:800;">${l}</td>
+      <td style="color:var(--red);font-weight:800;">${a}</td>
+      <td style="color:var(--muted);font-size:0.7rem;">${agent.comments||'—'}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('weekly-table-wrap').innerHTML = html;
+}
+
+// ── Render from Firebase only (fallback when sheet unavailable) ──
+function buildWeekRangesFromDates(dates, monthStart){
+  const year  = parseInt(monthStart.split('-')[0]);
   const month = parseInt(monthStart.split('-')[1])-1;
   const daysInMonth = new Date(year, month+1, 0).getDate();
   weekRanges = [];
   let d = 1;
   while(d <= daysInMonth){
     const start = d;
-    // Find end of week (next Saturday or end of month)
     let dt = new Date(year, month, d);
-    while(dt.getDay() !== 6 && d <= daysInMonth){ d++; dt = new Date(year, month, d); }
+    while(dt.getDay()!==6 && d<=daysInMonth){ d++; dt=new Date(year,month,d); }
     const end = Math.min(d, daysInMonth);
-    const dates = [];
-    for(let x=start; x<=end; x++){
+    const wkDates = [];
+    for(let x=start;x<=end;x++){
       const ds = monthStart+'-'+(x<10?'0':'')+x;
-      const dayOfWeek = new Date(year,month,x).getDay();
-      if(dayOfWeek !== 0) dates.push({date:ds, day:x, dow:dayOfWeek});
+      wkDates.push({date:ds, day:x, dow:new Date(year,month,x).getDay()});
     }
-    if(dates.length){
+    if(wkDates.length){
       const mn = new Date(year,month,1).toLocaleDateString('en-US',{month:'long'});
-      weekRanges.push({label: mn+' '+start+' – '+end, dates});
+      weekRanges.push({label:mn+' '+start+' – '+end, dates:wkDates});
     }
     d++;
   }
 }
 
-function renderWeekChips(){
-  const container = document.getElementById('week-chips');
-  container.innerHTML = weekRanges.map((w,i)=>
-    `<button class="week-chip${i===weekRanges.length-1?' active':''}" onclick="selectWeek(${i},this)">${w.label}</button>`
-  ).join('');
+function renderFirebaseWeeklyTable(week){
+  if(!week) return;
+  document.getElementById('weekly-range-lbl').textContent = week.label;
+  const agents = Object.values(ROSTER).filter(a=>a.team===weeklyTeam).sort((a,b)=>a.name.localeCompare(b.name));
+  const dowMap = {1:'Mon',2:'Tue',3:'Wed',4:'Thu',5:'Fri',6:'Sat',0:'Sun'};
+
+  let html = '<table class="wk-table"><thead><tr>';
+  html += '<th style="text-align:left;min-width:140px;">Agent Name</th><th>Shift</th>';
+  week.dates.forEach(d=>{ html+=`<th>${dowMap[d.dow]||''}<br><span style="font-size:0.5rem;color:#4a6080;">${d.day}</span></th>`; });
+  html += '<th style="color:var(--green);">P</th><th style="color:var(--gold);">L</th><th style="color:var(--red);">A</th></tr></thead><tbody>';
+
+  agents.forEach(agent=>{
+    let p=0,l=0,a=0,cells='';
+    week.dates.forEach(d=>{
+      const dayData = weeklyFirebase[d.date]||{};
+      const raw = dayData[agent.name]||dayData[agent.name.toLowerCase().trim()]||'';
+      const code = normalizeStatus(raw);
+      const cls  = statusClass(code);
+      if(code==='P') p++;
+      else if(code==='L') l++;
+      else if(code==='A'||code==='S'||code==='PO') a++;
+      cells += `<td><span class="wk-cell ${cls}">${code}</span></td>`;
+    });
+    html+=`<tr>
+      <td onclick="openRepProfile('${agent.userId}','${agent.name}','${agent.team}','${agent.shift}')" style="cursor:pointer;font-weight:700;">${agent.name}</td>
+      <td style="font-size:0.65rem;color:var(--muted);">${agent.shift||'—'}</td>
+      ${cells}
+      <td style="color:var(--green);font-weight:800;">${p}</td>
+      <td style="color:var(--gold);font-weight:800;">${l}</td>
+      <td style="color:var(--red);font-weight:800;">${a}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('weekly-table-wrap').innerHTML = html;
 }
 
-function selectWeek(idx, btn){
-  document.querySelectorAll('.week-chip').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderWeeklyTable(weekRanges[idx]);
-}
-
-function renderWeeklyTable(week){
+function renderSheetWeeklyTable(week){
   if(!week) return;
   document.getElementById('weekly-range-lbl').textContent = week.label;
 
-  // Get all agents for this team sorted alphabetically
-  const agents = Object.values(ROSTER)
-    .filter(a=>a.team===weeklyTeam)
-    .sort((a,b)=>a.name.localeCompare(b.name));
+  if(!week.agents || !week.agents.length){
+    document.getElementById('weekly-table-wrap').innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;">No agents in this week.</div>';
+    return;
+  }
 
-  const dayLabels = ['Mon','Tue','Wed','Thu','Fri','Sat'];
-  const dowMap = {1:'Mon',2:'Tue',3:'Wed',4:'Thu',5:'Fri',6:'Sat'};
+  // Get column headers from sheet (Mon, Tue, Wed, Thu, Fri, Sat, Sun etc.)
+  const cols = week.columns || [];
 
-  // Build header
+  // Get all agent names sorted alphabetically — use roster order for team
+  const sheetAgents = [...week.agents].sort((a,b)=>a.name.localeCompare(b.name));
+
   let html = '<table class="wk-table"><thead><tr>';
   html += '<th style="text-align:left;min-width:140px;">Agent Name</th>';
   html += '<th>Shift</th>';
-  week.dates.forEach(d=>{
-    html += `<th>${dowMap[d.dow]||''}<br><span style="font-size:0.55rem;color:#4a6080;">${d.day}</span></th>`;
+  cols.forEach(col=>{
+    html += `<th>${col.header}</th>`;
   });
-  html += '<th>P</th><th>L</th><th>A</th><th>Comments</th>';
+  html += '<th style="color:var(--green);">P</th>';
+  html += '<th style="color:var(--gold);">L</th>';
+  html += '<th style="color:var(--red);">A</th>';
+  html += '<th>Comments</th>';
   html += '</tr></thead><tbody>';
 
-  agents.forEach((agent,i)=>{
-    html += `<tr>`;
-    html += `<td onclick="openRepProfile('${agent.userId}','${agent.name}','${agent.team}','${agent.shift}')" style="cursor:pointer;">${agent.name}</td>`;
-    html += `<td style="font-size:0.65rem;color:var(--muted);">${agent.shift||'—'}</td>`;
+  sheetAgents.forEach((agent,i)=>{
+    // Find matching roster agent for shift info
+    const rosterAgent = Object.values(ROSTER).find(r=>
+      r.name.toLowerCase()===agent.name.toLowerCase() ||
+      r.name.toLowerCase().includes(agent.name.toLowerCase()) ||
+      agent.name.toLowerCase().includes(r.name.toLowerCase().split(' ')[0].toLowerCase())
+    );
+    const shift = agent.shift || (rosterAgent ? rosterAgent.shift : '—');
 
-    let p=0,l=0,a=0;
-    week.dates.forEach(d=>{
-      const dayData = weeklyData[d.date]||{};
-      // Try exact name first, then lowercase
-      const rawStatus = dayData[agent.name] || dayData[agent.name.toLowerCase().trim()] || '';
-
-      // Normalize status to short code
+    let p=0, l=0, a=0;
+    let dayCells = '';
+    cols.forEach(col=>{
+      const rawStatus = agent.days[col.header] || '';
       const s = rawStatus.toLowerCase().trim();
-      let code = '';
-      if(s==='p'||s==='present')                    code='P';
-      else if(s==='l'||s==='late')                  code='L';
-      else if(s==='a'||s==='absent')                code='A';
-      else if(s==='s'||s==='sick')                  code='S';
-      else if(s==='po'||s==='personal out')         code='PO';
-      else if(s==='v'||s==='vacation')              code='V';
-      else if(s==='off')                            code='OFF';
-      else if(rawStatus)                            code=rawStatus.toUpperCase();
+      let code = rawStatus.toUpperCase().trim();
+
+      // Normalize
+      if(s==='present') code='P';
+      else if(s==='late') code='L';
+      else if(s==='absent') code='A';
+      else if(s==='sick') code='S';
+      else if(s==='personal out') code='PO';
+      else if(s==='vacation') code='V';
 
       const cls = code==='P'?'wk-p'
         :code==='L'?'wk-l'
@@ -2072,19 +2232,27 @@ function renderWeeklyTable(week){
         :code==='S'?'wk-s'
         :code==='PO'?'wk-po'
         :code==='V'?'wk-l'
-        :code==='OFF'?'wk-off':'wk-blank';
+        :code==='OFF'?'wk-off'
+        :code?'wk-off':'wk-blank';
 
-      if(code==='P')                         p++;
-      else if(code==='L')                    l++;
+      if(code==='P') p++;
+      else if(code==='L') l++;
       else if(code==='A'||code==='S'||code==='PO') a++;
 
-      html += `<td><span class="wk-cell ${cls}">${code}</span></td>`;
+      dayCells += `<td><span class="wk-cell ${cls}">${code}</span></td>`;
     });
-    html += `<td style="color:var(--green);font-weight:800;">${p}</td>`;
-    html += `<td style="color:var(--gold);font-weight:800;">${l}</td>`;
-    html += `<td style="color:var(--red);font-weight:800;">${a}</td>`;
-    html += `<td style="color:var(--muted);font-size:0.7rem;">—</td>`;
-    html += '</tr>';
+
+    const rId = rosterAgent ? rosterAgent.userId : '';
+    const rTeam = rosterAgent ? rosterAgent.team : weeklyTeam;
+    html += `<tr>
+      <td onclick="openRepProfile('${rId}','${agent.name}','${rTeam}','${shift}')" style="cursor:pointer;font-weight:700;">${agent.name}</td>
+      <td style="font-size:0.65rem;color:var(--muted);">${shift}</td>
+      ${dayCells}
+      <td style="color:var(--green);font-weight:800;">${p}</td>
+      <td style="color:var(--gold);font-weight:800;">${l}</td>
+      <td style="color:var(--red);font-weight:800;">${a}</td>
+      <td style="color:var(--muted);font-size:0.7rem;">${agent.comments||'—'}</td>
+    </tr>`;
   });
 
   html += '</tbody></table>';
@@ -2093,41 +2261,55 @@ function renderWeeklyTable(week){
 
 // ── LOAD MONTHLY ATTENDANCE ──
 async function loadMonthlyAttendance(){
-  const today = getTodayGY();
+  const today      = getTodayGY();
   const monthStart = today.substring(0,7);
-  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const monthIdx = parseInt(monthStart.split('-')[1])-1;
-  const year = monthStart.split('-')[0];
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthIdx   = parseInt(monthStart.split('-')[1])-1;
+  const year       = monthStart.split('-')[0];
   document.getElementById('monthly-month-lbl').textContent = monthNames[monthIdx]+' '+year;
   document.getElementById('monthly-table-wrap').innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;">Loading...</div>';
 
-  try{
-    const snap = await db.collection('attendance')
+  // ── Fetch both in parallel ──
+  const [sheetResult, fbResult] = await Promise.allSettled([
+    callBridge({action:'getMonthlyAttendance'}),
+    db.collection('attendance')
       .where('date','>=',monthStart+'-01')
-      .where('date','<=',monthStart+'-31')
-      .get();
+      .where('date','<=',monthStart+'-31').get()
+  ]);
 
-    monthlyCache = {};
-    snap.forEach(doc=>{
+  monthlyCache = {};
+
+  // ── Firebase data ──
+  if(fbResult.status==='fulfilled'){
+    fbResult.value.forEach(doc=>{
       const d=doc.data();
-      // Index by agent ID
       if(d.id){
         if(!monthlyCache[String(d.id)]) monthlyCache[String(d.id)]={};
-        monthlyCache[String(d.id)][d.date]=d.status;
-      }
-      // Also index by name (lowercase) as fallback
-      if(d.name){
-        const key = 'name:'+d.name.toLowerCase().trim();
-        if(!monthlyCache[key]) monthlyCache[key]={};
-        monthlyCache[key][d.date]=d.status;
+        // Only store if not already set (sheet wins)
+        if(!monthlyCache[String(d.id)][d.date])
+          monthlyCache[String(d.id)][d.date] = normalizeStatus(d.status);
       }
     });
-
-    renderMonthly(monthlyCache, monthStart, year, monthIdx);
-  }catch(e){
-    console.error('Monthly load error:',e);
-    document.getElementById('monthly-table-wrap').innerHTML='<div style="color:var(--red);text-align:center;padding:20px;">Could not load: '+e.message+'</div>';
   }
+
+  // ── Sheet data — overwrites Firebase ──
+  if(sheetResult.status==='fulfilled' && sheetResult.value.success){
+    (sheetResult.value.agents||[]).forEach(agent=>{
+      const rAgent = Object.values(ROSTER).find(r=>
+        r.name.toLowerCase()===agent.name.toLowerCase() ||
+        r.name.toLowerCase().includes(agent.name.toLowerCase().split(' ')[0])
+      );
+      const key = rAgent ? String(rAgent.userId) : 'name:'+agent.name.toLowerCase();
+      if(!monthlyCache[key]) monthlyCache[key]={};
+      Object.entries(agent.days||{}).forEach(([day,status])=>{
+        const dateStr = monthStart+'-'+(parseInt(day)<10?'0':'')+parseInt(day);
+        const code = normalizeStatus(status);
+        if(code) monthlyCache[key][dateStr] = code; // sheet wins over Firebase
+      });
+    });
+  }
+
+  renderMonthly(monthlyCache, monthStart, year, monthIdx);
 }
 
 function reRenderMonthly(){
@@ -2209,13 +2391,17 @@ function renderMonthly(attMap, monthStart, year, monthIdx){
       const dayOfWeek = new Date(parseInt(year),monthIdx,d).getDay();
       const isSun = dayOfWeek===0;
       const isFuture = dateStr > getTodayGY();
-      const status = agentAtt[dateStr];
+      const rawStatus = agentAtt[dateStr];
+      const status    = normalizeStatus(rawStatus);
       let cls='mcal-empty', lbl='';
       if(isSun){cls='mcal-off';lbl='·';}
       else if(isFuture){cls='mcal-empty';lbl='';}
-      else if(status==='Present'||status==='P'){cls='mcal-p';lbl='P';p++;}
-      else if(status==='Late'||status==='L'){cls='mcal-l';lbl='L';l++;}
-      else if(status==='Absent'||status==='A'||status==='S'||status==='PO'){cls='mcal-a';lbl='A';a++;}
+      else if(status==='P'){cls='mcal-p';lbl='P';p++;}
+      else if(status==='L'){cls='mcal-l';lbl='L';l++;}
+      else if(status==='A'||status==='S'||status==='PO'){cls='mcal-a';lbl=status;a++;}
+      else if(status==='V'){cls='mcal-l';lbl='V';}
+      else if(status==='OFF'){cls='mcal-off';lbl='OFF';}
+      else if(status){cls='mcal-off';lbl=status;}
       else{cls='mcal-off';lbl='';}
       html+=`<td style="padding:4px 3px;text-align:center;border-bottom:1px solid #0f1e35;"><div class="mcal-cell ${cls}" title="${dateStr}">${lbl}</div></td>`;
     }
