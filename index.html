@@ -282,6 +282,15 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .mark-absent-btn:hover{border-color:var(--red);color:var(--red);}
 .note-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:7px;font-size:0.82rem;line-height:1.6;color:#cbd5e1;}
 .note-date{font-size:0.58rem;color:var(--muted);font-weight:700;margin-bottom:3px;}
+.expiry-opt{padding:8px 6px;border-radius:7px;border:1px solid var(--border);background:#0d1424;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;text-align:center;transition:all 0.15s;}
+.expiry-opt.active{background:rgba(251,191,36,0.15);border-color:var(--gold);color:var(--gold);}
+/* Monthly calendar cells */
+.mcal-cell{width:22px;height:22px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;cursor:pointer;}
+.mcal-p{background:rgba(52,211,153,0.25);color:#34d399;}
+.mcal-l{background:rgba(251,191,36,0.25);color:#fbbf24;}
+.mcal-a{background:rgba(248,113,113,0.2);color:#f87171;}
+.mcal-off{background:#111c30;color:#1e2d4a;}
+.mcal-empty{background:transparent;}
   .hero-title{font-size:2.2rem;letter-spacing:3px;}
   .tz-card.big{min-width:140px;padding:9px 14px;}
   .tz-time.big-time{font-size:1.4rem;}
@@ -471,105 +480,171 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
     <div style="display:flex;gap:6px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--border);flex-wrap:wrap;">
       <button class="sub-tab st-warn active" id="atab-overview" onclick="switchAdminTab('overview',this)">⚡ Overview</button>
       <button class="sub-tab st-warn" id="atab-attendance" onclick="switchAdminTab('attendance',this)">📅 Attendance</button>
-      <button class="sub-tab st-warn" id="atab-stats" onclick="switchAdminTab('stats',this)">📊 Agent Stats</button>
+      <button class="sub-tab st-warn" id="atab-monthly" onclick="switchAdminTab('monthly',this)">📆 Monthly</button>
+      <button class="sub-tab st-warn" id="atab-stats" onclick="switchAdminTab('stats',this)">📊 Stats</button>
     </div>
 
-    <!-- OVERVIEW -->
+    <!-- ── OVERVIEW ── -->
     <div id="admin-overview" class="admin-section">
+
       <!-- Goal bars -->
       <div class="admin-card">
-        <div class="admin-card-title">🎯 DAILY TRANSFER GOAL — TEAM TARGET: 300</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div class="admin-card-title" style="margin-bottom:0;">🎯 DAILY TRANSFER GOAL</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:0.6rem;color:var(--muted);">Target:</span>
+            <span id="goal-val-display" style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:var(--gold);">300</span>
+            <button onclick="editGoal()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.7rem;padding:2px 6px;border-radius:4px;border:1px solid var(--border);">✏️</button>
+          </div>
+        </div>
         <div class="goal-split">
           <div class="goal-side">
-            <div class="goal-side-title" style="color:var(--accent);">🏠 BERBICE</div>
-            <div class="goal-val" id="bb-xfer-val" style="color:var(--accent);">—</div>
-            <div class="goal-bar"><div class="goal-fill" id="bb-xfer-bar" style="width:0%;background:linear-gradient(90deg,var(--accent),var(--cyan));"></div></div>
+            <div class="goal-side-title" style="color:var(--accent);">🏠 BERBICE (BB)</div>
+            <div class="goal-val" id="bb-xfer-val" style="color:var(--accent);">0</div>
+            <div class="goal-bar"><div class="goal-fill" id="bb-xfer-bar" style="width:0%;background:linear-gradient(90deg,#60a5fa,#22d3ee);"></div></div>
             <div class="goal-pct" id="bb-xfer-pct" style="color:var(--accent);">0% of 300</div>
           </div>
           <div class="goal-side">
-            <div class="goal-side-title" style="color:var(--purple);">🌴 PROVIDENCE</div>
-            <div class="goal-val" id="pr-xfer-val" style="color:var(--purple);">—</div>
-            <div class="goal-bar"><div class="goal-fill" id="pr-xfer-bar" style="width:0%;background:linear-gradient(90deg,var(--purple),#c084fc);"></div></div>
+            <div class="goal-side-title" style="color:var(--purple);">🌴 PROVIDENCE (PR)</div>
+            <div class="goal-val" id="pr-xfer-val" style="color:var(--purple);">0</div>
+            <div class="goal-bar"><div class="goal-fill" id="pr-xfer-bar" style="width:0%;background:linear-gradient(90deg,#a78bfa,#c084fc);"></div></div>
             <div class="goal-pct" id="pr-xfer-pct" style="color:var(--purple);">0% of 300</div>
           </div>
         </div>
-        <div style="font-size:0.65rem;color:var(--muted);text-align:center;">Upload today's CSV report to update transfer counts</div>
+        <div style="margin-top:8px;background:#0d1424;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:0.65rem;color:var(--muted);">COMBINED TOTAL</span>
+          <span id="combined-xfer" style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--green);">0 / 300</span>
+        </div>
+        <div style="font-size:0.6rem;color:var(--muted);text-align:center;margin-top:6px;">Upload CSV in Stats tab to update · 5-tap secret</div>
       </div>
 
-      <!-- Who's online -->
-      <div class="admin-card">
-        <div class="admin-card-title" style="display:flex;justify-content:space-between;align-items:center;">
-          <span>🟢 WHO'S LOGGED IN TODAY</span>
-          <span id="online-count" style="color:var(--green);font-family:'Bebas Neue',sans-serif;font-size:1.2rem;">0</span>
-        </div>
-        <div class="online-grid" id="online-grid" style="margin-bottom:10px;">
-          <div style="font-size:0.75rem;color:var(--muted);">Loading attendance data...</div>
-        </div>
-        <div class="admin-card-title" style="margin-top:10px;margin-bottom:8px;">🟡 LATE — SHIFT STARTED, NOT LOGGED IN</div>
-        <div class="online-grid" id="late-grid">
-          <div style="font-size:0.75rem;color:var(--muted);">—</div>
-        </div>
-        <div class="admin-card-title" style="margin-top:10px;margin-bottom:8px;">🔴 NOT LOGGED IN TODAY</div>
-        <div class="online-grid" id="absent-grid">
-          <div style="font-size:0.75rem;color:var(--muted);">—</div>
-        </div>
-      </div>
-
-      <!-- Quick stats -->
+      <!-- Today at a glance -->
       <div class="admin-card">
         <div class="admin-card-title">📈 TODAY AT A GLANCE</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-          <div class="rp-stat"><div class="rp-stat-val" id="glance-total" style="color:var(--accent);">—</div><div class="rp-stat-lbl">Total Agents</div></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+          <div class="rp-stat"><div class="rp-stat-val" id="glance-total" style="color:var(--accent);">—</div><div class="rp-stat-lbl">Agents</div></div>
           <div class="rp-stat"><div class="rp-stat-val" id="glance-online" style="color:var(--green);">—</div><div class="rp-stat-lbl">Online</div></div>
           <div class="rp-stat"><div class="rp-stat-val" id="glance-late" style="color:var(--gold);">—</div><div class="rp-stat-lbl">Late</div></div>
-          <div class="rp-stat"><div class="rp-stat-val" id="glance-absent" style="color:var(--red);">—</div><div class="rp-stat-lbl">Absent</div></div>
+          <div class="rp-stat"><div class="rp-stat-val" id="glance-absent" style="color:var(--red);">—</div><div class="rp-stat-lbl">Not In</div></div>
         </div>
+        <!-- Online now -->
+        <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--green);margin-bottom:6px;">🟢 ONLINE NOW</div>
+        <div class="online-grid" id="online-grid" style="margin-bottom:10px;"><div style="font-size:0.72rem;color:var(--muted);">Loading...</div></div>
+        <!-- Late -->
+        <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px;margin-top:8px;">🟡 LATE — SHIFT STARTED, NOT LOGGED IN</div>
+        <div class="online-grid" id="late-grid" style="margin-bottom:10px;"><div style="font-size:0.72rem;color:var(--muted);">—</div></div>
+        <!-- Not in -->
+        <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:6px;margin-top:8px;">🔴 NOT LOGGED IN YET</div>
+        <div class="online-grid" id="absent-grid"><div style="font-size:0.72rem;color:var(--muted);">—</div></div>
+        <div style="font-size:0.6rem;color:var(--muted);text-align:center;margin-top:10px;">Tap any name to open their profile</div>
       </div>
-
-      <div style="font-size:0.62rem;color:var(--muted);text-align:center;padding-bottom:8px;">Tap any agent name to open their full profile</div>
     </div>
 
-    <!-- ATTENDANCE -->
+    <!-- ── DAILY ATTENDANCE ── -->
     <div id="admin-attendance" class="admin-section" style="display:none;">
       <div class="admin-card">
-        <div class="admin-card-title" style="display:flex;justify-content:space-between;">
-          <span>📅 DAILY ATTENDANCE SNAPSHOT</span>
-          <span id="att-date" style="color:var(--accent2);font-size:0.62rem;"></span>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div class="admin-card-title" style="margin-bottom:0;">📅 DAILY ATTENDANCE</div>
+          <span id="att-date" style="color:var(--accent2);font-size:0.62rem;font-weight:700;"></span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+          <button class="sub-tab st-ok active" id="att-filter-all" onclick="filterAtt('all',this)">All</button>
+          <button class="sub-tab st-ok" id="att-filter-P" onclick="filterAtt('P',this)">Present</button>
+          <button class="sub-tab st-warn" id="att-filter-L" onclick="filterAtt('L',this)">Late</button>
+          <button class="sub-tab st-bad" id="att-filter-A" onclick="filterAtt('A',this)">Absent</button>
+          <button class="sub-tab" id="att-filter-none" onclick="filterAtt('none',this)" style="border-color:var(--muted);color:var(--muted);">Not In</button>
         </div>
         <div style="overflow-x:auto;">
           <table class="att-table">
             <thead><tr>
-              <th>Agent</th><th>Team</th><th>Shift</th><th>Status</th><th>Login Time</th><th>Action</th>
+              <th>Agent</th><th>Team</th><th>Shift</th><th>Status</th><th>Time In</th><th>Action</th>
             </tr></thead>
             <tbody id="att-tbody">
-              <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Loading attendance data...</td></tr>
+              <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Loading...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- AGENT STATS -->
+    <!-- ── MONTHLY ATTENDANCE ── -->
+    <div id="admin-monthly" class="admin-section" style="display:none;">
+      <div class="admin-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div class="admin-card-title" style="margin-bottom:0;">📆 MONTHLY ATTENDANCE</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <select id="monthly-team-filter" onchange="renderMonthly()" style="padding:5px 10px;background:#0d1424;border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:0.72rem;">
+              <option value="all">All Teams</option>
+              <option value="BB">Berbice</option>
+              <option value="PR">Providence</option>
+            </select>
+            <span id="monthly-month-lbl" style="font-size:0.65rem;color:var(--accent2);font-weight:700;"></span>
+          </div>
+        </div>
+        <!-- Legend -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:4px;font-size:0.62rem;color:var(--muted);"><span style="width:12px;height:12px;border-radius:3px;background:var(--green);display:inline-block;"></span>Present</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:0.62rem;color:var(--muted);"><span style="width:12px;height:12px;border-radius:3px;background:var(--gold);display:inline-block;"></span>Late</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:0.62rem;color:var(--muted);"><span style="width:12px;height:12px;border-radius:3px;background:var(--red);display:inline-block;"></span>Absent</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:0.62rem;color:var(--muted);"><span style="width:12px;height:12px;border-radius:3px;background:#1e2d4a;display:inline-block;"></span>No data</div>
+        </div>
+        <div style="overflow-x:auto;" id="monthly-table-wrap">
+          <div style="text-align:center;color:var(--muted);padding:20px;font-size:0.8rem;">Loading monthly data...</div>
+        </div>
+        <!-- Monthly summary stats -->
+        <div id="monthly-summary" style="margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;display:none;">
+          <div class="rp-stat"><div class="rp-stat-val" id="ms-present" style="color:var(--green);">0</div><div class="rp-stat-lbl">Present Days</div></div>
+          <div class="rp-stat"><div class="rp-stat-val" id="ms-late" style="color:var(--gold);">0</div><div class="rp-stat-lbl">Late</div></div>
+          <div class="rp-stat"><div class="rp-stat-val" id="ms-absent" style="color:var(--red);">0</div><div class="rp-stat-lbl">Absent</div></div>
+          <div class="rp-stat"><div class="rp-stat-val" id="ms-rate" style="color:var(--cyan);">0%</div><div class="rp-stat-lbl">Att Rate</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AGENT STATS ── -->
     <div id="admin-stats" class="admin-section" style="display:none;">
       <div class="admin-card">
-        <div class="admin-card-title">📊 AGENT STATS — Upload CSV to populate</div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-          <input class="search-agent" id="stats-search" placeholder="🔍 Search agent..." oninput="filterStatsTable()" style="padding:7px 12px;background:#0d1424;border:1.5px solid #2a3a5a;border-radius:8px;color:#e2e8f0;font-size:0.78rem;font-family:'Nunito',sans-serif;outline:none;flex:1;min-width:140px;">
-          <input type="file" id="stats-csv-upload" accept=".csv" style="display:none;" onchange="handleStatsCSV(this)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <div class="admin-card-title" style="margin-bottom:0;">📊 AGENT STATS</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span id="csv-date-lbl" style="font-size:0.6rem;color:var(--muted);"></span>
+            <span id="csv-expiry-lbl" style="font-size:0.6rem;color:var(--red);"></span>
+          </div>
+        </div>
+        <input type="text" id="stats-search" placeholder="🔍 Search agent..." oninput="filterStatsTable()" style="width:100%;padding:7px 12px;background:#0d1424;border:1.5px solid #2a3a5a;border-radius:8px;color:#e2e8f0;font-size:0.78rem;font-family:'Nunito',sans-serif;outline:none;margin-bottom:10px;">
+        <input type="file" id="stats-csv-upload" accept=".csv" style="display:none;" onchange="handleStatsCSV(this)">
+        <!-- Expiry picker — shown after file selected -->
+        <div id="expiry-picker" style="display:none;background:#0d1424;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
+          <div style="font-size:0.6rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">SET EXPIRY DATE</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px;">
+            <button class="expiry-opt active" data-days="7" onclick="selectExpiry(7,this)">7 days</button>
+            <button class="expiry-opt" data-days="30" onclick="selectExpiry(30,this)">30 days</button>
+            <button class="expiry-opt" data-days="60" onclick="selectExpiry(60,this)">60 days</button>
+            <button class="expiry-opt" data-days="90" onclick="selectExpiry(90,this)">90 days</button>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+            <input type="number" id="custom-expiry-days" placeholder="Custom days..." min="1" max="365" oninput="selectCustomExpiry(this.value)" style="flex:1;padding:7px 10px;background:#060b18;border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:0.8rem;outline:none;">
+            <span style="font-size:0.7rem;color:var(--muted);">days</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:0.65rem;color:var(--muted);">Auto-deletes on:</span>
+            <span id="expiry-date-display" style="font-size:0.72rem;font-weight:700;color:var(--text);"></span>
+          </div>
+          <button onclick="confirmCSVUpload()" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--green);color:#000;font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;font-weight:800;letter-spacing:1.5px;cursor:pointer;">✅ UPLOAD &amp; SAVE REPORT</button>
         </div>
         <div style="overflow-x:auto;">
-          <table class="att-table" id="stats-table">
+          <table class="att-table">
             <thead><tr>
-              <th onclick="sortStats(0)">Agent ▾</th>
-              <th onclick="sortStats(1)">Calls</th>
-              <th onclick="sortStats(2)">CI</th>
-              <th onclick="sortStats(3)">Xfer ✓</th>
-              <th onclick="sortStats(4)">DNC</th>
-              <th onclick="sortStats(5)">NI</th>
-              <th onclick="sortStats(6)">Conv%</th>
+              <th onclick="sortStats(0)" style="cursor:pointer;">Agent</th>
+              <th onclick="sortStats(1)" style="cursor:pointer;">Calls</th>
+              <th onclick="sortStats(2)" style="cursor:pointer;">CI</th>
+              <th onclick="sortStats(3)" style="cursor:pointer;">Xfer ✓</th>
+              <th onclick="sortStats(4)" style="cursor:pointer;">DNC</th>
+              <th onclick="sortStats(5)" style="cursor:pointer;">NI</th>
+              <th onclick="sortStats(6)" style="cursor:pointer;">Conv%</th>
             </tr></thead>
             <tbody id="stats-tbody">
-              <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">No data — do the 5-tap secret on this tab to upload CSV</td></tr>
+              <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;font-size:0.78rem;">Tap <b style="color:var(--gold);">Stats</b> tab 5 times quickly to upload CSV</td></tr>
             </tbody>
           </table>
         </div>
@@ -1512,46 +1587,53 @@ let statsSortCol = 3;
 let statsSortDir = -1;
 let adminStatsTapCount = 0;
 let adminStatsTapTimer = null;
+let pendingCSVData = null;
+let selectedExpiryDays = 7;
+let dailyGoal = 300;
+let attFilter = 'all';
+let allAttRecords = [];
 
 function showAdminUI(){
   document.querySelectorAll('.admin-only').forEach(el=>{
     el.style.setProperty('display', el.classList.contains('tab-page') ? 'flex' : '', 'important');
     el.removeAttribute('hidden');
   });
-  // Make admin tab button visible
   const adminBtn = document.getElementById('tab-admin');
   if(adminBtn) adminBtn.style.setProperty('display','flex','important');
-  // Make admin page accessible
   const adminPage = document.getElementById('page-admin');
   if(adminPage) adminPage.style.setProperty('display','none','');
+  // Load goal from Firebase
+  db.collection('config').doc('settings').get().then(snap=>{
+    if(snap.exists && snap.data().goal){
+      dailyGoal = snap.data().goal;
+      document.getElementById('goal-val-display').textContent = dailyGoal;
+    }
+  }).catch(()=>{});
 }
 
+// ── SWITCH ADMIN SUBTAB ──
 function switchAdminTab(tab, btn){
-  // Switch main page to admin
   document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-admin').classList.add('active');
   document.querySelectorAll('.tab-btn,.admin-tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-admin').classList.add('active');
-
-  // Switch sub tab
-  ['overview','attendance','stats'].forEach(t=>{
-    const el = document.getElementById('admin-'+t);
-    if(el) el.style.display = t===tab ? '' : 'none';
-    const btn2 = document.getElementById('atab-'+t);
-    if(btn2) btn2.classList.toggle('active', t===tab);
+  ['overview','attendance','monthly','stats'].forEach(t=>{
+    const el=document.getElementById('admin-'+t);
+    if(el) el.style.display = t===tab?'':'none';
+    const b=document.getElementById('atab-'+t);
+    if(b) b.classList.toggle('active',t===tab);
   });
-
-  if(tab==='overview') loadAdminOverview();
-  if(tab==='attendance') loadAdminAttendance();
+  if(tab==='overview')    loadAdminOverview();
+  if(tab==='attendance')  loadAdminAttendance();
+  if(tab==='monthly')     loadMonthlyAttendance();
   if(tab==='stats'){
-    // 5-tap secret for CSV upload
     adminStatsTapCount++;
     clearTimeout(adminStatsTapTimer);
     adminStatsTapTimer = setTimeout(()=>{adminStatsTapCount=0;},1800);
     if(adminStatsTapCount>=5){
       adminStatsTapCount=0;
       clearTimeout(adminStatsTapTimer);
-      const tabBtn = document.getElementById('tab-admin');
+      const tabBtn=document.getElementById('tab-admin');
       tabBtn.style.borderColor='#34d399';tabBtn.style.color='#34d399';
       setTimeout(()=>{tabBtn.style.borderColor='';tabBtn.style.color='';},600);
       document.getElementById('stats-csv-upload').click();
@@ -1559,150 +1641,405 @@ function switchAdminTab(tab, btn){
   }
 }
 
+// ── EDIT GOAL ──
+async function editGoal(){
+  const val = prompt('Set daily transfer goal (current: '+dailyGoal+'):',dailyGoal);
+  if(!val||isNaN(val)) return;
+  dailyGoal = parseInt(val);
+  document.getElementById('goal-val-display').textContent = dailyGoal;
+  try{ await db.collection('config').doc('settings').set({goal:dailyGoal},{merge:true}); }catch(e){}
+  updateGoalBars();
+}
+
+// ── UPDATE GOAL BARS ──
+function updateGoalBars(){
+  const bbXfer = statsData.filter(r=>{
+    const agent = Object.values(ROSTER).find(a=>a.name.toLowerCase()===r.name.toLowerCase());
+    return agent && agent.team==='BB';
+  }).reduce((s,r)=>s+r.xfer,0);
+  const prXfer = statsData.filter(r=>{
+    const agent = Object.values(ROSTER).find(a=>a.name.toLowerCase()===r.name.toLowerCase());
+    return agent && agent.team==='PR';
+  }).reduce((s,r)=>s+r.xfer,0);
+  const combined = bbXfer + prXfer;
+
+  setGoalBar('bb', bbXfer);
+  setGoalBar('pr', prXfer);
+  document.getElementById('combined-xfer').textContent = combined + ' / ' + dailyGoal;
+}
+
+function setGoalBar(team, val){
+  const pct = Math.min(Math.round((val/dailyGoal)*100),100);
+  const vEl=document.getElementById(team+'-xfer-val');
+  const bEl=document.getElementById(team+'-xfer-bar');
+  const pEl=document.getElementById(team+'-xfer-pct');
+  if(vEl) vEl.textContent=val;
+  if(bEl) bEl.style.width=pct+'%';
+  if(pEl) pEl.textContent=pct+'% of '+dailyGoal;
+}
+
 // ── LOAD OVERVIEW ──
 async function loadAdminOverview(){
   const today = getTodayGY();
   try{
     const snap = await db.collection('attendance').where('date','==',today).get();
-    const records = [];
-    snap.forEach(doc=>records.push(doc.data()));
+    allAttRecords=[];
+    snap.forEach(doc=>allAttRecords.push(doc.data()));
+    const online = allAttRecords.filter(r=>r.status==='Present'||r.status==='P');
+    const late   = allAttRecords.filter(r=>r.status==='Late'||r.status==='L');
+    const allAgents = Object.values(ROSTER);
+    const loggedIds = allAttRecords.map(r=>String(r.id));
+    const notLogged = allAgents.filter(a=>!loggedIds.includes(String(a.userId||a.id||'')));
 
-    const online = records.filter(r=>r.status==='Present'||r.status==='P');
-    const late   = records.filter(r=>r.status==='Late'||r.status==='L');
-
-    // All agents from roster
-    const allAgents = Object.entries(ROSTER || {}).map(([uid,a])=>({...a,userId:uid}));
-    const loggedIds = records.map(r=>String(r.id));
-    const notLogged = allAgents.filter(a=>!loggedIds.includes(String(a.userId)));
-
-    document.getElementById('glance-total').textContent  = allAgents.length || '—';
+    document.getElementById('glance-total').textContent  = allAgents.length||'—';
     document.getElementById('glance-online').textContent = online.length;
     document.getElementById('glance-late').textContent   = late.length;
     document.getElementById('glance-absent').textContent = notLogged.length;
-    document.getElementById('online-count').textContent  = online.length + late.length;
 
-    // Online grid
-    const og = document.getElementById('online-grid');
-    og.innerHTML = online.length ? online.map(r=>`
-      <div class="status-chip online" onclick="openRepProfile('${r.id}','${r.name}','${r.team||''}','${r.shift||''}')">
-        <span class="pulse green"></span>${r.name}
-      </div>`).join('') : '<div style="font-size:0.75rem;color:var(--muted);">No one online yet</div>';
+    const og=document.getElementById('online-grid');
+    og.innerHTML = online.length
+      ? online.map(r=>`<div class="status-chip online" onclick="openRepProfile('${r.id}','${r.name}','${r.team||''}','${r.shift||''}')"><span class="pulse green"></span>${r.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
+      : '<div style="font-size:0.72rem;color:var(--muted);">No one online yet</div>';
 
-    // Late grid
-    const lg = document.getElementById('late-grid');
-    lg.innerHTML = late.length ? late.map(r=>`
-      <div class="status-chip late-chip" onclick="openRepProfile('${r.id}','${r.name}','${r.team||''}','${r.shift||''}')">
-        <span class="pulse amber"></span>${r.name}
-      </div>`).join('') : '<div style="font-size:0.75rem;color:var(--muted);">None</div>';
+    const lg=document.getElementById('late-grid');
+    lg.innerHTML = late.length
+      ? late.map(r=>`<div class="status-chip late-chip" onclick="openRepProfile('${r.id}','${r.name}','${r.team||''}','${r.shift||''}')"><span class="pulse amber"></span>${r.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
+      : '<div style="font-size:0.72rem;color:var(--muted);">None</div>';
 
-    // Absent grid — agents not logged in yet
-    const ag2 = document.getElementById('absent-grid');
-    ag2.innerHTML = notLogged.length ? notLogged.map(a=>`
-      <div class="status-chip absent-chip" onclick="openRepProfile('${a.userId}','${a.name}','${a.team||''}','${a.shift||''}')">
-        <span class="pulse red-p"></span>${a.name}
-      </div>`).join('') : '<div style="font-size:0.75rem;color:var(--green);">Everyone is logged in! 🎉</div>';
+    const ag2=document.getElementById('absent-grid');
+    ag2.innerHTML = notLogged.length
+      ? notLogged.slice(0,20).map(a=>`<div class="status-chip absent-chip" onclick="openRepProfile('${a.userId||''}','${a.name}','${a.team||''}','${a.shift||''}')"><span class="pulse red-p"></span>${a.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
+      : '<div style="font-size:0.72rem;color:var(--green);">Everyone is logged in! ✅</div>';
 
-  }catch(e){ console.error('Admin overview error:',e); }
+  }catch(e){ console.error('Overview error:',e); }
 }
 
-// ── LOAD ATTENDANCE TABLE ──
+// ── LOAD DAILY ATTENDANCE ──
 async function loadAdminAttendance(){
   const today = getTodayGY();
-  document.getElementById('att-date').textContent = new Date().toLocaleDateString('en-US',{timeZone:'America/Guyana',weekday:'long',month:'long',day:'numeric'});
+  const dateEl = document.getElementById('att-date');
+  if(dateEl) dateEl.textContent = new Date().toLocaleDateString('en-US',{timeZone:'America/Guyana',weekday:'long',month:'long',day:'numeric'});
   try{
     const snap = await db.collection('attendance').where('date','==',today).get();
-    const records = [];
-    snap.forEach(doc=>records.push(doc.data()));
-
-    const tbody = document.getElementById('att-tbody');
-    if(!records.length){
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No logins recorded yet today.</td></tr>';
-      return;
-    }
-
-    records.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-    tbody.innerHTML = records.map(r=>{
-      const statusCls = r.status==='Present'||r.status==='P' ? 'att-p' : r.status==='Late'||r.status==='L' ? 'att-l' : 'att-a';
-      const statusLbl = r.status==='P'?'Present':r.status==='L'?'Late':r.status||'Unknown';
-      const loginTime = r.loginTime ? new Date(r.loginTime.seconds*1000).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Guyana'}) : '—';
-      const team = r.team==='BB'?'Berbice':r.team==='PR'?'Providence':r.team||'—';
-      return `<tr onclick="openRepProfile('${r.id}','${r.name}','${r.team}','${r.shift||''}')">
-        <td style="font-weight:700;">${r.name||'—'}</td>
-        <td style="color:var(--muted);">${team}</td>
-        <td style="color:var(--muted);font-size:0.68rem;">${r.shift||'—'}</td>
-        <td><span class="att-badge ${statusCls}">${statusLbl}</span></td>
-        <td style="color:var(--muted);">${loginTime}</td>
-        <td><button class="mark-absent-btn" onclick="event.stopPropagation();markAgentAbsentDirect('${r.id}','${r.name}','${r.team}')">Edit</button></td>
-      </tr>`;
-    }).join('');
+    allAttRecords=[];
+    snap.forEach(doc=>allAttRecords.push(doc.data()));
+    renderAttTable();
   }catch(e){ console.error('Attendance load error:',e); }
 }
 
+function filterAtt(f,btn){
+  attFilter=f;
+  document.querySelectorAll('[id^="att-filter-"]').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderAttTable();
+}
+
+function renderAttTable(){
+  const tbody=document.getElementById('att-tbody');
+  const allAgents=Object.values(ROSTER);
+  const loggedIds=allAttRecords.map(r=>String(r.id));
+  // Build combined list — logged in + not logged in
+  let rows=[];
+  allAttRecords.forEach(r=>rows.push({...r,hasRecord:true}));
+  allAgents.forEach(a=>{
+    if(!loggedIds.includes(String(a.userId||'')))
+      rows.push({id:a.userId,name:a.name,team:a.team,shift:a.shift,status:'none',hasRecord:false});
+  });
+  // Filter
+  if(attFilter!=='all'){
+    if(attFilter==='none') rows=rows.filter(r=>!r.hasRecord);
+    else rows=rows.filter(r=>r.status===attFilter||(attFilter==='P'&&r.status==='Present')||(attFilter==='L'&&r.status==='Late'));
+  }
+  rows.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px;">No records match this filter.</td></tr>';return;}
+  tbody.innerHTML=rows.map(r=>{
+    const s=r.status;
+    const badge = s==='Present'||s==='P' ? `<span class="att-badge att-p">Present</span>`
+      : s==='Late'||s==='L'             ? `<span class="att-badge att-l">Late</span>`
+      : s==='none'                       ? `<span class="att-badge att-pending">Not In</span>`
+      : `<span class="att-badge att-a">${s||'Absent'}</span>`;
+    const loginTime = r.loginTime
+      ? new Date(r.loginTime.seconds*1000).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Guyana'})
+      : '—';
+    const team=r.team==='BB'?'Berbice':r.team==='PR'?'Providence':r.team||'—';
+    return `<tr onclick="openRepProfile('${r.id||''}','${r.name}','${r.team||''}','${r.shift||''}')">
+      <td style="font-weight:700;">${r.name||'—'}</td>
+      <td style="color:var(--muted);font-size:0.7rem;">${team}</td>
+      <td style="color:var(--muted);font-size:0.68rem;">${r.shift||'—'}</td>
+      <td>${badge}</td>
+      <td style="color:var(--muted);">${loginTime}</td>
+      <td><button class="mark-absent-btn" onclick="event.stopPropagation();markAgentAbsentDirect('${r.id||''}','${r.name}','${r.team||''}')">Edit</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── LOAD MONTHLY ATTENDANCE ──
+async function loadMonthlyAttendance(){
+  const today = getTodayGY();
+  const monthStart = today.substring(0,7); // e.g. "2026-03"
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const monthIdx = parseInt(monthStart.split('-')[1])-1;
+  const year = monthStart.split('-')[0];
+  document.getElementById('monthly-month-lbl').textContent = monthNames[monthIdx]+' '+year;
+
+  try{
+    // Get all attendance for this month
+    const snap = await db.collection('attendance')
+      .where('date','>=',monthStart+'-01')
+      .where('date','<=',monthStart+'-31')
+      .get();
+
+    // Build map: agentId -> { date -> status }
+    const attMap={};
+    snap.forEach(doc=>{
+      const d=doc.data();
+      if(!attMap[d.id]) attMap[d.id]={};
+      attMap[d.id][d.date]=d.status;
+    });
+
+    renderMonthly(attMap, monthStart, year, monthIdx);
+  }catch(e){ console.error('Monthly load error:',e); }
+}
+
+function renderMonthly(attMap, monthStart, year, monthIdx){
+  const teamFilter = document.getElementById('monthly-team-filter').value;
+  const daysInMonth = new Date(parseInt(year), monthIdx+1, 0).getDate();
+  const allAgents = Object.values(ROSTER).filter(a=>teamFilter==='all'||a.team===teamFilter);
+
+  // Build day headers
+  const dayNames=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  let html='<table style="border-collapse:collapse;font-size:0.68rem;width:100%;">';
+  html+='<thead><tr><th style="text-align:left;padding:4px 8px;color:var(--muted);font-size:0.58rem;white-space:nowrap;min-width:120px;">Agent</th>';
+  for(let d=1;d<=daysInMonth;d++){
+    const dayOfWeek = new Date(parseInt(year),monthIdx,d).getDay();
+    const isSun = dayOfWeek===0;
+    html+=`<th style="padding:2px;color:${isSun?'var(--red)':'var(--muted)'};font-size:0.52rem;text-align:center;">${d}<br><span style="font-size:0.45rem;">${dayNames[dayOfWeek]}</span></th>`;
+  }
+  html+='<th style="padding:4px 6px;color:var(--muted);font-size:0.58rem;">P</th><th style="padding:4px 6px;color:var(--gold);font-size:0.58rem;">L</th><th style="padding:4px 6px;color:var(--red);font-size:0.58rem;">A</th></tr></thead><tbody>';
+
+  let totalP=0,totalL=0,totalA=0;
+
+  allAgents.forEach(agent=>{
+    const agentAtt = attMap&&attMap[agent.userId] ? attMap[agent.userId] : {};
+    let p=0,l=0,a=0;
+    html+=`<tr><td style="padding:3px 8px;font-size:0.68rem;color:var(--text);white-space:nowrap;font-weight:600;">${agent.name.split(' ').slice(0,2).join(' ')}</td>`;
+    for(let d=1;d<=daysInMonth;d++){
+      const dateStr = monthStart+'-'+(d<10?'0':'')+d;
+      const dayOfWeek = new Date(parseInt(year),monthIdx,d).getDay();
+      const isSun = dayOfWeek===0;
+      const isFuture = dateStr > getTodayGY();
+      const status = agentAtt[dateStr];
+      let cls='mcal-empty', lbl='';
+      if(isSun){cls='mcal-off';lbl='·';}
+      else if(isFuture){cls='mcal-empty';lbl='';}
+      else if(status==='Present'||status==='P'){cls='mcal-p';lbl='P';p++;}
+      else if(status==='Late'||status==='L'){cls='mcal-l';lbl='L';l++;}
+      else if(status==='Absent'||status==='A'||status==='S'||status==='PO'){cls='mcal-a';lbl='A';a++;}
+      else{cls='mcal-off';lbl='';}
+      html+=`<td style="padding:2px;text-align:center;"><div class="mcal-cell ${cls}" title="${dateStr}">${lbl}</div></td>`;
+    }
+    totalP+=p;totalL+=l;totalA+=a;
+    html+=`<td style="padding:3px 6px;text-align:center;color:var(--green);font-weight:800;font-size:0.68rem;">${p}</td>`;
+    html+=`<td style="padding:3px 6px;text-align:center;color:var(--gold);font-weight:800;font-size:0.68rem;">${l}</td>`;
+    html+=`<td style="padding:3px 6px;text-align:center;color:var(--red);font-weight:800;font-size:0.68rem;">${a}</td>`;
+    html+='</tr>';
+  });
+
+  html+='</tbody></table>';
+  document.getElementById('monthly-table-wrap').innerHTML=html;
+
+  // Summary
+  const total = totalP+totalL+totalA;
+  const rate = total>0?Math.round((totalP/total)*100):0;
+  document.getElementById('ms-present').textContent=totalP;
+  document.getElementById('ms-late').textContent=totalL;
+  document.getElementById('ms-absent').textContent=totalA;
+  document.getElementById('ms-rate').textContent=rate+'%';
+  document.getElementById('monthly-summary').style.display='grid';
+}
+
+// ── CSV UPLOAD WITH EXPIRY ──
+function handleStatsCSV(input){
+  const file=input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    pendingCSVData={text:e.target.result, filename:file.name, date:getTodayGY()};
+    selectedExpiryDays=7;
+    updateExpiryDisplay();
+    document.getElementById('expiry-picker').style.display='';
+  };
+  reader.readAsText(file);
+}
+
+function selectExpiry(days,btn){
+  selectedExpiryDays=days;
+  document.querySelectorAll('.expiry-opt').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.getElementById('custom-expiry-days').value='';
+  updateExpiryDisplay();
+}
+
+function selectCustomExpiry(val){
+  const n=parseInt(val);
+  if(!n||n<1) return;
+  selectedExpiryDays=n;
+  document.querySelectorAll('.expiry-opt').forEach(b=>b.classList.remove('active'));
+  updateExpiryDisplay();
+}
+
+function updateExpiryDisplay(){
+  const d=new Date();
+  d.setDate(d.getDate()+selectedExpiryDays);
+  document.getElementById('expiry-date-display').textContent=d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+
+async function confirmCSVUpload(){
+  if(!pendingCSVData) return;
+  const expiryDate=new Date();
+  expiryDate.setDate(expiryDate.getDate()+selectedExpiryDays);
+
+  // Parse CSV
+  parseStatsCSV(pendingCSVData.text);
+
+  // Save to Firebase
+  try{
+    await db.collection('reports').doc(pendingCSVData.date).set({
+      date: pendingCSVData.date,
+      filename: pendingCSVData.filename,
+      uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      expiryDate: expiryDate.toISOString().split('T')[0],
+      expiryDays: selectedExpiryDays,
+      agentCount: statsData.length
+    },{merge:true});
+  }catch(e){ console.error('Report save error:',e); }
+
+  document.getElementById('expiry-picker').style.display='none';
+  document.getElementById('csv-date-lbl').textContent='📅 '+pendingCSVData.date;
+  document.getElementById('csv-expiry-lbl').textContent='🗑 Expires: '+expiryDate.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  pendingCSVData=null;
+
+  // Update goal bars
+  updateGoalBars();
+  renderStatsTable();
+}
+
+function parseStatsCSV(text){
+  const lines=text.trim().split('\n');
+  statsData=[];
+  for(let i=1;i<lines.length;i++){
+    const cols=lines[i].split(',').map(c=>c.replace(/^"|"$/g,'').trim());
+    if(!cols[0]||cols[0].startsWith('TOTAL')||cols[0].startsWith('AGENT STATUS')) continue;
+    const name=cols[0].replace(/^GUY[P]?\s+/i,'').trim();
+    if(!name) continue;
+    const calls=parseInt(cols[1])||0,ci=parseInt(cols[2])||0;
+    const xfer=parseInt(cols[12])||0,dnc=parseInt(cols[7])||0,ni=parseInt(cols[11])||0;
+    statsData.push({name,calls,ci,xfer,dnc,ni,conv:calls>0?parseFloat(((xfer/calls)*100).toFixed(1)):0});
+  }
+}
+
+function renderStatsTable(){
+  const q=(document.getElementById('stats-search')||{value:''}).value.toLowerCase();
+  let rows=[...statsData].filter(r=>!q||r.name.toLowerCase().includes(q));
+  const keys=['name','calls','ci','xfer','dnc','ni','conv'];
+  rows.sort((a,b)=>typeof a[keys[statsSortCol]]==='string'
+    ? a[keys[statsSortCol]].localeCompare(b[keys[statsSortCol]])*statsSortDir
+    : (a[keys[statsSortCol]]-b[keys[statsSortCol]])*statsSortDir);
+  const tbody=document.getElementById('stats-tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">No data yet.</td></tr>';return;}
+  tbody.innerHTML=rows.map(r=>{
+    const cc=r.conv>=5?'var(--green)':r.conv>=2?'var(--gold)':'var(--red)';
+    return `<tr onclick="openRepProfile('',${JSON.stringify(r.name)},'','')">
+      <td style="font-weight:700;">${r.name}</td>
+      <td>${r.calls.toLocaleString()}</td><td>${r.ci.toLocaleString()}</td>
+      <td><span class="att-badge att-p">${r.xfer}</span></td>
+      <td><span class="att-badge att-a">${r.dnc}</span></td>
+      <td><span class="att-badge att-l">${r.ni}</span></td>
+      <td style="color:${cc};font-weight:800;">${r.conv}%</td>
+    </tr>`;
+  }).join('');
+}
+
+function sortStats(col){
+  statsSortDir=statsSortCol===col?-statsSortDir:-1;
+  statsSortCol=col;
+  renderStatsTable();
+}
+function filterStatsTable(){ renderStatsTable(); }
+
 // ── REP PROFILE ──
-async function openRepProfile(id, name, team, shift){
-  currentRepProfile = {id, name, team, shift};
-  document.getElementById('rp-name').textContent = name;
-  const teamName = team==='BB'?'Berbice':team==='PR'?'Providence':team;
-  document.getElementById('rp-meta').textContent = `${teamName} · ${shift||'No shift set'}`;
+async function openRepProfile(id,name,team,shift){
+  currentRepProfile={id,name,team,shift};
+  document.getElementById('rp-name').textContent=name;
+  const teamName=team==='BB'?'Berbice':team==='PR'?'Providence':team||'—';
+  document.getElementById('rp-meta').textContent=teamName+' · '+(shift||'No shift set');
   document.getElementById('rep-profile-overlay').classList.add('open');
-  rpTab('perf', document.getElementById('rpt-perf'));
-  loadRepPerf(id, name, team);
+  rpTab('perf',document.getElementById('rpt-perf'));
+  loadRepPerf(id,name,team);
 }
 
 function closeRepProfile(){
   document.getElementById('rep-profile-overlay').classList.remove('open');
-  currentRepProfile = null;
+  currentRepProfile=null;
 }
 
-function rpTab(tab, btn){
+function rpTab(tab,btn){
   ['perf','att','coach','audit'].forEach(t=>{
     const el=document.getElementById('rp-'+t);
-    if(el) el.style.display = t===tab?'':'none';
+    if(el) el.style.display=t===tab?'':'none';
     const b=document.getElementById('rpt-'+t);
     if(b) b.classList.toggle('active',t===tab);
   });
-  if(tab==='att' && currentRepProfile) loadRepAtt(currentRepProfile.id, currentRepProfile.name);
-  if(tab==='coach' && currentRepProfile) loadRepCoach(currentRepProfile.id);
-  if(tab==='audit' && currentRepProfile) loadRepAudit(currentRepProfile.id);
+  if(tab==='att'&&currentRepProfile)   loadRepAtt(currentRepProfile.id);
+  if(tab==='coach'&&currentRepProfile) loadRepCoach(currentRepProfile.id);
+  if(tab==='audit'&&currentRepProfile) loadRepAudit(currentRepProfile.id);
 }
 
-async function loadRepPerf(id, name, team){
-  const today = getTodayGY();
+async function loadRepPerf(id,name,team){
+  const today=getTodayGY();
   try{
-    const snap = await db.collection('attendance').doc(id+'_'+today).get();
-    const attEl = document.getElementById('rp-att-status');
+    const snap=await db.collection('attendance').doc(id+'_'+today).get();
+    const el=document.getElementById('rp-att-status');
     if(snap.exists){
       const d=snap.data();
-      const s=d.status==='P'||d.status==='Present'?'Present':d.status==='L'||d.status==='Late'?'Late':'Unknown';
-      attEl.innerHTML=`<span class="att-badge ${s==='Present'?'att-p':s==='Late'?'att-l':'att-a'}">${s}</span>`;
-    } else { attEl.innerHTML='<span class="att-badge att-pending">Not logged in</span>'; }
+      const s=d.status==='P'||d.status==='Present'?'Present':d.status==='L'||d.status==='Late'?'Late':d.status||'Unknown';
+      el.innerHTML=`<span class="att-badge ${s==='Present'?'att-p':s==='Late'?'att-l':'att-a'}">${s}</span><span style="font-size:0.7rem;color:var(--muted);margin-left:8px;">Logged in today</span>`;
+    } else {
+      el.innerHTML='<span class="att-badge att-pending">Not logged in yet</span>';
+    }
   }catch(e){}
-  // Live tap data
   try{
-    const snap2 = await db.collection('taps').doc(id+'_'+today).get();
+    const snap2=await db.collection('taps').doc(id+'_'+today).get();
     if(snap2.exists){
       const d=snap2.data();
       document.getElementById('rp-live-calls').textContent=d.calls||0;
       document.getElementById('rp-live-xfer').textContent=d.xfer||0;
-      const conv=d.calls>0?Math.round((d.xfer/d.calls)*100)+'%':'0%';
-      document.getElementById('rp-live-conv').textContent=conv;
+      document.getElementById('rp-live-conv').textContent=d.calls>0?Math.round((d.xfer/d.calls)*100)+'%':'0%';
     } else {
-      document.getElementById('rp-live-calls').textContent='0';
-      document.getElementById('rp-live-xfer').textContent='0';
+      ['rp-live-calls','rp-live-xfer'].forEach(id=>document.getElementById(id).textContent='0');
       document.getElementById('rp-live-conv').textContent='0%';
     }
   }catch(e){}
+  // Stats from CSV
+  const csvAgent=statsData.find(r=>r.name.toLowerCase()===name.toLowerCase()||name.toLowerCase().includes(r.name.toLowerCase()));
+  if(csvAgent){
+    document.getElementById('rp-live-calls').textContent=csvAgent.calls;
+    document.getElementById('rp-live-xfer').textContent=csvAgent.xfer;
+    document.getElementById('rp-live-conv').textContent=csvAgent.conv+'%';
+  }
 }
 
-async function loadRepAtt(id, name){
-  const today = getTodayGY();
-  const monthStart = today.substring(0,7);
+async function loadRepAtt(id){
+  const today=getTodayGY();
+  const monthStart=today.substring(0,7);
   try{
-    const snap = await db.collection('attendance').where('id','==',id).get();
+    const snap=await db.collection('attendance')
+      .where('id','==',id)
+      .where('date','>=',monthStart+'-01')
+      .get();
     let p=0,l=0,a=0;
     snap.forEach(doc=>{
       const d=doc.data();
-      if(!d.date||!d.date.startsWith(monthStart)) return;
       if(d.status==='Present'||d.status==='P') p++;
       else if(d.status==='Late'||d.status==='L') l++;
       else a++;
@@ -1715,144 +2052,76 @@ async function loadRepAtt(id, name){
 
 async function loadRepCoach(id){
   try{
-    const snap = await db.collection('coaching').where('agentId','==',id).orderBy('createdAt','desc').limit(10).get();
-    const list = document.getElementById('coach-notes-list');
-    if(snap.empty){ list.innerHTML='<div style="color:var(--muted);font-size:0.78rem;">No notes yet.</div>'; return; }
+    const snap=await db.collection('coaching').where('agentId','==',id).orderBy('createdAt','desc').limit(10).get();
+    const list=document.getElementById('coach-notes-list');
+    if(snap.empty){list.innerHTML='<div style="color:var(--muted);font-size:0.78rem;">No notes yet.</div>';return;}
     list.innerHTML='';
     snap.forEach(doc=>{
       const d=doc.data();
       const date=d.createdAt?new Date(d.createdAt.seconds*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
       list.innerHTML+=`<div class="note-item"><div class="note-date">${date}</div>${d.note}</div>`;
     });
-  }catch(e){ document.getElementById('coach-notes-list').innerHTML='<div style="color:var(--muted);">Could not load notes.</div>'; }
+  }catch(e){document.getElementById('coach-notes-list').innerHTML='<div style="color:var(--muted);">Could not load notes.</div>';}
 }
 
 async function saveCoachNote(){
   if(!currentRepProfile) return;
-  const note = document.getElementById('coach-note-text').value.trim();
-  if(!note){ alert('Please type a note first.'); return; }
+  const note=document.getElementById('coach-note-text').value.trim();
+  if(!note){alert('Please type a note first.');return;}
   try{
     await db.collection('coaching').add({
-      agentId: currentRepProfile.id,
-      agentName: currentRepProfile.name,
+      agentId:currentRepProfile.id,
+      agentName:currentRepProfile.name,
       note,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
     document.getElementById('coach-note-text').value='';
     loadRepCoach(currentRepProfile.id);
-  }catch(e){ alert('Could not save note. Try again.'); }
+  }catch(e){alert('Could not save note.');}
 }
 
 async function loadRepAudit(id){
   try{
-    const snap = await db.collection('sessions').where('id','==',id).orderBy('loginTime','desc').limit(15).get();
-    const list = document.getElementById('audit-list');
-    if(snap.empty){ list.innerHTML='<div style="color:var(--muted);">No login history found.</div>'; return; }
+    const snap=await db.collection('sessions').where('id','==',id).orderBy('loginTime','desc').limit(15).get();
+    const list=document.getElementById('audit-list');
+    if(snap.empty){list.innerHTML='<div style="color:var(--muted);">No login history found.</div>';return;}
     list.innerHTML='';
     snap.forEach(doc=>{
       const d=doc.data();
       const date=d.loginTime?new Date(d.loginTime.seconds*1000).toLocaleString('en-US',{timeZone:'America/Guyana',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
       list.innerHTML+=`<div class="note-item"><div class="note-date">${d.date||'—'}</div>Logged in at ${date}</div>`;
     });
-  }catch(e){ document.getElementById('audit-list').innerHTML='<div style="color:var(--muted);">Could not load audit.</div>'; }
+  }catch(e){document.getElementById('audit-list').innerHTML='<div style="color:var(--muted);">Could not load audit.</div>';}
 }
 
 async function markAgentAbsent(status){
   if(!currentRepProfile) return;
-  const {id, name, team, shift} = currentRepProfile;
-  const today = getTodayGY();
-  const labels = {A:'Absent',S:'Sick',PO:'Personal Out'};
-  if(!confirm(`Mark ${name} as ${labels[status]||status} for today?`)) return;
+  const {id,name,team,shift}=currentRepProfile;
+  const today=getTodayGY();
+  const labels={A:'Absent',S:'Sick',PO:'Personal Out'};
+  if(!confirm('Mark '+name+' as '+(labels[status]||status)+' for today?')) return;
   try{
     await db.collection('attendance').doc(id+'_'+today).set({
-      id, name, team, shift, date:today, status,
-      markedBy:'admin', loginTime:firebase.firestore.FieldValue.serverTimestamp()
+      id,name,team,shift,date:today,status,
+      markedBy:'admin',loginTime:firebase.firestore.FieldValue.serverTimestamp()
     },{merge:true});
-    alert(`✅ ${name} marked as ${labels[status]||status}`);
-    loadRepAtt(id, name);
-  }catch(e){ alert('Could not save. Try again.'); }
+    alert('✅ '+name+' marked as '+(labels[status]||status));
+    loadRepAtt(id);
+  }catch(e){alert('Could not save.');}
 }
 
-async function markAgentAbsentDirect(id, name, team){
-  const status = prompt(`Mark ${name} as:\nA = Absent\nS = Sick\nP = Present\nL = Late\nPO = Personal Out\n\nType the letter:`,'A');
+async function markAgentAbsentDirect(id,name,team){
+  const status=prompt('Mark '+name+' as:\nP = Present  L = Late  A = Absent  S = Sick  PO = Personal Out\n\nType the code:','A');
   if(!status) return;
-  const today = getTodayGY();
+  const today=getTodayGY();
   try{
     await db.collection('attendance').doc(id+'_'+today).set({
-      id, name, team, date:today, status:status.toUpperCase().trim(),
-      markedBy:'admin', loginTime:firebase.firestore.FieldValue.serverTimestamp()
+      id,name,team,date:today,status:status.toUpperCase().trim(),
+      markedBy:'admin',loginTime:firebase.firestore.FieldValue.serverTimestamp()
     },{merge:true});
     loadAdminAttendance();
-  }catch(e){ alert('Could not save.'); }
+  }catch(e){alert('Could not save.');}
 }
-
-// ── STATS CSV UPLOAD ──
-function handleStatsCSV(input){
-  const file = input.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => parseStatsCSV(e.target.result);
-  reader.readAsText(file);
-}
-
-function parseStatsCSV(text){
-  const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim());
-  statsData = [];
-  for(let i=1;i<lines.length;i++){
-    const cols = lines[i].split(',').map(c=>c.replace(/^"|"$/g,'').trim());
-    if(!cols[0]||cols[0].startsWith('TOTAL')) continue;
-    const name = cols[0].replace(/^GUY[P]?\s+/i,'');
-    const calls=parseInt(cols[1])||0, ci=parseInt(cols[2])||0, xfer=parseInt(cols[12])||0, dnc=parseInt(cols[7])||0, ni=parseInt(cols[11])||0;
-    const conv=calls>0?((xfer/calls)*100).toFixed(1):0;
-    statsData.push({name,calls,ci,xfer,dnc,ni,conv:parseFloat(conv)});
-  }
-  // Update goal bars from CSV
-  const bbTotal = statsData.filter(r=>r.name).reduce((s,r)=>s+r.xfer,0);
-  updateGoalBar('bb',bbTotal,300);
-  renderStatsTable();
-}
-
-function updateGoalBar(team, val, goal){
-  const pct = Math.min(Math.round((val/goal)*100),100);
-  const valEl=document.getElementById(team+'-xfer-val');
-  const barEl=document.getElementById(team+'-xfer-bar');
-  const pctEl=document.getElementById(team+'-xfer-pct');
-  if(valEl) valEl.textContent=val;
-  if(barEl) barEl.style.width=pct+'%';
-  if(pctEl) pctEl.textContent=pct+'% of '+goal;
-}
-
-function renderStatsTable(){
-  const q=(document.getElementById('stats-search')||{value:''}).value.toLowerCase();
-  let rows=[...statsData].filter(r=>!q||r.name.toLowerCase().includes(q));
-  const keys=['name','calls','ci','xfer','dnc','ni','conv'];
-  rows.sort((a,b)=>{
-    const av=a[keys[statsSortCol]],bv=b[keys[statsSortCol]];
-    return typeof av==='string'?av.localeCompare(bv)*statsSortDir:(av-bv)*statsSortDir;
-  });
-  const tbody=document.getElementById('stats-tbody');
-  if(!rows.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">No data yet.</td></tr>';return;}
-  tbody.innerHTML=rows.map(r=>{
-    const convColor=r.conv>=5?'var(--green)':r.conv>=2?'var(--gold)':'var(--red)';
-    return `<tr onclick="openRepProfile('',${JSON.stringify(r.name)},'','')">
-      <td style="font-weight:700;">${r.name}</td>
-      <td>${r.calls.toLocaleString()}</td><td>${r.ci.toLocaleString()}</td>
-      <td><span class="att-badge att-p">${r.xfer}</span></td>
-      <td><span class="att-badge att-a">${r.dnc}</span></td>
-      <td><span class="att-badge att-l">${r.ni}</span></td>
-      <td style="color:${convColor};font-weight:800;">${r.conv}%</td>
-    </tr>`;
-  }).join('');
-}
-
-function sortStats(col){
-  statsSortDir = statsSortCol===col ? -statsSortDir : -1;
-  statsSortCol = col;
-  renderStatsTable();
-}
-
-function filterStatsTable(){ renderStatsTable(); }
 
 
 function searchRebuttals(val){
