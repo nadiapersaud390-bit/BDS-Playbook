@@ -227,8 +227,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .logout-btn:hover{border-color:var(--red);color:var(--red);}
 .admin-badge{padding:4px 12px;border-radius:20px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);color:var(--gold);font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;}
 /* ── ADMIN PANEL ── */
-.admin-only{display:none;}
-.admin-tab-btn{padding:14px 10px;border-radius:10px;border:1.5px solid rgba(251,191,36,0.4);font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.18s;background:rgba(251,191,36,0.08);color:var(--gold);display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}
+.admin-only{display:none !important;}
+#tab-admin{display:none;}
+body.is-admin #tab-admin{display:flex !important;}
+.admin-tab-btn{padding:14px 10px;border-radius:10px;border:1.5px solid rgba(251,191,36,0.4);font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.18s;background:rgba(251,191,36,0.08);color:var(--gold);align-items:center;justify-content:center;gap:6px;white-space:nowrap;}
 .admin-tab-btn:hover{background:rgba(251,191,36,0.15);}
 .admin-tab-btn.active{background:rgba(251,191,36,0.18);border-color:var(--gold);box-shadow:0 0 14px rgba(251,191,36,0.25);}
 .admin-tab-btn.full{grid-column:1/-1;}
@@ -1215,7 +1217,7 @@ pitch_softpull:{phase:'SALES PITCH BOOSTING \u2014 SOFT PULL / NO WEBSITE / DATA
 };
 
 // ── APPS SCRIPT BRIDGE URL ──
-const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbwRHqSD3bfazNipFC39EI84zTRhZzcFk988FXcHobCci9mgzv7Axees8NAoJMFq01Fx6g/exec';
+const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbxaFZhJr3F-pZbSzLxMkjZjzzTm3uZUW82Azg_eMSqAnsu1-Jcf9gTr9Fdr1ukHMK2gZQ/exec';
 
 // ── JSONP helper — bypasses CORS for Google Apps Script ──
 function callBridge(params) {
@@ -1253,18 +1255,26 @@ async function loadRoster() {
       ROSTER = {};
       data.agents.forEach(a => {
         if (a.userId) {
+          // Double-check team from ytelName — GUYP = Providence (PR), GUY only = Berbice (BB)
+          let team = a.team || 'BB';
+          if (a.ytelName) {
+            const yn = a.ytelName.toUpperCase().replace(/\s+/g,'').replace(/-/g,'');
+            if (yn.startsWith('GUYP')) team = 'PR';
+            else if (yn.startsWith('GUY')) team = 'BB';
+          }
           ROSTER[String(a.userId).trim()] = {
             name: a.name,
             ytelName: a.ytelName,
             shift: a.shift || '',
             lunch: a.lunch || '',
             brk: '',
-            team: a.team || 'BB',
+            team,
             status: a.status || 'Agent'
           };
         }
       });
       rosterLoaded = true;
+      console.log('Roster loaded:', Object.keys(ROSTER).length, 'agents');
     }
   } catch(e) {
     console.error('Roster load failed:', e);
@@ -1480,12 +1490,16 @@ function doLogout(auto=false){
   sessionStorage.removeItem('bds_user_'+getTodayGY());
   currentUser = null;
   auth.signOut();
-  // Hide all admin-only elements
+  // Remove admin mode completely
+  document.body.classList.remove('is-admin');
+  const adminBtn = document.getElementById('tab-admin');
+  if(adminBtn) adminBtn.classList.remove('admin-visible');
+  const adminPage = document.getElementById('page-admin');
+  if(adminPage){ adminPage.style.display='none'; adminPage.classList.remove('active'); }
+  // Remove any leftover inline styles from admin elements
   document.querySelectorAll('.admin-only').forEach(el=>{
     el.style.removeProperty('display');
   });
-  const adminPage=document.getElementById('page-admin');
-  if(adminPage){ adminPage.style.display='none'; adminPage.classList.remove('active'); }
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('rep-bar').classList.remove('show');
   document.getElementById('admin-badge-wrap').innerHTML='';
@@ -1604,17 +1618,21 @@ let attFilter = 'all';
 let allAttRecords = [];
 
 function showAdminUI(){
-  // Show admin tab button
+  // Add admin class to body — CSS handles all visibility
+  document.body.classList.add('is-admin');
   const adminBtn = document.getElementById('tab-admin');
-  if(adminBtn) adminBtn.style.setProperty('display','flex','important');
-  // Keep admin page hidden until clicked
+  if(adminBtn){
+    adminBtn.style.display = 'flex';
+    adminBtn.style.removeProperty('display');
+    adminBtn.classList.add('admin-visible');
+  }
   const adminPage = document.getElementById('page-admin');
-  if(adminPage) adminPage.style.display='none';
+  if(adminPage) adminPage.style.display = 'none';
   // Load goal from Firebase
   db.collection('config').doc('settings').get().then(snap=>{
     if(snap.exists && snap.data().goal){
       dailyGoal = snap.data().goal;
-      const el=document.getElementById('goal-val-display');
+      const el = document.getElementById('goal-val-display');
       if(el) el.textContent = dailyGoal;
     }
   }).catch(()=>{});
