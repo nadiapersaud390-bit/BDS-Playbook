@@ -1708,6 +1708,9 @@ let allAttRecords = [];
 
 function showAdminUI(){
   document.body.classList.add('is-admin');
+  // Force fresh roster load immediately so all admin views have correct data
+  rosterLoaded = false;
+  loadRoster();
   // Load saved goal
   db.collection('config').doc('settings').get().then(snap=>{
     if(snap.exists && snap.data().goal){
@@ -1744,9 +1747,16 @@ function switchAdminTab(tab, btn){
   if(tab==='weekly')     loadWeeklyAttendance('BB');
   if(tab==='monthly')    loadMonthlyAttendance();
   if(tab==='stats'){
-    // Always reload roster fresh when opening stats — ensures latest IDs/teams
+    // Always reload roster fresh — then re-render stats with correct teams
     rosterLoaded = false;
-    loadRoster();
+    loadRoster().then(()=>{
+      // Re-render stats table with updated roster teams
+      if(statsData.length) renderStatsTable();
+      // Also re-parse last saved report if available
+      if(reportHistory.length && !statsData.length){
+        loadReportByIndex(0);
+      }
+    });
     loadReportHistory();
     adminStatsTapCount++;
     clearTimeout(adminStatsTapTimer);
@@ -1795,6 +1805,10 @@ function setGoalBar(team, val){
 // ── LOAD OVERVIEW ──
 async function loadAdminOverview(){
   const today = getTodayGY();
+
+  // Always ensure roster is loaded first
+  if(!rosterLoaded) await loadRoster();
+
   try{
     const snap = await db.collection('attendance').where('date','==',today).get();
     allAttRecords=[];
@@ -1822,7 +1836,7 @@ async function loadAdminOverview(){
 
     const ag2=document.getElementById('absent-grid');
     ag2.innerHTML = notLogged.length
-      ? notLogged.slice(0,20).map(a=>`<div class="status-chip absent-chip" onclick="openRepProfile('${a.userId||''}','${a.name}','${a.team||''}','${a.shift||''}')"><span class="pulse red-p"></span>${a.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
+      ? notLogged.slice(0,30).map(a=>`<div class="status-chip absent-chip" onclick="openRepProfile('${a.userId||''}','${a.name}','${a.team||''}','${a.shift||''}')"><span class="pulse red-p"></span>${a.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
       : '<div style="font-size:0.72rem;color:var(--green);">Everyone is logged in! ✅</div>';
 
   }catch(e){ console.error('Overview error:',e); }
@@ -2350,11 +2364,23 @@ function loadReportByIndex(idx){
   if(!r||!r.statsJSON) return;
   try{
     statsData=JSON.parse(r.statsJSON);
+
+    // Re-apply current roster teams — overrides any stale team from saved JSON
+    statsData.forEach(agent=>{
+      const rosterAgents = Object.values(ROSTER);
+      // Match by name
+      const match = rosterAgents.find(ra=>{
+        const rn = ra.name.toLowerCase();
+        const an = agent.name.toLowerCase();
+        return rn===an || rn.includes(an.split(' ')[0]) && rn.includes(an.split(' ').slice(-1)[0]);
+      });
+      if(match) agent.team = match.team;
+    });
+
     document.getElementById('csv-date-lbl').textContent='📅 '+r.date;
     document.getElementById('csv-expiry-lbl').textContent=r.expiryDate?'🗑 Expires: '+r.expiryDate:'';
     updateGoalBars();
     renderStatsTable();
-    // Highlight selected chip
     document.querySelectorAll('#report-history button').forEach((b,i)=>{
       b.style.borderColor=i===idx?'var(--gold)':'';
       b.style.color=i===idx?'var(--gold)':'';
