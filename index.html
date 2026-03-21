@@ -1129,14 +1129,38 @@ pitch_softpull:{phase:'SALES PITCH BOOSTING \u2014 SOFT PULL / NO WEBSITE / DATA
 // ── APPS SCRIPT BRIDGE URL ──
 const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbwRHqSD3bfazNipFC39EI84zTRhZzcFk988FXcHobCci9mgzv7Axees8NAoJMFq01Fx6g/exec';
 
+// ── JSONP helper — bypasses CORS for Google Apps Script ──
+function callBridge(params) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'cb_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+    const timeout = setTimeout(() => {
+      delete window[cbName];
+      if(tag && tag.parentNode) tag.parentNode.removeChild(tag);
+      reject(new Error('Timed out'));
+    }, 15000);
+    window[cbName] = (data) => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      if(tag && tag.parentNode) tag.parentNode.removeChild(tag);
+      resolve(data);
+    };
+    const qs = Object.entries({...params, callback: cbName})
+      .map(([k,v]) => encodeURIComponent(k)+'='+encodeURIComponent(v))
+      .join('&');
+    const tag = document.createElement('script');
+    tag.src = BRIDGE_URL + '?' + qs;
+    tag.onerror = () => { clearTimeout(timeout); delete window[cbName]; reject(new Error('Load error')); };
+    document.head.appendChild(tag);
+  });
+}
+
 // ── ROSTER (loaded live from Google Sheet) ──
-let ROSTER = {}; // keyed by userId
+let ROSTER = {};
 let rosterLoaded = false;
 
 async function loadRoster() {
   try {
-    const res = await fetch(BRIDGE_URL + '?action=getRoster');
-    const data = await res.json();
+    const data = await callBridge({action: 'getRoster'});
     if (data.success && data.agents) {
       ROSTER = {};
       data.agents.forEach(a => {
@@ -1258,17 +1282,15 @@ async function doLogin(){
 // ── MARK ATTENDANCE IN GOOGLE SHEET ──
 async function markAttendanceSheet(agent) {
   try {
-    // First check if already marked today
-    const checkRes = await fetch(`${BRIDGE_URL}?action=checkAttendance&name=${encodeURIComponent(agent.name)}&team=${agent.team}`);
-    const checkData = await checkRes.json();
-    if(checkData.marked) return; // already marked — don't overwrite
+    // Check if already marked today
+    const checkData = await callBridge({action:'checkAttendance', name:agent.name, team:agent.team});
+    if(checkData.marked) return;
 
-    // Calculate Present or Late
     const status = getAttendanceStatus(agent.shift);
-    if(!status) return; // Sunday or no shift
+    if(!status) return;
 
-    // Write to sheet
-    await fetch(`${BRIDGE_URL}?action=markAttendance&name=${encodeURIComponent(agent.name)}&team=${agent.team}&status=${status}`);
+    // Write to sheet via JSONP
+    await callBridge({action:'markAttendance', name:agent.name, team:agent.team, status});
 
     // Also save to Firebase for dashboard display
     const today = getTodayGY();
