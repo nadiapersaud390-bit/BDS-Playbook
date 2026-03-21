@@ -7,6 +7,19 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBBnvva_YrF3_Cw442dajqvQcracwW5eyE",
+  authDomain: "bds-dashboard-b6cd9.firebaseapp.com",
+  projectId: "bds-dashboard-b6cd9",
+  storageBucket: "bds-dashboard-b6cd9.firebasestorage.app",
+  messagingSenderId: "30054871783",
+  appId: "1:30054871783:web:645e1dbc2883ed8b2da842"
+};
+firebase.initializeApp(firebaseConfig);
+const db   = firebase.firestore();
+const auth = firebase.auth();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1210,73 +1223,88 @@ async function doLogin(){
   const errEl = document.getElementById('login-err');
   errEl.textContent = '';
 
-  // Show loading spinner
+  if(!id){ errEl.textContent = '⚠ Please enter your Ytel ID.'; return; }
+
   const btn = document.querySelector('.login-btn');
   btn.innerHTML = '<span class="spinner"></span>CONNECTING...';
   btn.disabled = true;
 
-  try {
-    if(id === ADMIN_ID){
-      if(pw !== ADMIN_PW){
-        errEl.textContent = '⚠ Incorrect password.';
-        btn.textContent = 'ENTER DASHBOARD';
-        btn.disabled = false;
-        return;
-      }
+  // ── ADMIN LOGIN ──
+  if(id === ADMIN_ID){
+    if(pw !== ADMIN_PW){
+      errEl.textContent = '⚠ Incorrect password.';
+      btn.innerHTML = 'ENTER DASHBOARD';
+      btn.disabled = false;
+      return;
+    }
+    try{
       await auth.signInAnonymously();
       currentUser = {id:'0000', name:'Admin', isAdmin:true, team:'ADMIN'};
       sessionStorage.setItem('bds_user_'+getTodayGY(), JSON.stringify(currentUser));
+      btn.innerHTML = 'ENTER DASHBOARD';
+      btn.disabled = false;
       showDashboard();
-      return;
+    }catch(e){
+      errEl.textContent = '⚠ Firebase error: ' + e.message;
+      btn.innerHTML = 'ENTER DASHBOARD';
+      btn.disabled = false;
+    }
+    return;
+  }
+
+  // ── AGENT LOGIN ──
+  try{
+    // Step 1 — Load roster
+    errEl.textContent = '';
+    if(!rosterLoaded){
+      btn.innerHTML = '<span class="spinner"></span>LOADING ROSTER...';
+      await loadRoster();
     }
 
-    // Load roster if not loaded yet
-    if(!rosterLoaded) await loadRoster();
-
+    // Step 2 — Find agent
     const agentData = ROSTER[id];
     if(!agentData){
-      errEl.textContent = '⚠ Ytel ID not found. Check your ID and try again.';
-      btn.textContent = 'ENTER DASHBOARD';
+      // Show helpful message with ID count loaded
+      const count = Object.keys(ROSTER).length;
+      errEl.textContent = count > 0
+        ? '⚠ Ytel ID ' + id + ' not found. (' + count + ' agents loaded)'
+        : '⚠ Could not load roster. Check your connection and try again.';
+      btn.innerHTML = 'ENTER DASHBOARD';
       btn.disabled = false;
       return;
     }
 
-    // Check Firebase for admin-edited shift/lunch/break overrides
-    try {
-      const snap = await db.collection('roster').doc(id).get();
-      if(snap.exists){
-        const d = snap.data();
-        if(d.shift) agentData.shift = d.shift;
-        if(d.lunch) agentData.lunch = d.lunch;
-        if(d.brk)   agentData.brk   = d.brk;
-      }
-    } catch(e){}
-
+    // Step 3 — Firebase sign in
+    btn.innerHTML = '<span class="spinner"></span>SIGNING IN...';
     await auth.signInAnonymously();
     currentUser = {id, ...agentData, isAdmin:false};
 
-    // Mark attendance via Apps Script
-    await markAttendanceSheet(agentData);
+    // Step 4 — Mark attendance (non-blocking — don't fail login if this errors)
+    btn.innerHTML = '<span class="spinner"></span>MARKING ATTENDANCE...';
+    try{ await markAttendanceSheet(agentData); }catch(e){ console.warn('Attendance mark failed:', e); }
 
-    // Save session to Firebase
+    // Step 5 — Save session
     const today = getTodayGY();
-    await db.collection('sessions').doc(id+'_'+today).set({
-      id, name:agentData.name, team:agentData.team,
-      loginTime: firebase.firestore.FieldValue.serverTimestamp(),
-      date: today
-    },{merge:true});
+    try{
+      await db.collection('sessions').doc(id+'_'+today).set({
+        id, name:agentData.name, team:agentData.team,
+        loginTime: firebase.firestore.FieldValue.serverTimestamp(),
+        date: today
+      },{merge:true});
+    }catch(e){ console.warn('Session save failed:', e); }
 
-    // Save to sessionStorage
     sessionStorage.setItem('bds_user_'+today, JSON.stringify(currentUser));
+
+    btn.innerHTML = 'ENTER DASHBOARD';
+    btn.disabled = false;
     showDashboard();
 
-  } catch(e) {
-    errEl.textContent = '⚠ Login error. Please try again.';
-    console.error(e);
+  }catch(e){
+    console.error('Login error:', e);
+    errEl.textContent = '⚠ ' + (e.message || 'Login failed. Please try again.');
+    btn.innerHTML = 'ENTER DASHBOARD';
+    btn.disabled = false;
   }
-
-  btn.innerHTML = 'ENTER DASHBOARD';
-  btn.disabled = false;
 }
 
 // ── MARK ATTENDANCE IN GOOGLE SHEET ──
