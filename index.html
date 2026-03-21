@@ -2542,17 +2542,33 @@ function parseStatsCSV(text){
     // Skip total row, meta rows, empty rows
     if(!nameRaw || nameRaw.startsWith('TOTAL') || nameRaw.startsWith('AGENT STATUS') || nameRaw.startsWith('Time Range')) continue;
 
-    // Clean name — remove GUY/GUYP prefix and extension number
+    // Clean name — remove GUY/GUYP/GUYB prefix and extension number
     const name = nameRaw
-      .replace(/^GUY[P]?\s+/i,'')
+      .replace(/^GUY[PB]?\s+/i,'')
+      .replace(/^GUY[PB]?-/i,'')
       .replace(/\s*-\s*\d{4,}$/,'')
       .trim();
 
     if(!name) continue;
 
-    // Determine team — GUYP = PR, everything else (GUY, GUYB, GUY-) = BB
-    const yn = nameRaw.toUpperCase().replace(/\s+/g,'').replace(/-/g,'');
-    const team = yn.startsWith('GUYP') ? 'PR' : 'BB';
+    // ── TEAM — match against ROSTER first (most accurate) ──
+    // CSV prefixes are unreliable — some PR agents show as GUY not GUYP
+    let team = 'BB'; // default
+    const rosterMatch = Object.values(ROSTER).find(r=>{
+      const rn = r.name.toLowerCase();
+      const cn = name.toLowerCase();
+      return rn === cn
+          || rn.includes(cn)
+          || cn.includes(rn)
+          || rn.split(' ')[0] === cn.split(' ')[0] && rn.split(' ')[1] === cn.split(' ')[1];
+    });
+    if(rosterMatch){
+      team = rosterMatch.team; // use roster team — definitive
+    } else {
+      // Fallback to CSV prefix if no roster match
+      const yn = nameRaw.toUpperCase().replace(/\s+/g,'').replace(/-/g,'');
+      team = yn.startsWith('GUYP') ? 'PR' : 'BB';
+    }
 
     const n = s => parseInt((cols[s]||'0').replace(/[^0-9]/g,''))||0;
 
