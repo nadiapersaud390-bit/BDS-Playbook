@@ -230,6 +230,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .admin-only{display:none !important;}
 #tab-admin{display:none;}
 body.is-admin #tab-admin{display:flex !important;}
+body.is-admin #page-admin.active{display:flex !important;flex-direction:column;}
 .admin-tab-btn{padding:14px 10px;border-radius:10px;border:1.5px solid rgba(251,191,36,0.4);font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.18s;background:rgba(251,191,36,0.08);color:var(--gold);align-items:center;justify-content:center;gap:6px;white-space:nowrap;}
 .admin-tab-btn:hover{background:rgba(251,191,36,0.15);}
 .admin-tab-btn.active{background:rgba(251,191,36,0.18);border-color:var(--gold);box-shadow:0 0 14px rgba(251,191,36,0.25);}
@@ -1495,11 +1496,11 @@ function doLogout(auto=false){
   const adminBtn = document.getElementById('tab-admin');
   if(adminBtn) adminBtn.classList.remove('admin-visible');
   const adminPage = document.getElementById('page-admin');
-  if(adminPage){ adminPage.style.display='none'; adminPage.classList.remove('active'); }
-  // Remove any leftover inline styles from admin elements
-  document.querySelectorAll('.admin-only').forEach(el=>{
-    el.style.removeProperty('display');
-  });
+  if(adminPage){
+    adminPage.classList.remove('active');
+    adminPage.classList.add('admin-only');
+    adminPage.style.display='';
+  }
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('rep-bar').classList.remove('show');
   document.getElementById('admin-badge-wrap').innerHTML='';
@@ -1571,18 +1572,19 @@ function startClocks(){
 }
 
 function switchTab(tab){
-  document.querySelectorAll('.tab-page').forEach(p=>{
-    p.classList.remove('active');
-    p.style.display='';
-  });
+  document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn,.admin-tab-btn').forEach(b=>b.classList.remove('active'));
   const page=document.getElementById('page-'+tab);
   const btn=document.getElementById('tab-'+tab);
-  if(page){ page.classList.add('active'); page.style.display='flex'; }
+  if(page){ page.classList.add('active'); }
   if(btn) btn.classList.add('active');
-  // Always keep admin page hidden when on non-admin tab
+  // Always re-hide admin page when switching to non-admin tab
   const adminPage=document.getElementById('page-admin');
-  if(adminPage && tab!=='admin'){ adminPage.style.display='none'; adminPage.classList.remove('active'); }
+  if(adminPage){
+    adminPage.classList.remove('active');
+    adminPage.classList.add('admin-only');
+    adminPage.style.display='';
+  }
 }
 
 function loadScript(key){
@@ -1641,20 +1643,19 @@ function showAdminUI(){
 // ── SWITCH ADMIN SUBTAB ──
 function switchAdminTab(tab, btn){
   // Hide all tab pages
-  document.querySelectorAll('.tab-page').forEach(p=>{
-    p.classList.remove('active');
-    if(!p.classList.contains('admin-only')) p.style.display='none';
-  });
-  // Show admin page explicitly
+  document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));
+  // Show admin page — must remove admin-only class temporarily since CSS has !important
   const adminPage = document.getElementById('page-admin');
   if(adminPage){
+    adminPage.classList.remove('admin-only');
+    adminPage.classList.add('active');
     adminPage.style.display='flex';
     adminPage.style.flexDirection='column';
-    adminPage.classList.add('active');
   }
   // Update tab buttons
   document.querySelectorAll('.tab-btn,.admin-tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-admin').classList.add('active');
+  const adminBtn = document.getElementById('tab-admin');
+  if(adminBtn) adminBtn.classList.add('active');
   // Show correct sub-section
   ['overview','attendance','monthly','stats'].forEach(t=>{
     const el=document.getElementById('admin-'+t);
@@ -1673,8 +1674,8 @@ function switchAdminTab(tab, btn){
       adminStatsTapCount=0;
       clearTimeout(adminStatsTapTimer);
       const tabBtn=document.getElementById('tab-admin');
-      tabBtn.style.borderColor='#34d399';tabBtn.style.color='#34d399';
-      setTimeout(()=>{tabBtn.style.borderColor='';tabBtn.style.color='';},600);
+      if(tabBtn){tabBtn.style.borderColor='#34d399';tabBtn.style.color='#34d399';
+      setTimeout(()=>{tabBtn.style.borderColor='';tabBtn.style.color='';},600);}
       document.getElementById('stats-csv-upload').click();
     }
   }
