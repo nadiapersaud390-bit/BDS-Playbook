@@ -1405,6 +1405,10 @@ function doLogout(auto=false){
   sessionStorage.removeItem('bds_user_'+getTodayGY());
   currentUser = null;
   auth.signOut();
+  // Hide all admin-only elements
+  document.querySelectorAll('.admin-only').forEach(el=>{
+    el.style.removeProperty('display');
+  });
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('rep-bar').classList.remove('show');
   document.getElementById('admin-badge-wrap').innerHTML='';
@@ -1510,7 +1514,16 @@ let adminStatsTapCount = 0;
 let adminStatsTapTimer = null;
 
 function showAdminUI(){
-  document.querySelectorAll('.admin-only').forEach(el=>el.style.display='');
+  document.querySelectorAll('.admin-only').forEach(el=>{
+    el.style.setProperty('display', el.classList.contains('tab-page') ? 'flex' : '', 'important');
+    el.removeAttribute('hidden');
+  });
+  // Make admin tab button visible
+  const adminBtn = document.getElementById('tab-admin');
+  if(adminBtn) adminBtn.style.setProperty('display','flex','important');
+  // Make admin page accessible
+  const adminPage = document.getElementById('page-admin');
+  if(adminPage) adminPage.style.setProperty('display','none','');
 }
 
 function switchAdminTab(tab, btn){
@@ -1558,12 +1571,11 @@ async function loadAdminOverview(){
     const late   = records.filter(r=>r.status==='Late'||r.status==='L');
 
     // All agents from roster
-    const allAgents = Object.values(ROSTER || {});
+    const allAgents = Object.entries(ROSTER || {}).map(([uid,a])=>({...a,userId:uid}));
     const loggedIds = records.map(r=>String(r.id));
-    const notLogged = allAgents.filter(a=>!loggedIds.includes(String(a.userId||''))).slice(0,20);
+    const notLogged = allAgents.filter(a=>!loggedIds.includes(String(a.userId)));
 
-    // Update counts
-    document.getElementById('glance-total').textContent  = allAgents.length||'—';
+    document.getElementById('glance-total').textContent  = allAgents.length || '—';
     document.getElementById('glance-online').textContent = online.length;
     document.getElementById('glance-late').textContent   = late.length;
     document.getElementById('glance-absent').textContent = notLogged.length;
@@ -1573,22 +1585,22 @@ async function loadAdminOverview(){
     const og = document.getElementById('online-grid');
     og.innerHTML = online.length ? online.map(r=>`
       <div class="status-chip online" onclick="openRepProfile('${r.id}','${r.name}','${r.team||''}','${r.shift||''}')">
-        <span class="pulse green"></span>${r.name.split(' ')[0]} ${r.name.split(' ')[1]||''}
+        <span class="pulse green"></span>${r.name}
       </div>`).join('') : '<div style="font-size:0.75rem;color:var(--muted);">No one online yet</div>';
 
     // Late grid
     const lg = document.getElementById('late-grid');
     lg.innerHTML = late.length ? late.map(r=>`
       <div class="status-chip late-chip" onclick="openRepProfile('${r.id}','${r.name}','${r.team||''}','${r.shift||''}')">
-        <span class="pulse amber"></span>${r.name.split(' ')[0]} ${r.name.split(' ')[1]||''}
+        <span class="pulse amber"></span>${r.name}
       </div>`).join('') : '<div style="font-size:0.75rem;color:var(--muted);">None</div>';
 
-    // Absent grid
+    // Absent grid — agents not logged in yet
     const ag2 = document.getElementById('absent-grid');
     ag2.innerHTML = notLogged.length ? notLogged.map(a=>`
-      <div class="status-chip absent-chip" onclick="openRepProfile('','${a.name}','${a.team||''}','${a.shift||''}')">
-        <span class="pulse red-p"></span>${a.name.split(' ')[0]} ${(a.name.split(' ')[1]||'')}
-      </div>`).join('') : '<div style="font-size:0.75rem;color:var(--green);">Everyone is logged in!</div>';
+      <div class="status-chip absent-chip" onclick="openRepProfile('${a.userId}','${a.name}','${a.team||''}','${a.shift||''}')">
+        <span class="pulse red-p"></span>${a.name}
+      </div>`).join('') : '<div style="font-size:0.75rem;color:var(--green);">Everyone is logged in! 🎉</div>';
 
   }catch(e){ console.error('Admin overview error:',e); }
 }
