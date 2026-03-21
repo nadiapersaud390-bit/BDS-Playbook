@@ -1484,6 +1484,8 @@ function doLogout(auto=false){
   document.querySelectorAll('.admin-only').forEach(el=>{
     el.style.removeProperty('display');
   });
+  const adminPage=document.getElementById('page-admin');
+  if(adminPage){ adminPage.style.display='none'; adminPage.classList.remove('active'); }
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('rep-bar').classList.remove('show');
   document.getElementById('admin-badge-wrap').innerHTML='';
@@ -1555,10 +1557,18 @@ function startClocks(){
 }
 
 function switchTab(tab){
-  document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+tab).classList.add('active');
-  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-page').forEach(p=>{
+    p.classList.remove('active');
+    p.style.display='';
+  });
+  document.querySelectorAll('.tab-btn,.admin-tab-btn').forEach(b=>b.classList.remove('active'));
+  const page=document.getElementById('page-'+tab);
+  const btn=document.getElementById('tab-'+tab);
+  if(page){ page.classList.add('active'); page.style.display='flex'; }
+  if(btn) btn.classList.add('active');
+  // Always keep admin page hidden when on non-admin tab
+  const adminPage=document.getElementById('page-admin');
+  if(adminPage && tab!=='admin'){ adminPage.style.display='none'; adminPage.classList.remove('active'); }
 }
 
 function loadScript(key){
@@ -1594,29 +1604,40 @@ let attFilter = 'all';
 let allAttRecords = [];
 
 function showAdminUI(){
-  document.querySelectorAll('.admin-only').forEach(el=>{
-    el.style.setProperty('display', el.classList.contains('tab-page') ? 'flex' : '', 'important');
-    el.removeAttribute('hidden');
-  });
+  // Show admin tab button
   const adminBtn = document.getElementById('tab-admin');
   if(adminBtn) adminBtn.style.setProperty('display','flex','important');
+  // Keep admin page hidden until clicked
   const adminPage = document.getElementById('page-admin');
-  if(adminPage) adminPage.style.setProperty('display','none','');
+  if(adminPage) adminPage.style.display='none';
   // Load goal from Firebase
   db.collection('config').doc('settings').get().then(snap=>{
     if(snap.exists && snap.data().goal){
       dailyGoal = snap.data().goal;
-      document.getElementById('goal-val-display').textContent = dailyGoal;
+      const el=document.getElementById('goal-val-display');
+      if(el) el.textContent = dailyGoal;
     }
   }).catch(()=>{});
 }
 
 // ── SWITCH ADMIN SUBTAB ──
 function switchAdminTab(tab, btn){
-  document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-admin').classList.add('active');
+  // Hide all tab pages
+  document.querySelectorAll('.tab-page').forEach(p=>{
+    p.classList.remove('active');
+    if(!p.classList.contains('admin-only')) p.style.display='none';
+  });
+  // Show admin page explicitly
+  const adminPage = document.getElementById('page-admin');
+  if(adminPage){
+    adminPage.style.display='flex';
+    adminPage.style.flexDirection='column';
+    adminPage.classList.add('active');
+  }
+  // Update tab buttons
   document.querySelectorAll('.tab-btn,.admin-tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-admin').classList.add('active');
+  // Show correct sub-section
   ['overview','attendance','monthly','stats'].forEach(t=>{
     const el=document.getElementById('admin-'+t);
     if(el) el.style.display = t===tab?'':'none';
