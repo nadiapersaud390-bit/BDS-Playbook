@@ -1744,6 +1744,9 @@ function switchAdminTab(tab, btn){
   if(tab==='weekly')     loadWeeklyAttendance('BB');
   if(tab==='monthly')    loadMonthlyAttendance();
   if(tab==='stats'){
+    // Always reload roster fresh when opening stats — ensures latest IDs/teams
+    rosterLoaded = false;
+    loadRoster();
     loadReportHistory();
     adminStatsTapCount++;
     clearTimeout(adminStatsTapTimer);
@@ -2467,6 +2470,14 @@ function updateExpiryDisplay(){
 
 async function confirmCSVUpload(){
   if(!pendingCSVData) return;
+
+  // Force fresh roster reload from Google Sheet to get latest IDs and teams
+  const uploadBtn = document.querySelector('#expiry-picker button');
+  if(uploadBtn){ uploadBtn.textContent = '⏳ Loading roster...'; uploadBtn.disabled = true; }
+  rosterLoaded = false;
+  await loadRoster();
+  if(uploadBtn){ uploadBtn.textContent = '✅ UPLOAD & SAVE REPORT'; uploadBtn.disabled = false; }
+
   const expiryDate=new Date();
   expiryDate.setDate(expiryDate.getDate()+selectedExpiryDays);
 
