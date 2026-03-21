@@ -126,6 +126,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .tab-btn.t-asep.active{background:#001820;border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 14px rgba(34,211,238,0.25);}
 .tab-btn.t-spanish.active{background:#1a0e00;border-color:var(--orange);color:var(--orange);box-shadow:0 0 14px rgba(251,146,60,0.25);}
 .tab-btn.t-sunday.active{background:#120828;border-color:#c084fc;color:#c084fc;box-shadow:0 0 14px rgba(192,132,252,0.25);}
+/* Sunday Protocol always glows to draw attention */
+.tab-btn.sunday-glow{border-color:rgba(192,132,252,0.6);color:#c084fc;background:#0e0620;box-shadow:0 0 12px rgba(192,132,252,0.2),inset 0 0 8px rgba(192,132,252,0.08);animation:sundayPulse 3s ease-in-out infinite;}
+.tab-btn.sunday-glow.active{animation:none;box-shadow:0 0 18px rgba(192,132,252,0.5);}
+@keyframes sundayPulse{0%,100%{box-shadow:0 0 8px rgba(192,132,252,0.15),inset 0 0 6px rgba(192,132,252,0.05);}50%{box-shadow:0 0 18px rgba(192,132,252,0.4),inset 0 0 10px rgba(192,132,252,0.12);}}
 .tab-btn.t-dbs.active{background:#0a1a10;border-color:#4ade80;color:#4ade80;box-shadow:0 0 14px rgba(74,222,128,0.25);}
 #tab-lenders.active,.tab-btn.t-lenders.active{background:#0a1224;border-color:#3b82f6;color:#60a5fa;box-shadow:0 0 14px rgba(59,130,246,0.25);}
 .tab-btn.t-lenders{background:#0d1a2e;border-color:#3b82f6;color:#60a5fa;}
@@ -351,7 +355,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 .mcal-l{background:rgba(251,191,36,0.25);color:#fbbf24;}
 .mcal-a{background:rgba(248,113,113,0.2);color:#f87171;}
 .mcal-off{background:#111c30;color:#1e2d4a;}
-.mcal-empty{background:transparent;}
+.mcal-empty{background:#0a1020;border:1px solid #111c30;}
   .hero-title{font-size:2.2rem;letter-spacing:3px;}
   .tz-card.big{min-width:140px;padding:9px 14px;}
   .tz-time.big-time{font-size:1.4rem;}
@@ -444,15 +448,15 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 
 <div class="tabs-wrap">
 <div class="top-tabs">
-  <button class="tab-btn t-script active" id="tab-script" onclick="switchTab('script')">&#128203; SCRIPT</button>
-  <button class="tab-btn t-obj" id="tab-objections" onclick="switchTab('objections')">&#127919; REBUTTALS</button>
-  <button class="tab-btn t-dispo" id="tab-dispo" onclick="switchTab('dispo')">&#9989; DISPO</button>
-  <button class="tab-btn t-tips" id="tab-tips" onclick="switchTab('tips')">&#128161; TIPS</button>
-  <button class="tab-btn t-asep" id="tab-asep" onclick="switchTab('asep')">&#9881;&#65039; A.S.E.P</button>
-  <button class="tab-btn t-spanish" id="tab-spanish" onclick="switchTab('spanish')">&#127466;&#127480; SPANISH</button>
-  <button class="tab-btn t-dbs" id="tab-dbs" onclick="switchTab('dbs')">&#128274; ACCESS GUIDE</button>
-  <button class="tab-btn t-sunday full" id="tab-sunday" onclick="switchTab('sunday')">&#128197; SUNDAY PROTOCOL</button>
-  <button class="tab-btn t-lenders full" id="tab-lenders" onclick="switchTab('lenders')">&#129309; LENDERS WE WORK WITH</button>
+  <button class="tab-btn t-script active" id="tab-script"     onclick="switchTab('script')">&#128203; SCRIPT</button>
+  <button class="tab-btn t-obj"          id="tab-objections"  onclick="switchTab('objections')">&#127919; REBUTTALS</button>
+  <button class="tab-btn t-tips"         id="tab-tips"        onclick="switchTab('tips')">&#128161; TIPS</button>
+  <button class="tab-btn t-dbs"          id="tab-dbs"         onclick="switchTab('dbs')">&#128274; ACCESS GUIDE</button>
+  <button class="tab-btn t-spanish"      id="tab-spanish"     onclick="switchTab('spanish')">&#127466;&#127480; SPANISH</button>
+  <button class="tab-btn t-asep"         id="tab-asep"        onclick="switchTab('asep')">&#9881;&#65039; A.S.E.P</button>
+  <button class="tab-btn t-sunday sunday-glow" id="tab-sunday" onclick="switchTab('sunday')">&#128197; SUNDAY PROTOCOL</button>
+  <button class="tab-btn t-dispo"        id="tab-dispo"       onclick="switchTab('dispo')">&#9989; DISPO</button>
+  <button class="tab-btn t-lenders full" id="tab-lenders"     onclick="switchTab('lenders')">&#129309; LENDERS WE WORK WITH</button>
   <!-- ADMIN ONLY TABS -->
   <button class="admin-tab-btn full admin-only" id="tab-admin" onclick="switchAdminTab('overview')">&#9889; ADMIN PANEL</button>
 </div>
@@ -2395,12 +2399,12 @@ function renderMonthly(attMap, monthStart, year, monthIdx){
       const status    = normalizeStatus(rawStatus);
       let cls='mcal-empty', lbl='';
       if(isSun){cls='mcal-off';lbl='·';}
-      else if(isFuture){cls='mcal-empty';lbl='';}
+      else if(isFuture){cls='mcal-off';lbl='';}
       else if(status==='P'){cls='mcal-p';lbl='P';p++;}
       else if(status==='L'){cls='mcal-l';lbl='L';l++;}
       else if(status==='A'||status==='S'||status==='PO'){cls='mcal-a';lbl=status;a++;}
       else if(status==='V'){cls='mcal-l';lbl='V';}
-      else if(status==='OFF'){cls='mcal-off';lbl='OFF';}
+      else if(status==='OFF'){cls='mcal-off';lbl='';}
       else if(status){cls='mcal-off';lbl=status;}
       else{cls='mcal-off';lbl='';}
       html+=`<td style="padding:4px 3px;text-align:center;border-bottom:1px solid #0f1e35;"><div class="mcal-cell ${cls}" title="${dateStr}">${lbl}</div></td>`;
