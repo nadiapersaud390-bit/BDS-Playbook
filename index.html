@@ -1298,7 +1298,7 @@ pitch_softpull:{phase:'SALES PITCH BOOSTING \u2014 SOFT PULL / NO WEBSITE / DATA
 };
 
 // ── APPS SCRIPT BRIDGE URL ──
-const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbxAr3F4XloqX16Mtq7lSGjdPNvcaPeAdJnjn88WloimUgl8yVGB1FqkIr7NlN3kRVN97A/exec';
+const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbx18hajcSyksJi7JXVVzJa_oV-mBvE2xzDmhhKROeEuL2_DgDdXa4AFYSNKU34MMXTZiQ/exec';
 
 // ── JSONP helper — bypasses CORS for Google Apps Script ──
 function callBridge(params) {
@@ -1325,14 +1325,14 @@ function callBridge(params) {
   });
 }
 
-// ── INACTIVE AGENTS — highlighted in the Google Sheet roster ──
-// These agents will not show on the dashboard anywhere
-// The Apps Script sends the highlight flag — we block them here
+// ── INACTIVE AGENTS ──
+// Agents are automatically blocked if their Status column in the Google Sheet
+// is NOT "Agent" or "Trainee" — the Apps Script sends inactive:true for those.
+// To remove an agent from the dashboard: change their Status to "Inactive" in the sheet.
+// This hardcoded list is a fallback for agents with no status set.
 const INACTIVE_AGENTS = [
   'Esha Singh','Keisha Graig','Angelica Alert'
 ];
-// We also block anyone whose name appears in the CSV but NOT in the roster
-// (handled in parseStatsCSV by checking ROSTER)
 
 // ── ROSTER (loaded live from Google Sheet) ──
 let ROSTER = {};
@@ -1826,12 +1826,20 @@ async function loadAdminAttendance(){
   const today = getTodayGY();
   const dateEl = document.getElementById('att-date');
   if(dateEl) dateEl.textContent = new Date().toLocaleDateString('en-US',{timeZone:'America/Guyana',weekday:'long',month:'long',day:'numeric'});
+
+  // Make sure roster is loaded first
+  if(!rosterLoaded) await loadRoster();
+
   try{
     const snap = await db.collection('attendance').where('date','==',today).get();
     allAttRecords=[];
     snap.forEach(doc=>allAttRecords.push(doc.data()));
     renderAttTable();
-  }catch(e){ console.error('Attendance load error:',e); }
+  }catch(e){
+    console.error('Attendance load error:',e);
+    // Still render with roster even if Firebase fails
+    renderAttTable();
+  }
 }
 
 function filterAtt(f,btn){
@@ -1843,31 +1851,81 @@ function filterAtt(f,btn){
 
 function renderAttTable(){
   const tbody=document.getElementById('att-tbody');
-  const allAgents=Object.values(ROSTER).sort((a,b)=>a.name.localeCompare(b.name));
-  const loggedIds=allAttRecords.map(r=>String(r.id));
-  let rows=[];
-  allAttRecords.forEach(r=>rows.push({...r,hasRecord:true}));
-  allAgents.forEach(a=>{
-    if(!loggedIds.includes(String(a.userId||'')))
-      rows.push({id:a.userId,name:a.name,team:a.team,shift:a.shift,status:'none',hasRecord:false});
-  });
-  if(attFilter!=='all'){
-    if(attFilter==='none') rows=rows.filter(r=>!r.hasRecord);
-    else rows=rows.filter(r=>r.status===attFilter||(attFilter==='P'&&r.status==='Present')||(attFilter==='L'&&r.status==='Late'));
+  if(!tbody) return;
+
+  // Get ALL agents from roster sorted alphabetically
+  const allAgents = Object.values(ROSTER).sort((a,b)=>a.name.localeCompare(b.name));
+
+  if(!allAgents.length){
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">Loading roster... please wait a moment and try again.</td></tr>';
+    return;
   }
-  rows.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  if(!rows.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">No records match this filter.</td></tr>';return;}
-  tbody.innerHTML=rows.map((r,i)=>{
-    const s=r.status;
-    const badge=s==='Present'||s==='P'?`<span class="att-badge att-p">Present</span>`
-      :s==='Late'||s==='L'?`<span class="att-badge att-l">Late</span>`
-      :s==='none'?`<span class="att-badge att-pending">Not In</span>`
-      :`<span class="att-badge att-a">${s||'Absent'}</span>`;
-    const loginTime=r.loginTime?new Date(r.loginTime.seconds*1000).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Guyana'}):'—';
-    const team=r.team==='BB'?'<span style="color:var(--accent);font-weight:800;">BB</span>':'<span style="color:var(--purple);font-weight:800;">PR</span>';
+
+  // Build a lookup map from attendance records — match by name AND by id
+  const attByName = {};
+  const attById   = {};
+  allAttRecords.forEach(r=>{
+    if(r.name) attByName[r.name.toLowerCase().trim()] = r;
+    if(r.id)   attById[String(r.id).trim()] = r;
+  });
+
+  // Build rows — one per agent from roster
+  let rows = allAgents.map(agent=>{
+    // Try to find their attendance record by ID first, then by name
+    const rec = attById[String(agent.userId||'').trim()]
+             || attByName[agent.name.toLowerCase().trim()]
+             || null;
+    return {
+      id:     agent.userId,
+      name:   agent.name,
+      team:   agent.team,
+      shift:  agent.shift,
+      status: rec ? rec.status : 'none',
+      loginTime: rec ? rec.loginTime : null,
+      hasRecord: !!rec
+    };
+  });
+
+  // Apply filter
+  if(attFilter !== 'all'){
+    if(attFilter === 'none'){
+      rows = rows.filter(r => !r.hasRecord);
+    } else if(attFilter === 'P'){
+      rows = rows.filter(r => r.status==='P' || r.status==='Present');
+    } else if(attFilter === 'L'){
+      rows = rows.filter(r => r.status==='L' || r.status==='Late');
+    } else if(attFilter === 'A'){
+      rows = rows.filter(r => r.status==='A' || r.status==='Absent' || r.status==='S' || r.status==='PO');
+    }
+  }
+
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">No records match this filter.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map((r,i)=>{
+    const s = r.status;
+    const badge =
+        s==='Present'||s==='P'  ? `<span class="att-badge att-p">Present</span>`
+      : s==='Late'   ||s==='L'  ? `<span class="att-badge att-l">Late</span>`
+      : s==='Absent' ||s==='A'  ? `<span class="att-badge att-a">Absent</span>`
+      : s==='S'                  ? `<span class="att-badge att-a">Sick</span>`
+      : s==='PO'                 ? `<span class="att-badge att-a">Personal Out</span>`
+      : s==='V'                  ? `<span class="att-badge att-l">Vacation</span>`
+      :                            `<span class="att-badge att-pending">Not In</span>`;
+
+    const loginTime = r.loginTime
+      ? new Date(r.loginTime.seconds*1000).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Guyana'})
+      : '—';
+
+    const team = r.team==='BB'
+      ? '<span style="color:var(--accent);font-weight:800;font-size:0.78rem;">BB</span>'
+      : '<span style="color:var(--purple);font-weight:800;font-size:0.78rem;">PR</span>';
+
     return `<tr onclick="openRepProfile('${r.id||''}','${r.name}','${r.team||''}','${r.shift||''}')">
-      <td style="color:var(--muted);font-size:0.7rem;">${i+1}</td>
-      <td style="font-weight:700;">${r.name||'—'}</td>
+      <td style="color:var(--muted);font-size:0.72rem;">${i+1}</td>
+      <td style="font-weight:700;color:var(--text);">${r.name||'—'}</td>
       <td>${team}</td>
       <td style="color:var(--muted);font-size:0.72rem;">${r.shift||'—'}</td>
       <td>${badge}</td>
