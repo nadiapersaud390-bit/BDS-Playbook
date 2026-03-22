@@ -767,8 +767,14 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
           <div style="background:#060b18;border:1px solid #1a2540;border-radius:10px;padding:14px;">
             <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#60a5fa;margin-bottom:8px;">Shift Time</div>
             <div class="ap-input-row">
-              <input id="rp-shift-input" type="text" placeholder="e.g. 11:45am-9:00pm" class="ap-input"
+              <select id="rp-shift-input" class="ap-input"
                 onfocus="this.style.borderColor='#60a5fa'" onblur="this.style.borderColor='#2a3a5a'">
+                <option value="">— Select shift —</option>
+                <option value="10:00AM - 7:00PM">10:00AM - 7:00PM</option>
+                <option value="11:00am-8:00pm">11:00am-8:00pm</option>
+                <option value="11:45am-9:00pm">11:45am-9:00pm</option>
+                <option value="13:00pm - 22:00pm">13:00pm - 22:00pm</option>
+              </select>
               <button class="ap-save-btn" onclick="saveRosterField('shift')">💾 Save</button>
             </div>
             <div id="rp-shift-status" class="ap-field-status"></div>
@@ -1074,9 +1080,15 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
             <!-- Shift -->
             <div>
               <div style="font-size:0.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:5px;">⏰ Shift</div>
-              <input id="pe-shift" type="text" placeholder="e.g. 11:45am-9:00pm"
+              <select id="pe-shift"
                 style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;"
                 onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#2a3a5a'">
+                <option value="">— Select shift —</option>
+                <option value="10:00AM - 7:00PM">10:00AM - 7:00PM</option>
+                <option value="11:00am-8:00pm">11:00am-8:00pm</option>
+                <option value="11:45am-9:00pm">11:45am-9:00pm</option>
+                <option value="13:00pm - 22:00pm">13:00pm - 22:00pm</option>
+              </select>
             </div>
             <!-- Lunch -->
             <div>
@@ -2639,7 +2651,16 @@ function selectProfile(userId){
   const uid = agent.userId || userId;
   document.getElementById('pe-name').textContent  = agent.name;
   document.getElementById('pe-meta').textContent  = (agent.team==='BB'?'Berbice (BB)':'Providence (PR)')+' · ID: '+uid;
-  document.getElementById('pe-shift').value       = agent.shift  || '';
+
+  // Shift — fuzzy match to dropdown option
+  const shiftSel = document.getElementById('pe-shift');
+  const shiftVal = (agent.shift||'').toLowerCase().replace(/\s+/g,'');
+  let shiftMatched = '';
+  Array.from(shiftSel.options).forEach(opt=>{
+    if(opt.value && opt.value.toLowerCase().replace(/\s+/g,'') === shiftVal) shiftMatched = opt.value;
+  });
+  shiftSel.value = shiftMatched || agent.shift || '';
+
   document.getElementById('pe-lunch').value       = agent.lunch  || '';
   document.getElementById('pe-status').value      = agent.status || 'Agent';
   document.getElementById('pe-save-status').textContent = '';
@@ -4208,7 +4229,16 @@ function apLoadSchedule(){
   const s=document.getElementById('rp-shift-input');
   const l=document.getElementById('rp-lunch-input');
   const b=document.getElementById('rp-break-input');
-  if(s) s.value=r.shift||'';
+
+  // For the shift dropdown, find the closest matching option
+  if(s){
+    const shiftVal = (r.shift||'').toLowerCase().replace(/\s+/g,'');
+    let matched = '';
+    Array.from(s.options).forEach(opt=>{
+      if(opt.value && opt.value.toLowerCase().replace(/\s+/g,'') === shiftVal) matched = opt.value;
+    });
+    s.value = matched || r.shift || '';
+  }
   if(l) l.value=r.lunch||'';
   if(b) b.value=r.brk||'';
   ['rp-shift-status','rp-lunch-status','rp-break-status'].forEach(id=>{
