@@ -930,9 +930,11 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
           </select>
         </div>
 
-        <!-- Add form (hidden by default) -->
+        <!-- Add form -->
         <div id="coaching-form" style="display:none;background:#060d1a;border:1px solid #1a2a45;border-radius:12px;padding:16px;margin-bottom:14px;">
           <div style="font-size:0.65rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">NEW COACHING NOTE</div>
+
+          <!-- Rep + Admin -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
             <div>
               <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">REP NAME</div>
@@ -941,38 +943,47 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
               <datalist id="cn-rep-list"></datalist>
             </div>
             <div>
-              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">ADMIN NAME</div>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">ADMIN (Coached by)</div>
               <input id="cn-admin" type="text" placeholder="Your name..."
                 style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;">
             </div>
           </div>
+
+          <!-- Discussion -->
+          <div style="margin-bottom:10px;">
+            <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">💬 DISCUSSION</div>
+            <input id="cn-discussion" type="text" placeholder="e.g. Consistency and Efficiency"
+              style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;">
+          </div>
+
+          <!-- Goal -->
+          <div style="margin-bottom:10px;">
+            <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">🎯 GOAL</div>
+            <input id="cn-goal" type="text" placeholder="e.g. Break the cycle of 8 leads to reach the 12-lead target"
+              style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;">
+          </div>
+
+          <!-- Key Discussion Points -->
+          <div style="margin-bottom:10px;">
+            <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">🔑 KEY DISCUSSION POINTS <span style="opacity:0.6;">(one per line)</span></div>
+            <textarea id="cn-keypoints" placeholder="• Proven Potential: Reminded her that she has hit 12 leads before&#10;• Energy Check: Reviewed her script delivery&#10;• Speed to Lead: Focused on dispositioning calls faster"
+              style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:100px;box-sizing:border-box;"></textarea>
+          </div>
+
+          <!-- Advice + Outcome side by side -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
             <div>
-              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">📞 DIAL BEHAVIOR (Voicemails)</div>
-              <textarea id="cn-dial" placeholder="e.g. Consistently handles dispositions correctly..."
-                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:70px;box-sizing:border-box;"></textarea>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">💡 MY ADVICE</div>
+              <textarea id="cn-advice" placeholder="Your personal advice to the rep..."
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:80px;box-sizing:border-box;"></textarea>
             </div>
             <div>
-              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">🎙 VOICE, ENERGY &amp; TONE</div>
-              <textarea id="cn-voice" placeholder="e.g. Speaks clearly, warm and welcoming..."
-                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:70px;box-sizing:border-box;"></textarea>
-            </div>
-            <div>
-              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">📋 SCRIPT &amp; ENGAGEMENT</div>
-              <textarea id="cn-script" placeholder="e.g. Opens every call with a strong greeting..."
-                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:70px;box-sizing:border-box;"></textarea>
-            </div>
-            <div>
-              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">🛡 OBJECTION / REBUTTAL HANDLING</div>
-              <textarea id="cn-objection" placeholder="e.g. Able to handle objections without losing composure..."
-                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:70px;box-sizing:border-box;"></textarea>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">✅ OUTCOME <span style="opacity:0.6;">(one per line)</span></div>
+              <textarea id="cn-outcome" placeholder="• Process Shift: Focused on faster call handling&#10;• Commitment: Agreed to push past the 8-lead wall"
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:80px;box-sizing:border-box;"></textarea>
             </div>
           </div>
-          <div style="margin-bottom:10px;">
-            <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">⭐ COACHING POINTS (overall summary)</div>
-            <textarea id="cn-points" placeholder="Overall coaching summary and what to focus on..."
-              style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:60px;box-sizing:border-box;"></textarea>
-          </div>
+
           <div id="cn-save-status" style="font-size:0.68rem;min-height:18px;margin-bottom:8px;"></div>
           <div style="display:flex;gap:8px;">
             <button onclick="saveCoachingNote()" style="flex:1;padding:11px;border-radius:8px;border:none;background:var(--accent);color:#000;font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;font-weight:800;letter-spacing:1px;cursor:pointer;">💾 SAVE NOTE</button>
@@ -2007,44 +2018,38 @@ function openCoachingForm(){
 }
 function closeCoachingForm(){
   document.getElementById('coaching-form').style.display='none';
-  ['cn-rep','cn-admin','cn-dial','cn-voice','cn-script','cn-objection','cn-points']
+  ['cn-rep','cn-admin','cn-discussion','cn-goal','cn-keypoints','cn-advice','cn-outcome']
     .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
 }
 
 async function saveCoachingNote(){
-  const repName  = document.getElementById('cn-rep').value.trim();
-  const adminName= document.getElementById('cn-admin').value.trim();
-  const dial     = document.getElementById('cn-dial').value.trim();
-  const voice    = document.getElementById('cn-voice').value.trim();
-  const script   = document.getElementById('cn-script').value.trim();
-  const objection= document.getElementById('cn-objection').value.trim();
-  const points   = document.getElementById('cn-points').value.trim();
-  const statusEl = document.getElementById('cn-save-status');
+  const repName    = document.getElementById('cn-rep').value.trim();
+  const adminName  = document.getElementById('cn-admin').value.trim();
+  const discussion = document.getElementById('cn-discussion').value.trim();
+  const goal       = document.getElementById('cn-goal').value.trim();
+  const keypoints  = document.getElementById('cn-keypoints').value.trim();
+  const advice     = document.getElementById('cn-advice').value.trim();
+  const outcome    = document.getElementById('cn-outcome').value.trim();
+  const statusEl   = document.getElementById('cn-save-status');
 
   if(!repName||!adminName){ statusEl.textContent='⚠ Rep name and admin name are required.'; statusEl.style.color='var(--red)'; return; }
-  if(!dial&&!voice&&!script&&!objection&&!points){ statusEl.textContent='⚠ Fill in at least one field.'; statusEl.style.color='var(--red)'; return; }
+  if(!discussion&&!goal&&!keypoints){ statusEl.textContent='⚠ Fill in at least Discussion, Goal or Key Points.'; statusEl.style.color='var(--red)'; return; }
 
   statusEl.textContent='Saving...'; statusEl.style.color='var(--muted)';
-
-  // Find rep's team and userId
   const rAgent = Object.values(ROSTER).find(r=>r.name.toLowerCase()===repName.toLowerCase());
 
   try{
     await db.collection('coaching_sessions').add({
-      type:       'coaching',
-      repName,
-      repId:      rAgent ? rAgent.userId : '',
-      repTeam:    rAgent ? rAgent.team : '',
-      adminName,
-      dial, voice, script, objection, points,
-      date:       getTodayGY(),
-      createdAt:  firebase.firestore.FieldValue.serverTimestamp()
+      type:'coaching', repName,
+      repId:   rAgent ? rAgent.userId : '',
+      repTeam: rAgent ? rAgent.team   : '',
+      adminName, discussion, goal, keypoints, advice, outcome,
+      date:      getTodayGY(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     statusEl.textContent='✅ Coaching note saved!'; statusEl.style.color='var(--green)';
     setTimeout(()=>{ closeCoachingForm(); loadCoachingNotes(); }, 800);
-  }catch(e){
-    statusEl.textContent='❌ Error: '+e.message; statusEl.style.color='var(--red)';
-  }
+  }catch(e){ statusEl.textContent='❌ Error: '+e.message; statusEl.style.color='var(--red)'; }
 }
 
 async function loadCoachingNotes(){
@@ -2155,37 +2160,58 @@ function renderMonitoringNotes(notes){
 
 // ── SHARED NOTE CARD RENDERER ──
 function renderNoteCard(n, type){
-  const isMonitor = type==='monitoring';
+  const isMonitor   = type==='monitoring';
   const accentColor = isMonitor ? 'var(--purple)' : 'var(--accent)';
+  const typeLabel   = isMonitor ? '🎧 LIVE MONITORING' : '📝 COACHING';
   const date = n.date || '—';
   const time = n.createdAt ? new Date(n.createdAt.seconds*1000).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Guyana'}) : '';
-  const team = n.repTeam==='BB'?'<span style="color:var(--accent);font-size:0.62rem;font-weight:800;">BB</span>':'<span style="color:var(--purple);font-size:0.62rem;font-weight:800;">PR</span>';
+  const team = n.repTeam==='BB'
+    ? `<span style="color:var(--accent);font-size:0.62rem;font-weight:800;background:rgba(96,165,250,0.1);padding:2px 7px;border-radius:4px;">BB</span>`
+    : `<span style="color:var(--purple);font-size:0.62rem;font-weight:800;background:rgba(167,139,250,0.1);padding:2px 7px;border-radius:4px;">PR</span>`;
 
-  const fields = [
-    {icon:'📞', label:'Dial Behavior (Voicemails)', val:n.dial},
-    {icon:'🎙', label:'Voice, Energy & Tone',       val:n.voice},
-    {icon:'📋', label:'Script & Engagement',         val:n.script},
-    {icon:'🛡', label:'Objection / Rebuttal Handling', val:n.objection},
-    {icon:'⭐', label:'Coaching Points',              val:n.points},
-  ].filter(f=>f.val);
+  const ta = (label, val, full) => !val ? '' : `
+    <div style="background:#060b18;border:1px solid #111c30;border-radius:8px;padding:10px;${full?'grid-column:1/-1':''}">
+      <div style="font-size:0.55rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:${accentColor};margin-bottom:5px;opacity:0.8;">${label}</div>
+      <div style="font-size:0.8rem;color:#cbd5e1;line-height:1.7;">${val.replace(/\n/g,'<br>')}</div>
+    </div>`;
 
-  return `<div style="background:#070e1c;border:1px solid #1a2a45;border-left:3px solid ${accentColor};border-radius:10px;padding:14px;margin-bottom:10px;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
-      <div>
-        <span style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:var(--text);cursor:pointer;" onclick="openRepProfileByName('${n.repName}')">${n.repName}</span>
+  // Build bullet list from textarea (lines starting with • or -)
+  const bulletList = (val) => {
+    if(!val) return '';
+    return val.split('\n').filter(l=>l.trim()).map(l=>{
+      const clean = l.replace(/^[•\-\*]\s*/,'').trim();
+      return clean ? `<li style="margin-bottom:4px;">${clean}</li>` : '';
+    }).join('');
+  };
+
+  const bl = (label, val, full) => !val ? '' : `
+    <div style="background:#060b18;border:1px solid #111c30;border-radius:8px;padding:10px;${full?'grid-column:1/-1':''}">
+      <div style="font-size:0.55rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:${accentColor};margin-bottom:5px;opacity:0.8;">${label}</div>
+      <ul style="margin:0;padding-left:16px;font-size:0.8rem;color:#cbd5e1;line-height:1.7;">${bulletList(val)}</ul>
+    </div>`;
+
+  return `<div style="background:#070e1c;border:1px solid #1a2a45;border-left:3px solid ${accentColor};border-radius:10px;padding:14px 16px;margin-bottom:12px;">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:6px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;font-weight:800;color:var(--text);cursor:pointer;" onclick="openRepProfileByName('${n.repName}')">${n.repName}</span>
         ${team}
+        <span style="font-size:0.6rem;color:${accentColor};font-weight:800;letter-spacing:1px;">${typeLabel}</span>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:0.65rem;color:${accentColor};font-weight:700;">${date} ${time}</div>
-        <div style="font-size:0.6rem;color:var(--muted);">Admin: <strong style="color:var(--text);">${n.adminName||'—'}</strong></div>
+        <div style="font-size:0.68rem;color:var(--text);font-weight:700;">${date} ${time}</div>
+        <div style="font-size:0.62rem;color:var(--muted);">Coached by: <strong style="color:var(--text);">${n.adminName||'—'}</strong></div>
       </div>
     </div>
+
+    <!-- Fields grid -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      ${fields.map(f=>`
-        <div style="background:#060b18;border:1px solid #111c30;border-radius:8px;padding:10px;">
-          <div style="font-size:0.55rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">${f.icon} ${f.label}</div>
-          <div style="font-size:0.78rem;color:#cbd5e1;line-height:1.6;">${f.val}</div>
-        </div>`).join('')}
+      ${ta('💬 Discussion', n.discussion, false)}
+      ${ta('🎯 Goal', n.goal, false)}
+      ${bl('🔑 Key Discussion Points', n.keypoints, true)}
+      ${ta('💡 My Advice', n.advice, false)}
+      ${bl('✅ Outcome', n.outcome, false)}
     </div>
   </div>`;
 }
@@ -2209,8 +2235,17 @@ async function loadRepCoach(id){
       const label = isMonitor?'🎧 Live Monitoring':'📝 Coaching';
       const date  = d.createdAt ? new Date(d.createdAt.seconds*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/Guyana'}) : d.date||'—';
       const fields = [
-        ['Dial Behavior',d.dial],['Voice & Tone',d.voice],
-        ['Script',d.script],['Objection Handling',d.objection],['Coaching Points',d.points]
+        ['💬 Discussion',          d.discussion],
+        ['🎯 Goal',                d.goal],
+        ['🔑 Key Discussion Points', d.keypoints],
+        ['💡 My Advice',           d.advice],
+        ['✅ Outcome',             d.outcome],
+        // Legacy fields fallback
+        ['📞 Dial Behavior',       d.dial],
+        ['🎙 Voice & Tone',        d.voice],
+        ['📋 Script',              d.script],
+        ['🛡 Objection Handling',  d.objection],
+        ['⭐ Coaching Points',     d.points],
       ].filter(f=>f[1]);
       return `<div class="note-item" style="border-left:2px solid ${color};margin-bottom:10px;">
         <div class="note-date" style="display:flex;justify-content:space-between;margin-bottom:5px;">
