@@ -508,13 +508,60 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
     <div class="rep-profile-body">
       <!-- Sub tabs -->
       <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
-        <button class="sub-tab st-ok active" id="rpt-perf" onclick="rpTab('perf',this)">📊 Performance</button>
-        <button class="sub-tab st-ok" id="rpt-att" onclick="rpTab('att',this)">📅 Attendance</button>
-        <button class="sub-tab st-ok" id="rpt-coach" onclick="rpTab('coach',this)">📝 Coaching</button>
-        <button class="sub-tab st-ok" id="rpt-audit" onclick="rpTab('audit',this)">🔍 Audit</button>
+        <button class="sub-tab st-ok active" id="rpt-perf"     onclick="rpTab('perf',this)">📊 Performance</button>
+        <button class="sub-tab st-ok"        id="rpt-schedule" onclick="rpTab('schedule',this)">⏰ Schedule</button>
+        <button class="sub-tab st-ok"        id="rpt-att"      onclick="rpTab('att',this)">📅 Attendance</button>
+        <button class="sub-tab st-ok"        id="rpt-coach"    onclick="rpTab('coach',this)">📝 Coaching</button>
+        <button class="sub-tab st-ok"        id="rpt-audit"    onclick="rpTab('audit',this)">🔍 Audit</button>
       </div>
-      <!-- Performance -->
-      <div id="rp-perf">
+      <!-- Schedule Edit -->
+      <div id="rp-schedule" style="display:none;">
+        <div class="rp-section">
+          <div class="rp-section-title">⏰ SHIFT &amp; SCHEDULE — edits save to Google Sheet</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
+
+            <!-- Shift -->
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;">
+              <div style="font-size:0.6rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">Shift Time</div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input id="rp-shift-input" type="text" placeholder="e.g. 11:45am-9:00pm"
+                  style="flex:1;padding:8px 12px;background:#060b18;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.85rem;font-family:'Nunito',sans-serif;outline:none;transition:border-color 0.15s;"
+                  onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#2a3a5a'">
+                <button onclick="saveRosterField('shift')" class="save-btn" style="white-space:nowrap;">💾 Save</button>
+              </div>
+              <div id="rp-shift-status" style="font-size:0.65rem;margin-top:4px;"></div>
+            </div>
+
+            <!-- Lunch -->
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;">
+              <div style="font-size:0.6rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--green);margin-bottom:6px;">Lunch Time</div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input id="rp-lunch-input" type="text" placeholder="e.g. 3:30-4:00 pm"
+                  style="flex:1;padding:8px 12px;background:#060b18;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.85rem;font-family:'Nunito',sans-serif;outline:none;transition:border-color 0.15s;"
+                  onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='#2a3a5a'">
+                <button onclick="saveRosterField('lunch')" class="save-btn" style="white-space:nowrap;background:var(--green);">💾 Save</button>
+              </div>
+              <div id="rp-lunch-status" style="font-size:0.65rem;margin-top:4px;"></div>
+            </div>
+
+            <!-- Break -->
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;">
+              <div style="font-size:0.6rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">Break Time <span style="opacity:0.6;">(Firebase only)</span></div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input id="rp-break-input" type="text" placeholder="e.g. 2:00-2:15 pm"
+                  style="flex:1;padding:8px 12px;background:#060b18;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.85rem;font-family:'Nunito',sans-serif;outline:none;transition:border-color 0.15s;"
+                  onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#2a3a5a'">
+                <button onclick="saveRosterField('break')" class="save-btn" style="white-space:nowrap;background:var(--gold);color:#000;">💾 Save</button>
+              </div>
+              <div id="rp-break-status" style="font-size:0.65rem;margin-top:4px;"></div>
+            </div>
+
+          </div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-top:10px;text-align:center;">
+            Shift &amp; Lunch save directly to <strong style="color:var(--text);">Google Sheet</strong> · Break saves to Firebase · Agent sees changes on next login
+          </div>
+        </div>
+      </div>
         <div class="rp-section">
           <div class="rp-section-title">Live Session</div>
           <div class="rp-stat-grid">
@@ -583,6 +630,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
         <button class="adm-tab"        id="atab-weekly"      onclick="switchAdminTab('weekly',this)">📋 Weekly Attendance</button>
         <button class="adm-tab"        id="atab-monthly"     onclick="switchAdminTab('monthly',this)">📆 Monthly Attendance</button>
         <button class="adm-tab"        id="atab-stats"       onclick="switchAdminTab('stats',this)">📊 Agent Stats</button>
+        <button class="adm-tab"        id="atab-profiles"    onclick="switchAdminTab('profiles',this)">👤 Agent Profiles</button>
       </div>
     </div>
 
@@ -782,6 +830,85 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
               <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;font-size:0.82rem;">Tap <strong style="color:var(--gold);">Agent Stats</strong> tab 5 times quickly to upload CSV</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+    <!-- ── AGENT PROFILES ── -->
+    <div id="admin-profiles" class="admin-section" style="display:none;">
+      <div class="admin-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div class="admin-card-title" style="margin-bottom:0;font-size:0.9rem;">👤 AGENT PROFILES</div>
+          <span style="font-size:0.65rem;color:var(--muted);">Changes save to Google Sheet &amp; Firebase instantly</span>
+        </div>
+
+        <!-- Search + team filter -->
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <input type="text" id="profile-search" placeholder="🔍 Search agent name..." oninput="filterProfileList()"
+            style="flex:1;min-width:160px;padding:9px 14px;background:#0d1424;border:1.5px solid #2a3a5a;border-radius:8px;color:#e2e8f0;font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;">
+          <select id="profile-team-filter" onchange="filterProfileList()"
+            style="padding:9px 12px;background:#0d1424;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;outline:none;">
+            <option value="all">All Teams</option>
+            <option value="BB">🏠 Berbice (BB)</option>
+            <option value="PR">🌴 Providence (PR)</option>
+          </select>
+        </div>
+
+        <!-- Agent list -->
+        <div id="profile-list" style="display:flex;flex-direction:column;gap:0;"></div>
+
+        <!-- Edit panel — shown when agent selected -->
+        <div id="profile-edit-panel" style="display:none;margin-top:14px;background:#060d1a;border:1px solid #1a2a45;border-radius:12px;padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div>
+              <div id="pe-name" style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;color:var(--text);"></div>
+              <div id="pe-meta" style="font-size:0.62rem;color:var(--muted);margin-top:2px;"></div>
+            </div>
+            <button onclick="closeProfileEdit()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px 8px;">✕</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+            <!-- Shift -->
+            <div>
+              <div style="font-size:0.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:5px;">⏰ Shift</div>
+              <input id="pe-shift" type="text" placeholder="e.g. 11:45am-9:00pm"
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#2a3a5a'">
+            </div>
+            <!-- Lunch -->
+            <div>
+              <div style="font-size:0.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);margin-bottom:5px;">🍽 Lunch</div>
+              <input id="pe-lunch" type="text" placeholder="e.g. 3:30-4:00 pm"
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;"
+                onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='#2a3a5a'">
+            </div>
+            <!-- Break -->
+            <div>
+              <div style="font-size:0.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:5px;">☕ Break</div>
+              <input id="pe-break" type="text" placeholder="e.g. 2:00-2:15 pm"
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;"
+                onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#2a3a5a'">
+            </div>
+            <!-- Status -->
+            <div>
+              <div style="font-size:0.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--purple);margin-bottom:5px;">📋 Status</div>
+              <select id="pe-status"
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;outline:none;box-sizing:border-box;">
+                <option value="Agent">Agent</option>
+                <option value="Trainee">Trainee</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="pe-save-status" style="font-size:0.7rem;text-align:center;margin-bottom:10px;min-height:18px;"></div>
+
+          <button onclick="saveProfileEdits()" style="width:100%;padding:12px;border-radius:9px;border:none;background:linear-gradient(90deg,var(--accent),var(--cyan));color:#000;font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;letter-spacing:1.5px;cursor:pointer;">
+            💾 SAVE ALL CHANGES TO GOOGLE SHEET
+          </button>
+
+          <div style="font-size:0.6rem;color:var(--muted);text-align:center;margin-top:8px;">
+            Shift, Lunch &amp; Status → Google Sheet · Break → Firebase · Agent sees changes on next login
+          </div>
         </div>
       </div>
     </div>
@@ -1350,7 +1477,7 @@ pitch_softpull:{phase:'SALES PITCH BOOSTING \u2014 SOFT PULL / NO WEBSITE / DATA
 };
 
 // ── APPS SCRIPT BRIDGE URL ──
-const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbyEXBVyjblAEu2LLTucoeDvH9Hnio9ZiBqvz0WzlVKaucaIH1MFdgGRyUWE_HzJvaJM9g/exec';
+const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbyZ2JIqslFV_8JMxYEIi2Lv_55BX5cF2EKAKfHcwNx_gg_9XlTpLfEdI33DFIx6bmDyCw/exec';
 
 // ── JSONP helper — bypasses CORS for Google Apps Script ──
 function callBridge(params) {
@@ -1710,6 +1837,174 @@ function startClocks(){
   tick();setInterval(tick,1000);
 }
 
+// ── AGENT PROFILES TAB ──
+let selectedProfileId = null;
+
+function loadAgentProfiles(){
+  if(!rosterLoaded){ loadRoster().then(renderProfileList); return; }
+  renderProfileList();
+}
+
+function renderProfileList(){
+  const search    = (document.getElementById('profile-search')||{value:''}).value.toLowerCase();
+  const teamFilter = (document.getElementById('profile-team-filter')||{value:'all'}).value;
+  const container = document.getElementById('profile-list');
+  if(!container) return;
+
+  const agents = Object.values(ROSTER)
+    .filter(a => (teamFilter==='all'||a.team===teamFilter)
+              && (!search || a.name.toLowerCase().includes(search)))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+
+  if(!agents.length){
+    container.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:0.82rem;">No agents found.</div>';
+    return;
+  }
+
+  container.innerHTML = agents.map(a=>{
+    const teamColor = a.team==='BB'?'var(--accent)':'var(--purple)';
+    const isSelected = a.userId === selectedProfileId;
+    return `<div onclick="selectProfile('${a.userId}')"
+      style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #0f1e35;cursor:pointer;background:${isSelected?'#0d1a30':'transparent'};transition:background 0.12s;"
+      onmouseover="if('${a.userId}'!==selectedProfileId)this.style.background='#0a1424'" onmouseout="if('${a.userId}'!==selectedProfileId)this.style.background='transparent'">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:0.65rem;font-weight:800;color:${teamColor};min-width:24px;">${a.team}</span>
+        <div>
+          <div style="font-weight:700;font-size:0.85rem;color:var(--text);">${a.name}</div>
+          <div style="font-size:0.65rem;color:var(--muted);">${a.shift||'No shift set'} ${a.lunch?'· '+a.lunch:''}</div>
+        </div>
+      </div>
+      <div style="font-size:0.65rem;color:var(--muted);">ID: ${a.userId}</div>
+    </div>`;
+  }).join('');
+}
+
+function filterProfileList(){
+  renderProfileList();
+  // Close edit panel if search changes
+  closeProfileEdit();
+}
+
+function selectProfile(userId){
+  selectedProfileId = userId;
+  const agent = ROSTER[userId];
+  if(!agent) return;
+
+  // Highlight selected row
+  renderProfileList();
+
+  // Populate edit panel
+  document.getElementById('pe-name').textContent  = agent.name;
+  document.getElementById('pe-meta').textContent  = (agent.team==='BB'?'Berbice (BB)':'Providence (PR)') + ' · ID: ' + agent.userId;
+  document.getElementById('pe-shift').value  = agent.shift || '';
+  document.getElementById('pe-lunch').value  = agent.lunch || '';
+  document.getElementById('pe-status').value = agent.status || 'Agent';
+  document.getElementById('pe-save-status').textContent = '';
+
+  // Load break from Firebase
+  document.getElementById('pe-break').value = agent.brk || '';
+  db.collection('roster').doc(userId).get().then(snap=>{
+    if(snap.exists && snap.data().brk){
+      document.getElementById('pe-break').value = snap.data().brk;
+    }
+  }).catch(()=>{});
+
+  document.getElementById('profile-edit-panel').style.display='';
+
+  // Scroll edit panel into view
+  document.getElementById('profile-edit-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function closeProfileEdit(){
+  selectedProfileId = null;
+  document.getElementById('profile-edit-panel').style.display='none';
+  renderProfileList();
+}
+
+async function saveProfileEdits(){
+  if(!selectedProfileId) return;
+  const agent = ROSTER[selectedProfileId];
+  if(!agent) return;
+
+  const newShift  = document.getElementById('pe-shift').value.trim();
+  const newLunch  = document.getElementById('pe-lunch').value.trim();
+  const newBreak  = document.getElementById('pe-break').value.trim();
+  const newStatus = document.getElementById('pe-status').value.trim();
+  const statusEl  = document.getElementById('pe-save-status');
+
+  statusEl.textContent = '💾 Saving...';
+  statusEl.style.color = 'var(--muted)';
+
+  const errors = [];
+  const updates = [];
+
+  // Save shift to Google Sheet
+  if(newShift !== (agent.shift||'')){
+    try{
+      const r = await callBridge({action:'updateRosterField', userId:selectedProfileId, field:'shift', value:newShift});
+      if(r.success){ ROSTER[selectedProfileId].shift = newShift; updates.push('shift'); }
+      else errors.push('shift: '+r.error);
+    }catch(e){ errors.push('shift error'); }
+  }
+
+  // Save lunch to Google Sheet
+  if(newLunch !== (agent.lunch||'')){
+    try{
+      const r = await callBridge({action:'updateRosterField', userId:selectedProfileId, field:'lunch', value:newLunch});
+      if(r.success){ ROSTER[selectedProfileId].lunch = newLunch; updates.push('lunch'); }
+      else errors.push('lunch: '+r.error);
+    }catch(e){ errors.push('lunch error'); }
+  }
+
+  // Save status to Google Sheet
+  if(newStatus !== (agent.status||'')){
+    try{
+      const r = await callBridge({action:'updateRosterField', userId:selectedProfileId, field:'status', value:newStatus});
+      if(r.success){
+        ROSTER[selectedProfileId].status = newStatus;
+        // If marked Inactive — remove from ROSTER so they don't show
+        if(newStatus.toLowerCase()==='inactive'){
+          delete ROSTER[selectedProfileId];
+          closeProfileEdit();
+        }
+        updates.push('status');
+      } else errors.push('status: '+r.error);
+    }catch(e){ errors.push('status error'); }
+  }
+
+  // Save break to Firebase
+  if(newBreak !== (agent.brk||'')){
+    try{
+      await db.collection('roster').doc(selectedProfileId).set({brk:newBreak},{merge:true});
+      ROSTER[selectedProfileId].brk = newBreak;
+      updates.push('break');
+    }catch(e){ errors.push('break error'); }
+  }
+
+  // Save shift+lunch to Firebase too so agent sees immediately
+  try{
+    const fbUpdate = {};
+    if(newShift) fbUpdate.shift = newShift;
+    if(newLunch) fbUpdate.lunch = newLunch;
+    if(Object.keys(fbUpdate).length){
+      await db.collection('roster').doc(selectedProfileId).set(fbUpdate,{merge:true});
+    }
+  }catch(e){}
+
+  if(errors.length){
+    statusEl.textContent = '⚠ Some errors: '+errors.join(', ');
+    statusEl.style.color = 'var(--gold)';
+  } else if(updates.length){
+    statusEl.textContent = '✅ Saved: '+updates.join(', ')+' — Google Sheet updated';
+    statusEl.style.color = 'var(--green)';
+    // Refresh list to show new values
+    renderProfileList();
+  } else {
+    statusEl.textContent = 'No changes to save.';
+    statusEl.style.color = 'var(--muted)';
+  }
+}
+
 function switchTab(tab){
   document.querySelectorAll('.tab-page').forEach(p=>{
     p.classList.remove('active');
@@ -1792,7 +2087,7 @@ function switchAdminTab(tab, btn){
   const adminBtn = document.getElementById('tab-admin');
   if(adminBtn) adminBtn.classList.add('active');
   // Show correct sub-section
-  ['overview','attendance','weekly','monthly','stats'].forEach(t=>{
+  ['overview','attendance','weekly','monthly','stats','profiles'].forEach(t=>{
     const el=document.getElementById('admin-'+t);
     if(el) el.style.display = t===tab?'':'none';
     const b=document.getElementById('atab-'+t);
@@ -1802,6 +2097,7 @@ function switchAdminTab(tab, btn){
   if(tab==='attendance') loadAdminAttendance();
   if(tab==='weekly')     loadWeeklyAttendance('BB');
   if(tab==='monthly')    loadMonthlyAttendance();
+  if(tab==='profiles')   loadAgentProfiles();
   if(tab==='stats'){
     // Always reload roster fresh — then re-render stats with correct teams
     rosterLoaded = false;
@@ -2840,15 +3136,85 @@ function closeRepProfile(){
 }
 
 function rpTab(tab,btn){
-  ['perf','att','coach','audit'].forEach(t=>{
+  ['perf','schedule','att','coach','audit'].forEach(t=>{
     const el=document.getElementById('rp-'+t);
     if(el) el.style.display=t===tab?'':'none';
     const b=document.getElementById('rpt-'+t);
     if(b) b.classList.toggle('active',t===tab);
   });
-  if(tab==='att'&&currentRepProfile)   loadRepAtt(currentRepProfile.id);
-  if(tab==='coach'&&currentRepProfile) loadRepCoach(currentRepProfile.id);
-  if(tab==='audit'&&currentRepProfile) loadRepAudit(currentRepProfile.id);
+  if(tab==='schedule' && currentRepProfile) loadRepSchedule();
+  if(tab==='att'      && currentRepProfile) loadRepAtt(currentRepProfile.id);
+  if(tab==='coach'    && currentRepProfile) loadRepCoach(currentRepProfile.id);
+  if(tab==='audit'    && currentRepProfile) loadRepAudit(currentRepProfile.id);
+}
+
+function loadRepSchedule(){
+  if(!currentRepProfile) return;
+  const r = currentRepProfile;
+  const shiftEl = document.getElementById('rp-shift-input');
+  const lunchEl = document.getElementById('rp-lunch-input');
+  const breakEl = document.getElementById('rp-break-input');
+  if(shiftEl) shiftEl.value = r.shift || '';
+  if(lunchEl) lunchEl.value = r.lunch || '';
+  if(breakEl) breakEl.value = r.brk   || '';
+  // Clear status messages
+  ['rp-shift-status','rp-lunch-status','rp-break-status'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent='';
+  });
+}
+
+async function saveRosterField(field){
+  if(!currentRepProfile) return;
+  const r = currentRepProfile;
+  const inputEl  = document.getElementById('rp-'+field+'-input');
+  const statusEl = document.getElementById('rp-'+field+'-status');
+  if(!inputEl) return;
+  const value = inputEl.value.trim();
+  if(!value){ if(statusEl){statusEl.textContent='⚠ Please enter a value.';statusEl.style.color='var(--red)';}return; }
+
+  if(statusEl){ statusEl.textContent='Saving...'; statusEl.style.color='var(--muted)'; }
+
+  // Break saves to Firebase only (not in roster sheet)
+  if(field==='break'){
+    try{
+      await db.collection('roster').doc(r.id).set({brk:value},{merge:true});
+      currentRepProfile.brk = value;
+      if(statusEl){ statusEl.textContent='✅ Break saved'; statusEl.style.color='var(--green)'; }
+      // Update rep bar if this is the logged-in user
+      if(currentUser && currentUser.id===r.id){ currentUser.brk=value; }
+    }catch(e){
+      if(statusEl){ statusEl.textContent='❌ Failed: '+e.message; statusEl.style.color='var(--red)'; }
+    }
+    return;
+  }
+
+  // Shift and Lunch save to Google Sheet via Apps Script
+  try{
+    const result = await callBridge({action:'updateRosterField', userId:r.id, field, value});
+    if(result.success){
+      // Update local roster and current profile
+      if(field==='shift'){ currentRepProfile.shift=value; if(ROSTER[r.id]) ROSTER[r.id].shift=value; }
+      if(field==='lunch'){ currentRepProfile.lunch=value; if(ROSTER[r.id]) ROSTER[r.id].lunch=value; }
+      // Also save to Firebase so agent sees it immediately
+      const fbUpdate = {};
+      fbUpdate[field] = value;
+      await db.collection('roster').doc(r.id).set(fbUpdate,{merge:true});
+      // Update rep bar if this is the currently logged-in user
+      if(currentUser && currentUser.id===r.id){
+        currentUser[field]=value;
+        // Rebuild rep header chips
+        showDashboard();
+      }
+      if(statusEl){ statusEl.textContent='✅ Saved to Google Sheet'; statusEl.style.color='var(--green)'; }
+      // Update the meta line in profile header
+      document.getElementById('rp-meta').textContent =
+        (currentRepProfile.team==='BB'?'Berbice':'Providence') + ' · ' + (currentRepProfile.shift||'No shift');
+    } else {
+      if(statusEl){ statusEl.textContent='❌ '+result.error; statusEl.style.color='var(--red)'; }
+    }
+  }catch(e){
+    if(statusEl){ statusEl.textContent='❌ Error: '+e.message; statusEl.style.color='var(--red)'; }
+  }
 }
 
 async function loadRepPerf(id,name,team){
