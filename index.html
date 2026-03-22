@@ -696,9 +696,11 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
       <div class="ap-card">
         <div class="ap-card-title">✏️ MARK TODAY'S ATTENDANCE</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="mark-absent-btn" onclick="markAgentAbsent('A')">Mark Absent</button>
-          <button class="mark-absent-btn" onclick="markAgentAbsent('S')" style="border-color:rgba(96,165,250,0.3);color:var(--accent);">Mark Sick</button>
-          <button class="mark-absent-btn" onclick="markAgentAbsent('PO')" style="border-color:rgba(167,139,250,0.3);color:var(--purple);">Personal Out</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('P')" style="border-color:rgba(52,211,153,0.4);color:#34d399;">✅ Present</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('L')" style="border-color:rgba(251,191,36,0.4);color:#fbbf24;">🕐 Late</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('A')" style="border-color:rgba(248,113,113,0.4);color:#f87171;">❌ Absent</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('S')" style="border-color:rgba(96,165,250,0.3);color:var(--accent);">🤒 Sick</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('PO')" style="border-color:rgba(167,139,250,0.3);color:var(--purple);">🏠 Personal Out</button>
         </div>
       </div>
     </div>
@@ -735,9 +737,11 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
       <div class="ap-card">
         <div class="ap-card-title">✏️ MARK TODAY</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="mark-absent-btn" onclick="markAgentAbsent('A')">Mark Absent</button>
-          <button class="mark-absent-btn" onclick="markAgentAbsent('S')" style="border-color:rgba(96,165,250,0.3);color:var(--accent);">Mark Sick</button>
-          <button class="mark-absent-btn" onclick="markAgentAbsent('PO')" style="border-color:rgba(167,139,250,0.3);color:var(--purple);">Personal Out</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('P')" style="border-color:rgba(52,211,153,0.4);color:#34d399;">✅ Present</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('L')" style="border-color:rgba(251,191,36,0.4);color:#fbbf24;">🕐 Late</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('A')" style="border-color:rgba(248,113,113,0.4);color:#f87171;">❌ Absent</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('S')" style="border-color:rgba(96,165,250,0.3);color:var(--accent);">🤒 Sick</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('PO')" style="border-color:rgba(167,139,250,0.3);color:var(--purple);">🏠 Personal Out</button>
         </div>
       </div>
     </div>
@@ -3938,6 +3942,17 @@ async function openRepProfile(id,name,team,shift){
 
   document.getElementById('rep-profile-overlay').classList.add('open');
   document.body.style.overflow='hidden';
+
+  // Pre-load monthly cache if not yet populated (so attendance data shows immediately)
+  if(Object.keys(monthlyCache).length === 0){
+    loadMonthlyAttendance().catch(()=>{}).then(()=>{
+      // Refresh overview after monthly loads if still on that tab
+      if(currentRepProfile && document.getElementById('apt-overview')?.classList.contains('active')){
+        apLoadOverview(currentRepProfile.id, currentRepProfile.name);
+      }
+    });
+  }
+
   apTab('overview', document.getElementById('apt-overview'));
 }
 
@@ -3969,6 +3984,13 @@ async function apLoadOverview(id,name){
   const today      = getTodayGY();
   const monthStart = today.substring(0,7);
   const idStr      = String(id||'');
+
+  // Show loading state
+  ['rp-att-p','rp-att-l','rp-att-a','rp-att-rate','rp-live-calls','rp-live-xfer','rp-coach-count','rp-monitor-count'].forEach(i=>{
+    const el=document.getElementById(i); if(el) el.textContent='…';
+  });
+  document.getElementById('rp-live-conv').textContent='…';
+  document.getElementById('rp-att-status').innerHTML='<span style="color:#64748b;">Loading...</span>';
 
   // ── Today's attendance status ──
   try{
@@ -4475,16 +4497,19 @@ async function markAgentAbsent(status){
   if(!currentRepProfile) return;
   const {id,name,team,shift}=currentRepProfile;
   const today=getTodayGY();
-  const labels={A:'Absent',S:'Sick',PO:'Personal Out'};
-  if(!confirm('Mark '+name+' as '+(labels[status]||status)+' for today?')) return;
+  const labels={P:'Present',L:'Late',A:'Absent',S:'Sick',PO:'Personal Out'};
+  const label = labels[status]||status;
+  if(!confirm('Mark '+name+' as '+label+' for today?')) return;
   try{
     await db.collection('attendance').doc(id+'_'+today).set({
-      id,name,team,shift,date:today,status,
-      markedBy:'admin',loginTime:firebase.firestore.FieldValue.serverTimestamp()
+      id, name, team, shift, date:today, status,
+      markedBy:'admin', loginTime:firebase.firestore.FieldValue.serverTimestamp()
     },{merge:true});
-    alert('✅ '+name+' marked as '+(labels[status]||status));
-    loadRepAtt(id);
-  }catch(e){alert('Could not save.');}
+    // Also write to Google Sheet weekly tab
+    try{ await callBridge({action:'markAttendance', name, team, status}); }catch(e){}
+    // Refresh the overview stats
+    apLoadOverview(id, name);
+  }catch(e){ alert('Could not save: '+e.message); }
 }
 
 async function markAgentAbsentDirect(id,name,team){
