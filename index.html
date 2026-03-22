@@ -684,6 +684,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
       <button class="ap-tab"        id="apt-schedule"    onclick="apTab('schedule',this)">⏰ Schedule</button>
       <button class="ap-tab"        id="apt-audit"       onclick="apTab('audit',this)">🔍 Login History</button>
       <button class="ap-tab"        id="apt-rebuttal"    onclick="apTab('rebuttal',this)">🧠 Rebuttal Usage</button>
+      <button class="ap-tab"        id="apt-stats"       onclick="apTab('stats',this)">📈 Stats History</button>
     </div>
 
     <!-- ── OVERVIEW TAB ── -->
@@ -897,6 +898,23 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
       <div class="ap-card">
         <div class="ap-card-title">🔍 LOGIN HISTORY — LAST 20 SESSIONS</div>
         <div id="audit-list"><div style="color:#64748b;font-size:0.78rem;">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- ── STATS HISTORY TAB ── -->
+    <div id="ap-stats" style="display:none;">
+      <div class="ap-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div class="ap-card-title" style="margin-bottom:0;">📈 PERFORMANCE HISTORY</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button id="sh-view-daily" onclick="shSetView('daily')" style="padding:6px 12px;border-radius:7px;border:1px solid var(--accent);background:#0b1a38;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;">📅 DAILY</button>
+            <button id="sh-view-weekly" onclick="shSetView('weekly')" style="padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;">📆 WEEKLY</button>
+            <button id="sh-view-monthly" onclick="shSetView('monthly')" style="padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;">🗓 MONTHLY</button>
+          </div>
+        </div>
+        <div id="ap-stats-content">
+          <div style="color:var(--muted);text-align:center;padding:30px;font-size:0.82rem;">Loading stats history...</div>
+        </div>
       </div>
     </div>
 
@@ -1115,9 +1133,21 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
             <span id="csv-date-lbl"   style="font-size:0.68rem;color:var(--accent2);font-weight:700;"></span>
             <span id="csv-expiry-lbl" style="font-size:0.68rem;color:var(--red);font-weight:700;"></span>
+            <button id="compare-toggle-btn" onclick="toggleCompareMode()" style="display:none;padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;">⚖️ COMPARE</button>
+            <button id="compare-clear-btn" onclick="clearCompare()" style="display:none;padding:5px 12px;border-radius:7px;border:1px solid rgba(248,113,113,0.4);background:transparent;color:var(--red);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;">✕ CLEAR</button>
           </div>
         </div>
+        <!-- Compare mode banner -->
+        <div id="compare-banner" style="display:none;background:#0a1020;border:1px solid rgba(251,191,36,0.3);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:none;">
+          <div style="font-size:0.58rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">⚖️ COMPARE MODE</div>
+          <div id="compare-banner-text" style="font-size:0.75rem;color:var(--muted);"></div>
+        </div>
         <div id="report-history" style="margin-bottom:10px;"></div>
+        <!-- Old report banner -->
+        <div id="old-report-banner" style="display:none;background:#1a0e00;border:1px solid rgba(251,191,36,0.4);border-radius:9px;padding:9px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span style="font-size:0.75rem;color:var(--gold);">📅 Viewing report from <strong id="old-report-date"></strong> — click today's report or upload new CSV to return to today</span>
+          <button onclick="loadTodayReport()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;white-space:nowrap;">← TODAY</button>
+        </div>
         <input type="text" id="stats-search" placeholder="🔍 Search agent name..." oninput="filterStatsTable()" style="width:100%;padding:9px 14px;background:#0d1424;border:1.5px solid #2a3a5a;border-radius:8px;color:#e2e8f0;font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;margin-bottom:10px;">
         <input type="file" id="stats-csv-upload" accept=".csv" style="display:none;" onchange="handleStatsCSV(this)">
         <div id="expiry-picker" style="display:none;background:#0d1424;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
@@ -1137,7 +1167,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
         </div>
         <div style="overflow-x:auto;">
           <table class="adm-table">
-            <thead><tr>
+            <thead><tr id="stats-thead-row">
               <th onclick="sortStats(0)" style="cursor:pointer;">#</th>
               <th onclick="sortStats(0)" style="cursor:pointer;">Agent Name ↕</th>
               <th>Team</th>
@@ -4120,6 +4150,47 @@ function renderReportHistory(){
       return `<button onclick="loadReportByIndex(${i})" style="margin:0 4px 4px 0;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:1.5px solid ${isToday?'var(--green)':'var(--border)'};background:${isToday?'rgba(52,211,153,0.1)':'transparent'};color:${isToday?'var(--green)':'var(--muted)'};font-family:Barlow Condensed,sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">${isToday?'⚡ ':''} ${r.date} <span style="opacity:0.6;">(${r.agentCount||'?'} agents)</span></button>`;
     }).join('');
 }
+let compareData     = [];   // second dataset for comparison
+let compareDataDate = '';
+let compareModeOn   = false;
+
+function toggleCompareMode(){
+  if(!compareData.length){
+    // Prompt to select a report to compare against
+    const btn = document.getElementById('compare-toggle-btn');
+    btn.textContent = '⚖️ SELECT REPORT TO COMPARE...';
+    btn.style.borderColor = 'var(--gold)';
+    btn.style.color = 'var(--gold)';
+    window._pickingCompare = true;
+  } else {
+    compareModeOn = !compareModeOn;
+    updateCompareBanner();
+    renderStatsTable();
+  }
+}
+
+function clearCompare(){
+  compareData = []; compareDataDate = ''; compareModeOn = false;
+  window._pickingCompare = false;
+  document.getElementById('compare-toggle-btn').textContent = '⚖️ COMPARE';
+  document.getElementById('compare-toggle-btn').style.borderColor = 'var(--border)';
+  document.getElementById('compare-toggle-btn').style.color = 'var(--muted)';
+  document.getElementById('compare-clear-btn').style.display = 'none';
+  document.getElementById('compare-banner').style.display = 'none';
+  renderStatsTable();
+}
+
+function updateCompareBanner(){
+  const banner = document.getElementById('compare-banner');
+  const text   = document.getElementById('compare-banner-text');
+  if(compareModeOn && compareData.length){
+    banner.style.display = '';
+    text.innerHTML = `Comparing <strong style="color:var(--accent);">${statsDataDate}</strong> vs <strong style="color:var(--gold);">${compareDataDate}</strong> — <span style="color:var(--green);">▲ green = improved</span> · <span style="color:var(--red);">▼ red = declined</span>`;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
 function loadReportByIndex(idx){
   const r=reportHistory[idx];
   if(!r||!r.statsJSON) return;
@@ -4430,16 +4501,21 @@ function parseCSVLine(line){
 function renderStatsTable(){
   const tbody = document.getElementById('stats-tbody');
   const today = getTodayGY();
+  const isOldReport = statsDataDate && statsDataDate !== today;
 
-  // If no data or data is from a previous day — show upload prompt
-  if(!statsData.length || statsDataDate !== today){
+  if(!statsData.length){
     tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:40px;">
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:#64748b;letter-spacing:2px;margin-bottom:8px;">NO DATA FOR TODAY</div>
       <div style="font-size:0.78rem;color:#3a4a6a;">Upload today's CSV report to see agent stats</div>
-      ${statsData.length && statsDataDate !== today ? `<div style="font-size:0.68rem;color:#f87171;margin-top:6px;">Showing data from ${statsDataDate} — upload today's CSV to update</div>` : ''}
     </td></tr>`;
     return;
   }
+
+  // Show banner if viewing an old report
+  const bannerEl = document.getElementById('old-report-banner');
+  if(bannerEl) bannerEl.style.display = isOldReport ? '' : 'none';
+  const bannerTxt = document.getElementById('old-report-date');
+  if(bannerTxt && isOldReport) bannerTxt.textContent = statsDataDate;
 
   const q=(document.getElementById('stats-search')||{value:''}).value.toLowerCase();
   let rows=[...statsData].filter(r=>!q||r.name.toLowerCase().includes(q));
@@ -4547,7 +4623,7 @@ function closeRepProfile(){
 }
 
 function apTab(tab, btn){
-  ['overview','attendance','coaching','monitoring','schedule','audit','rebuttal'].forEach(t=>{
+  ['overview','attendance','coaching','monitoring','schedule','audit','rebuttal','stats'].forEach(t=>{
     const el = document.getElementById('ap-'+t);
     if(el) el.style.display = t===tab ? '' : 'none';
     const b  = document.getElementById('apt-'+t);
@@ -4562,6 +4638,7 @@ function apTab(tab, btn){
   if(tab==='schedule')   { apLoadSchedule(); }
   if(tab==='audit')      { loadRepAudit(id); }
   if(tab==='rebuttal')  { apLoadRebuttalUsage(id,name); }
+  if(tab==='stats')     { apLoadStatsHistory(name); }
 }
 
 // ── OVERVIEW ──
@@ -5158,6 +5235,222 @@ async function markAgentAbsentDirect(id,name,team){
   }catch(e){alert('Could not save.');}
 }
 
+
+// ── LOAD TODAY REPORT SHORTCUT ──
+function loadTodayReport(){
+  if(!reportHistory.length) return;
+  const idx = reportHistory.findIndex(r=>r.date===getTodayGY());
+  if(idx>=0) loadReportByIndex(idx);
+  else { statsData=[]; statsDataDate=''; renderStatsTable(); }
+}
+
+// ══════════════════════════════════════════════
+//  REP STATS HISTORY TAB
+// ══════════════════════════════════════════════
+let shCurrentView = 'daily';
+
+function shSetView(view){
+  shCurrentView = view;
+  ['daily','weekly','monthly'].forEach(v=>{
+    const btn = document.getElementById('sh-view-'+v);
+    if(!btn) return;
+    const active = v===view;
+    btn.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
+    btn.style.background  = active ? '#0b1a38' : 'transparent';
+    btn.style.color       = active ? 'var(--accent)' : 'var(--muted)';
+  });
+  if(currentRepProfile) apLoadStatsHistory(currentRepProfile.name);
+}
+
+async function apLoadStatsHistory(name){
+  const el = document.getElementById('ap-stats-content');
+  if(!el) return;
+  el.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;font-size:0.82rem;">⏳ Loading...</div>';
+
+  if(!reportHistory.length){
+    // Try loading from Firestore if not yet loaded
+    try{
+      const snap = await db.collection('stat_reports').orderBy('date','desc').get();
+      reportHistory=[];
+      snap.forEach(doc=>{ const d=doc.data(); if(d.statsJSON) reportHistory.push(d); });
+    }catch(e){}
+  }
+
+  if(!reportHistory.length){
+    el.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;font-size:0.82rem;">No saved reports yet. Upload CSVs in Agent Stats to build history.</div>';
+    return;
+  }
+
+  const nameLower = name.toLowerCase();
+
+  // Pull this agent's data from every saved report
+  const agentReports = [];
+  reportHistory.forEach(report=>{
+    try{
+      const data = JSON.parse(report.statsJSON);
+      const match = data.find(r=>{
+        const rn = r.name.toLowerCase();
+        return rn===nameLower || (rn.includes(nameLower.split(' ')[0]) && rn.includes(nameLower.split(' ').slice(-1)[0]));
+      });
+      if(match) agentReports.push({date: report.date, ...match});
+    }catch(e){}
+  });
+
+  // Sort oldest → newest
+  agentReports.sort((a,b)=>a.date.localeCompare(b.date));
+
+  if(!agentReports.length){
+    el.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;font-size:0.82rem;">No data found for this agent in saved reports.</div>';
+    return;
+  }
+
+  if(shCurrentView==='daily')   shRenderDaily(el, agentReports);
+  else if(shCurrentView==='weekly')  shRenderGrouped(el, agentReports, 'week');
+  else shRenderGrouped(el, agentReports, 'month');
+}
+
+function shRenderDaily(el, reports){
+  // Summary totals
+  const totXfer  = reports.reduce((s,r)=>s+r.xfer,0);
+  const totCalls = reports.reduce((s,r)=>s+r.calls,0);
+  const avgConv  = reports.length ? (reports.reduce((s,r)=>s+r.conv,0)/reports.length).toFixed(1) : 0;
+  const bestDay  = [...reports].sort((a,b)=>b.xfer-a.xfer)[0];
+
+  let html = `
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">
+    <div style="background:#0a1020;border:1px solid var(--border);border-radius:9px;padding:10px;text-align:center;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--green);line-height:1;">${totXfer}</div>
+      <div style="font-size:0.5rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;">Total Transfers</div>
+    </div>
+    <div style="background:#0a1020;border:1px solid var(--border);border-radius:9px;padding:10px;text-align:center;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--accent);line-height:1;">${totCalls.toLocaleString()}</div>
+      <div style="font-size:0.5rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;">Total Calls</div>
+    </div>
+    <div style="background:#0a1020;border:1px solid var(--border);border-radius:9px;padding:10px;text-align:center;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--gold);line-height:1;">${avgConv}%</div>
+      <div style="font-size:0.5rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;">Avg Conv %</div>
+    </div>
+  </div>
+  ${bestDay?`<div style="background:var(--green-light);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:0.75rem;color:var(--green);">⭐ Best day: <strong>${bestDay.date}</strong> — ${bestDay.xfer} transfers, ${bestDay.conv}% conv</div>`:''}
+  <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">DAILY BREAKDOWN (${reports.length} report${reports.length!==1?'s':''})</div>
+  <div style="overflow-x:auto;">
+  <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+    <thead><tr style="border-bottom:1px solid var(--border);">
+      <th style="padding:6px 8px;text-align:left;color:var(--muted);font-size:0.58rem;letter-spacing:1px;">DATE</th>
+      <th style="padding:6px 8px;text-align:right;color:var(--muted);font-size:0.58rem;letter-spacing:1px;">CALLS</th>
+      <th style="padding:6px 8px;text-align:right;color:var(--muted);font-size:0.58rem;letter-spacing:1px;">CI</th>
+      <th style="padding:6px 8px;text-align:right;color:var(--muted);font-size:0.58rem;letter-spacing:1px;">XFER</th>
+      <th style="padding:6px 8px;text-align:right;color:var(--muted);font-size:0.58rem;letter-spacing:1px;">DNC</th>
+      <th style="padding:6px 8px;text-align:right;color:var(--muted);font-size:0.58rem;letter-spacing:1px;">NI</th>
+      <th style="padding:6px 8px;text-align:right;color:var(--muted);font-size:0.58rem;letter-spacing:1px;">CONV%</th>
+      <th style="padding:6px 8px;text-align:right;color:var(--muted);font-size:0.58rem;letter-spacing:1px;">TREND</th>
+    </tr></thead>
+    <tbody>`;
+
+  reports.slice().reverse().forEach((r,i,arr)=>{
+    const prev = arr[i+1];
+    const xferDelta = prev ? r.xfer - prev.xfer : null;
+    const convDelta = prev ? (r.conv - prev.conv).toFixed(1) : null;
+    const trendIcon = xferDelta===null ? '' : xferDelta>0 ? `<span style="color:var(--green);">▲${xferDelta}</span>` : xferDelta<0 ? `<span style="color:var(--red);">▼${Math.abs(xferDelta)}</span>` : `<span style="color:var(--muted);">—</span>`;
+    const cc = r.conv>=5?'var(--green)':r.conv>=2?'var(--gold)':'var(--red)';
+    const isToday = r.date === getTodayGY();
+    html += `<tr style="border-bottom:1px solid #0d1a2e;${isToday?'background:rgba(52,211,153,0.05);':''}">
+      <td style="padding:7px 8px;color:${isToday?'var(--green)':'var(--text)'};font-weight:${isToday?'800':'600'};font-size:0.75rem;">${r.date}${isToday?' ⚡':''}</td>
+      <td style="padding:7px 8px;text-align:right;color:var(--muted);">${r.calls.toLocaleString()}</td>
+      <td style="padding:7px 8px;text-align:right;color:var(--muted);">${r.ci.toLocaleString()}</td>
+      <td style="padding:7px 8px;text-align:right;font-weight:800;color:var(--green);">${r.xfer}</td>
+      <td style="padding:7px 8px;text-align:right;color:var(--red);">${r.dnc}</td>
+      <td style="padding:7px 8px;text-align:right;color:var(--gold);">${r.ni}</td>
+      <td style="padding:7px 8px;text-align:right;font-weight:800;color:${cc};">${r.conv}%</td>
+      <td style="padding:7px 8px;text-align:right;font-size:0.72rem;">${trendIcon}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+function shRenderGrouped(el, reports, groupBy){
+  // Group by week (Mon-Sun) or month
+  const groups = {};
+  reports.forEach(r=>{
+    let key;
+    if(groupBy==='month'){
+      key = r.date.substring(0,7); // YYYY-MM
+    } else {
+      // Get Monday of that week
+      const d = new Date(r.date);
+      const day = d.getDay(); // 0=Sun
+      const diff = d.getDate() - (day===0?6:day-1);
+      const mon = new Date(d.setDate(diff));
+      key = mon.toISOString().split('T')[0];
+    }
+    if(!groups[key]) groups[key]=[];
+    groups[key].push(r);
+  });
+
+  const keys = Object.keys(groups).sort().reverse();
+  if(!keys.length){ el.innerHTML='<div style="color:var(--muted);text-align:center;padding:20px;">No data.</div>'; return; }
+
+  let html = `<div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">${groupBy==='month'?'MONTHLY':'WEEKLY'} SUMMARY</div>`;
+
+  keys.forEach(key=>{
+    const reps = groups[key];
+    const totalXfer  = reps.reduce((s,r)=>s+r.xfer,0);
+    const totalCalls = reps.reduce((s,r)=>s+r.calls,0);
+    const totalCI    = reps.reduce((s,r)=>s+r.ci,0);
+    const totalDNC   = reps.reduce((s,r)=>s+r.dnc,0);
+    const totalNI    = reps.reduce((s,r)=>s+r.ni,0);
+    const avgConv    = reps.length ? (reps.reduce((s,r)=>s+r.conv,0)/reps.length).toFixed(1) : 0;
+    const label      = groupBy==='month' ? key : `Week of ${key} (${reps.length} day${reps.length!==1?'s':''})`;
+    const cc         = avgConv>=5?'var(--green)':avgConv>=2?'var(--gold)':'var(--red)';
+
+    html += `<div style="background:#090f1e;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:0.95rem;color:var(--text);margin-bottom:10px;">${label}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">
+        <div style="background:#0a1020;border-radius:7px;padding:8px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--green);line-height:1;">${totalXfer}</div>
+          <div style="font-size:0.48rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;">Transfers</div>
+        </div>
+        <div style="background:#0a1020;border-radius:7px;padding:8px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--accent);line-height:1;">${totalCalls.toLocaleString()}</div>
+          <div style="font-size:0.48rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;">Calls</div>
+        </div>
+        <div style="background:#0a1020;border-radius:7px;padding:8px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:${cc};line-height:1;">${avgConv}%</div>
+          <div style="font-size:0.48rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;">Avg Conv</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;font-size:0.7rem;color:var(--muted);">
+        <span>CI: <strong style="color:var(--text);">${totalCI.toLocaleString()}</strong></span>
+        <span>DNC: <strong style="color:var(--red);">${totalDNC}</strong></span>
+        <span>NI: <strong style="color:var(--gold);">${totalNI}</strong></span>
+        <span>Days: <strong style="color:var(--text);">${reps.length}</strong></span>
+      </div>
+      <!-- Day breakdown inside the week/month -->
+      <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;display:flex;flex-wrap:wrap;gap:5px;">
+        ${reps.slice().reverse().map(r=>{
+          const daycc=r.conv>=5?'var(--green)':r.conv>=2?'var(--gold)':'var(--red)';
+          return `<div style="background:#060b18;border:1px solid #1a2540;border-radius:6px;padding:5px 8px;font-size:0.65rem;">
+            <div style="color:var(--muted);margin-bottom:2px;">${r.date}</div>
+            <div style="font-weight:800;color:var(--green);">${r.xfer} xfer</div>
+            <div style="color:${daycc};">${r.conv}%</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+// ── LOAD TODAY REPORT SHORTCUT ──
+function loadTodayReport(){
+  if(!reportHistory.length) return;
+  const idx = reportHistory.findIndex(r=>r.date===getTodayGY());
+  if(idx>=0) loadReportByIndex(idx);
+  else { statsData=[]; statsDataDate=''; renderStatsTable(); }
+}
 
 // ── REP PROFILE: REBUTTAL MINI CARD (Overview Tab) ──
 async function apLoadRebuttalMini(id, name){
