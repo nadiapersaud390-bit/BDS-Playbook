@@ -683,6 +683,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
       <button class="ap-tab"        id="apt-monitoring"  onclick="apTab('monitoring',this)">🎧 Monitoring</button>
       <button class="ap-tab"        id="apt-schedule"    onclick="apTab('schedule',this)">⏰ Schedule</button>
       <button class="ap-tab"        id="apt-audit"       onclick="apTab('audit',this)">🔍 Login History</button>
+      <button class="ap-tab"        id="apt-rebuttal"    onclick="apTab('rebuttal',this)">🧠 Rebuttal Usage</button>
     </div>
 
     <!-- ── OVERVIEW TAB ── -->
@@ -762,6 +763,15 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
           <span style="font-size:0.5rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#64748b;">🔥 PUNCTUALITY STREAK</span>
           <span id="rp-streak-display" style="font-size:0.78rem;color:#64748b;">Loading...</span>
         </div>
+      </div>
+
+      <!-- Rebuttal mini-summary -->
+      <div class="ap-card" id="rp-rebuttal-mini-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div class="ap-card-title" style="margin-bottom:0;">🧠 TODAY'S REBUTTAL USAGE</div>
+          <button onclick="apTab('rebuttal',document.getElementById('apt-rebuttal'))" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:0.62rem;padding:3px 9px;border-radius:6px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:1px;">VIEW ALL →</button>
+        </div>
+        <div id="rp-rb-mini-content" style="font-size:0.78rem;color:var(--muted);">Loading...</div>
       </div>
 
       <!-- Mark today -->
@@ -890,6 +900,31 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
       </div>
     </div>
 
+    <!-- ── REBUTTAL USAGE TAB ── -->
+    <div id="ap-rebuttal" style="display:none;">
+      <div class="ap-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div class="ap-card-title" style="margin-bottom:0;">🧠 REBUTTAL USAGE HISTORY</div>
+          <select id="ap-rebuttal-range" onchange="apLoadRebuttalUsage(currentRepProfile.id,currentRepProfile.name)"
+            style="padding:6px 12px;background:#0a1020;border:1px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.75rem;outline:none;">
+            <option value="today">Today</option>
+            <option value="7">Last 7 Days</option>
+            <option value="30">Last 30 Days</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+        <!-- Summary stats row -->
+        <div id="ap-rb-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;"></div>
+        <!-- Coaching signals for this rep -->
+        <div id="ap-rb-signals" style="margin-bottom:14px;"></div>
+        <!-- Bar chart of usage -->
+        <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">USAGE BY REBUTTAL</div>
+        <div id="ap-rb-bars" style="display:flex;flex-direction:column;gap:5px;"></div>
+        <!-- Never touched -->
+        <div id="ap-rb-never" style="margin-top:14px;"></div>
+      </div>
+    </div>
+
   </div><!-- end .agent-panel -->
 </div><!-- end overlay -->
 
@@ -917,6 +952,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
         <button class="adm-tab"        id="atab-stats"       onclick="switchAdminTab('stats',this)">📊 Agent Stats</button>
         <button class="adm-tab"        id="atab-coaching"    onclick="switchAdminTab('coaching',this)">📝 Coaching</button>
         <button class="adm-tab"        id="atab-monitoring"  onclick="switchAdminTab('monitoring',this)">🎧 Live Monitoring</button>
+        <button class="adm-tab"        id="atab-rebuttal"    onclick="switchAdminTab('rebuttal',this)">🧠 Rebuttal Intel</button>
       </div>
     </div>
 
@@ -1124,7 +1160,75 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
       <div class="admin-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
           <div class="admin-card-title" style="margin-bottom:0;font-size:0.9rem;">👤 AGENT PROFILES</div>
-          <span style="font-size:0.65rem;color:var(--muted);">Changes save to Google Sheet &amp; Firebase instantly</span>
+          <button onclick="toggleAddRepForm()" id="add-rep-toggle-btn" style="padding:9px 18px;border-radius:9px;border:none;background:linear-gradient(90deg,var(--green),var(--cyan));color:#000;font-family:'Barlow Condensed',sans-serif;font-size:0.88rem;font-weight:800;letter-spacing:1.5px;cursor:pointer;">＋ ADD NEW REP</button>
+        </div>
+
+        <!-- ── ADD NEW REP FORM ── -->
+        <div id="add-rep-form" style="display:none;background:#06120a;border:1.5px solid rgba(52,211,153,0.35);border-radius:14px;padding:18px;margin-bottom:16px;">
+          <div style="font-size:0.62rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--green);margin-bottom:14px;">✨ NEW REP — FILL IN DETAILS</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div>
+              <div style="font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Full Name *</div>
+              <input id="nr-name" type="text" placeholder="e.g. Priya Ramkhelawan"
+                style="width:100%;padding:9px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;"
+                onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='#2a3a5a'">
+            </div>
+            <div>
+              <div style="font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">User ID *</div>
+              <input id="nr-id" type="text" placeholder="e.g. 1042 (unique number)"
+                style="width:100%;padding:9px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;"
+                onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='#2a3a5a'">
+            </div>
+            <div>
+              <div style="font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Team *</div>
+              <select id="nr-team"
+                style="width:100%;padding:9px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;outline:none;box-sizing:border-box;"
+                onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='#2a3a5a'">
+                <option value="BB">🏠 Berbice (BB)</option>
+                <option value="PR">🌴 Providence (PR)</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Ytel Name</div>
+              <input id="nr-ytel" type="text" placeholder="e.g. GUY_PriyaR or GUYP_PriyaR"
+                style="width:100%;padding:9px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;"
+                onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#2a3a5a'">
+            </div>
+            <div>
+              <div style="font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Shift</div>
+              <select id="nr-shift"
+                style="width:100%;padding:9px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;outline:none;box-sizing:border-box;">
+                <option value="">— Select shift —</option>
+                <option value="10:00AM - 7:00PM">10:00AM - 7:00PM</option>
+                <option value="11:00am-8:00pm">11:00am-8:00pm</option>
+                <option value="11:45am-9:00pm">11:45am-9:00pm</option>
+                <option value="13:00pm - 22:00pm">13:00pm - 22:00pm</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Lunch Time</div>
+              <input id="nr-lunch" type="text" placeholder="e.g. 3:30-4:00 pm"
+                style="width:100%;padding:9px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#2a3a5a'">
+            </div>
+          </div>
+
+          <div style="margin-bottom:10px;">
+            <div style="font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Status</div>
+            <select id="nr-status"
+              style="width:100%;padding:9px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;outline:none;box-sizing:border-box;">
+              <option value="Agent">Agent</option>
+              <option value="Trainee">Trainee</option>
+            </select>
+          </div>
+
+          <div id="nr-status-msg" style="font-size:0.72rem;min-height:20px;margin-bottom:10px;text-align:center;"></div>
+
+          <div style="display:flex;gap:8px;">
+            <button onclick="saveNewRep()" style="flex:1;padding:12px;border-radius:9px;border:none;background:linear-gradient(90deg,var(--green),var(--cyan));color:#000;font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;letter-spacing:1.5px;cursor:pointer;">💾 ADD REP TO SYSTEM</button>
+            <button onclick="toggleAddRepForm()" style="padding:12px 18px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;font-weight:800;cursor:pointer;">Cancel</button>
+          </div>
         </div>
 
         <!-- Search + team filter -->
@@ -1365,6 +1469,43 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
         <!-- Sessions list -->
         <div id="monitoring-notes-feed">
           <div style="text-align:center;color:var(--muted);padding:24px;font-size:0.82rem;">Loading monitoring sessions...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── REBUTTAL INTEL ── -->
+    <div id="admin-rebuttal" class="admin-section" style="display:none;">
+      <div class="admin-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <div class="admin-card-title" style="margin-bottom:0;">🧠 REBUTTAL INTEL — COACHING SIGNALS</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <select id="ri-team-filter" onchange="loadRebuttalIntel()" style="padding:7px 12px;background:#0d1424;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.78rem;outline:none;">
+              <option value="all">All Teams</option>
+              <option value="BB">🏠 Berbice</option>
+              <option value="PR">🌴 Providence</option>
+            </select>
+            <select id="ri-date-range" onchange="loadRebuttalIntel()" style="padding:7px 12px;background:#0d1424;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.78rem;outline:none;">
+              <option value="today">Today</option>
+              <option value="7">Last 7 Days</option>
+              <option value="30">Last 30 Days</option>
+              <option value="all">All Time</option>
+            </select>
+            <button onclick="loadRebuttalIntel()" style="padding:7px 14px;border-radius:8px;border:none;background:#1a2a45;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-size:0.82rem;font-weight:800;letter-spacing:1px;cursor:pointer;">🔄 REFRESH</button>
+          </div>
+        </div>
+
+        <!-- Summary banner -->
+        <div id="ri-summary-banner" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px;"></div>
+
+        <!-- View toggle -->
+        <div style="display:flex;gap:6px;margin-bottom:14px;">
+          <button id="ri-view-reps" onclick="riSetView('reps')" style="padding:7px 14px;border-radius:8px;border:1px solid var(--accent);background:#0b1a38;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:800;letter-spacing:1px;cursor:pointer;">👤 BY REP</button>
+          <button id="ri-view-rebuttals" onclick="riSetView('rebuttals')" style="padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:800;letter-spacing:1px;cursor:pointer;">📊 BY REBUTTAL</button>
+          <button id="ri-view-signals" onclick="riSetView('signals')" style="padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:800;letter-spacing:1px;cursor:pointer;">🚨 COACHING SIGNALS</button>
+        </div>
+
+        <div id="ri-content">
+          <div style="text-align:center;color:var(--muted);padding:40px;font-size:0.85rem;">Loading rebuttal intelligence...</div>
         </div>
       </div>
     </div>
@@ -2849,6 +2990,99 @@ async function loadRepCoach(id){
 }
 let selectedProfileId = null;
 
+function toggleAddRepForm(){
+  const form = document.getElementById('add-rep-form');
+  const btn  = document.getElementById('add-rep-toggle-btn');
+  const open = form.style.display === 'none';
+  form.style.display = open ? '' : 'none';
+  btn.textContent = open ? '✕ CANCEL' : '＋ ADD NEW REP';
+  btn.style.background = open ? 'transparent' : 'linear-gradient(90deg,var(--green),var(--cyan))';
+  btn.style.border = open ? '1px solid var(--border)' : 'none';
+  btn.style.color = open ? 'var(--muted)' : '#000';
+  if(open){
+    document.getElementById('nr-name').value='';
+    document.getElementById('nr-id').value='';
+    document.getElementById('nr-ytel').value='';
+    document.getElementById('nr-lunch').value='';
+    document.getElementById('nr-status-msg').textContent='';
+  }
+}
+
+async function saveNewRep(){
+  const msgEl = document.getElementById('nr-status-msg');
+  const name   = document.getElementById('nr-name').value.trim();
+  const idVal  = document.getElementById('nr-id').value.trim();
+  const team   = document.getElementById('nr-team').value;
+  const ytel   = document.getElementById('nr-ytel').value.trim();
+  const shift  = document.getElementById('nr-shift').value;
+  const lunch  = document.getElementById('nr-lunch').value.trim();
+  const status = document.getElementById('nr-status').value;
+
+  // Validate required fields
+  if(!name){ msgEl.style.color='var(--red)'; msgEl.textContent='⚠️ Full name is required.'; return; }
+  if(!idVal){ msgEl.style.color='var(--red)'; msgEl.textContent='⚠️ User ID is required.'; return; }
+  if(isNaN(idVal)||idVal===''){ msgEl.style.color='var(--red)'; msgEl.textContent='⚠️ User ID must be a number.'; return; }
+
+  // Check for duplicate ID
+  if(ROSTER[String(idVal)]){ msgEl.style.color='var(--red)'; msgEl.textContent='⚠️ A rep with ID '+idVal+' already exists: '+ROSTER[String(idVal)].name; return; }
+
+  msgEl.style.color='var(--gold)'; msgEl.textContent='⏳ Saving to Google Sheet...';
+
+  let sheetOk = false;
+  let fireOk  = false;
+  const errors = [];
+
+  // 1. Write to Google Sheet via bridge
+  try{
+    const r = await callBridge({
+      action: 'addAgent',
+      userId: idVal,
+      name,
+      team,
+      ytelName: ytel,
+      shift,
+      lunch,
+      status
+    });
+    if(r && r.success){ sheetOk = true; }
+    else { errors.push('Sheet: '+(r&&r.error?r.error:'Unknown error')); }
+  }catch(e){ errors.push('Sheet bridge failed — rep added to Firebase only'); }
+
+  // 2. Write to Firebase roster so they can log in immediately
+  try{
+    await db.collection('roster').doc(String(idVal)).set({
+      userId: String(idVal),
+      name,
+      team,
+      ytelName: ytel||'',
+      shift:  shift||'',
+      lunch:  lunch||'',
+      brk:    '',
+      status,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    fireOk = true;
+  }catch(e){ errors.push('Firebase: '+e.message); }
+
+  if(!fireOk && !sheetOk){
+    msgEl.style.color='var(--red)'; msgEl.textContent='❌ Failed to save. '+errors.join(' | ');
+    return;
+  }
+
+  // Update local ROSTER so the rep appears immediately without a full reload
+  ROSTER[String(idVal)] = { userId:String(idVal), name, team, ytelName:ytel||'', shift:shift||'', lunch:lunch||'', brk:'', status };
+
+  const note = errors.length ? ' (⚠️ '+errors.join('; ')+')' : '';
+  msgEl.style.color='var(--green)';
+  msgEl.textContent='✅ '+name+' (ID: '+idVal+') added successfully!'+note;
+
+  // Refresh the agent list
+  setTimeout(()=>{
+    toggleAddRepForm();
+    loadAgentProfiles();
+  }, 1800);
+}
+
 function loadAgentProfiles(){
   if(!rosterLoaded){ loadRoster().then(renderProfileList); return; }
   renderProfileList();
@@ -3058,6 +3292,25 @@ function loadObjection(key){
   const d=document.getElementById('obj-display');
   d.innerHTML=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:${o.color};margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--border);">${o.phase}</div>${o.content}`;
   d.scrollTop=0;
+  // ── REBUTTAL TRACKING ──
+  if(currentUser && !currentUser.isAdmin){
+    const today = getTodayGY();
+    const docId = currentUser.id+'_'+today;
+    const ref = db.collection('rebuttal_clicks').doc(docId);
+    ref.get().then(snap=>{
+      const dat = snap.exists ? snap.data() : {};
+      const clicks = dat.clicks || {};
+      clicks[key] = (clicks[key]||0)+1;
+      ref.set({
+        id: String(currentUser.id),
+        name: currentUser.name||'',
+        team: currentUser.team||'',
+        date: today,
+        clicks,
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+    }).catch(()=>{});
+  }
 }
 
 // ── ADMIN PANEL JS ──
@@ -3112,7 +3365,7 @@ function switchAdminTab(tab, btn){
   const adminBtn = document.getElementById('tab-admin');
   if(adminBtn) adminBtn.classList.add('active');
   // Show correct sub-section
-  ['overview','attendance','weekly','monthly','stats','profiles','coaching','monitoring'].forEach(t=>{
+  ['overview','attendance','weekly','monthly','stats','profiles','coaching','monitoring','rebuttal'].forEach(t=>{
     const el=document.getElementById('admin-'+t);
     if(el) el.style.display = t===tab?'':'none';
     const b=document.getElementById('atab-'+t);
@@ -3125,6 +3378,7 @@ function switchAdminTab(tab, btn){
   if(tab==='monthly')     loadMonthlyAttendance();
   if(tab==='coaching')    loadCoachingNotes();
   if(tab==='monitoring')  loadMonitoringNotes();
+  if(tab==='rebuttal')    loadRebuttalIntel();
   if(tab==='stats'){
     rosterLoaded = false;
     loadRoster().then(()=>{
@@ -4237,7 +4491,7 @@ function closeRepProfile(){
 }
 
 function apTab(tab, btn){
-  ['overview','attendance','coaching','monitoring','schedule','audit'].forEach(t=>{
+  ['overview','attendance','coaching','monitoring','schedule','audit','rebuttal'].forEach(t=>{
     const el = document.getElementById('ap-'+t);
     if(el) el.style.display = t===tab ? '' : 'none';
     const b  = document.getElementById('apt-'+t);
@@ -4251,6 +4505,7 @@ function apTab(tab, btn){
   if(tab==='monitoring') { apLoadSessions(id,'monitoring'); }
   if(tab==='schedule')   { apLoadSchedule(); }
   if(tab==='audit')      { loadRepAudit(id); }
+  if(tab==='rebuttal')  { apLoadRebuttalUsage(id,name); }
 }
 
 // ── OVERVIEW ──
@@ -4389,6 +4644,9 @@ async function apLoadOverview(id,name){
   try{
     loadAgentStreakForProfile(idStr, name);
   }catch(e){}
+
+  // ── Rebuttal mini card ──
+  apLoadRebuttalMini(idStr, name);
 }
 
 // ── ATTENDANCE ──
@@ -4844,6 +5102,486 @@ async function markAgentAbsentDirect(id,name,team){
   }catch(e){alert('Could not save.');}
 }
 
+
+// ── REP PROFILE: REBUTTAL MINI CARD (Overview Tab) ──
+async function apLoadRebuttalMini(id, name){
+  const el = document.getElementById('rp-rb-mini-content');
+  if(!el) return;
+  const today = getTodayGY();
+  try{
+    const snap = await db.collection('rebuttal_clicks').doc(id+'_'+today).get();
+    if(!snap.exists){
+      el.innerHTML='<div style="color:var(--red);font-size:0.78rem;font-weight:700;">⚠️ No rebuttals opened today yet</div>';
+      return;
+    }
+    const d = snap.data();
+    const clicks = d.clicks||{};
+    const total = Object.values(clicks).reduce((s,v)=>s+v,0);
+    const used = Object.keys(clicks).filter(k=>clicks[k]>0).length;
+    const allKeys = Object.keys(REBUTTAL_LABELS);
+    const critMissing = CRITICAL_REBUTTALS.filter(k=>!clicks[k]);
+    const top3 = Object.entries(clicks).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const engPct = Math.round((used/allKeys.length)*100);
+    const engColor = engPct>=60?'var(--green)':engPct>=30?'var(--gold)':'var(--red)';
+
+    el.innerHTML=`
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">
+        <div style="background:#0a1020;border-radius:8px;padding:8px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--accent);line-height:1;">${total}</div>
+          <div style="font-size:0.5rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;">Total Opens</div>
+        </div>
+        <div style="background:#0a1020;border-radius:8px;padding:8px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:${engColor};line-height:1;">${engPct}%</div>
+          <div style="font-size:0.5rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;">Coverage</div>
+        </div>
+        <div style="background:#0a1020;border-radius:8px;padding:8px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:${critMissing.length>0?'var(--red)':'var(--green)'};line-height:1;">${critMissing.length===0?'✓':critMissing.length}</div>
+          <div style="font-size:0.5rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;">Crit Missing</div>
+        </div>
+      </div>
+      ${top3.length>0?`<div style="font-size:0.55rem;color:var(--muted);font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;">🔥 MOST USED TODAY</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">
+        ${top3.map(([k,v])=>`<span style="background:#111c30;border:1px solid #2a3a5a;border-radius:6px;padding:3px 9px;font-size:0.7rem;color:var(--text);">${REBUTTAL_LABELS[k]||k} <strong style="color:var(--gold);">×${v}</strong></span>`).join('')}
+      </div>`:''}
+      ${critMissing.length>0?`<div style="background:var(--red-light);border:1px solid rgba(248,113,113,0.35);border-radius:8px;padding:8px 10px;font-size:0.72rem;color:var(--red);">
+        🚨 <strong>Critical not opened:</strong> ${critMissing.map(k=>REBUTTAL_LABELS[k]||k).join(', ')}
+      </div>`:'<div style="background:var(--green-light);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:8px 10px;font-size:0.72rem;color:var(--green);">✅ All critical rebuttals covered today</div>'}`;
+  }catch(e){
+    el.innerHTML='<div style="color:var(--muted);font-size:0.75rem;">Could not load rebuttal data.</div>';
+  }
+}
+
+// ── REP PROFILE: REBUTTAL FULL TAB ──
+async function apLoadRebuttalUsage(id, name){
+  const summaryEl  = document.getElementById('ap-rb-summary');
+  const signalsEl  = document.getElementById('ap-rb-signals');
+  const barsEl     = document.getElementById('ap-rb-bars');
+  const neverEl    = document.getElementById('ap-rb-never');
+  if(!summaryEl) return;
+
+  const range = document.getElementById('ap-rebuttal-range')?.value || 'today';
+  const idStr = String(id||'');
+  const allKeys = Object.keys(REBUTTAL_LABELS);
+
+  summaryEl.innerHTML='<div style="color:var(--muted);font-size:0.75rem;grid-column:1/-1;">Loading...</div>';
+  barsEl.innerHTML='';
+  neverEl.innerHTML='';
+  signalsEl.innerHTML='';
+
+  try{
+    let query = db.collection('rebuttal_clicks').where('id','==',idStr);
+    if(range==='today'){
+      query = query.where('date','==',getTodayGY());
+    } else if(range!=='all'){
+      const days=parseInt(range);
+      const cutoff=new Date();cutoff.setDate(cutoff.getDate()-days);
+      query = query.where('date','>=',cutoff.toISOString().split('T')[0]);
+    }
+    const snap = await query.get();
+    const merged = {};
+    let daysActive = 0;
+    snap.forEach(doc=>{
+      const clicks = doc.data().clicks||{};
+      if(Object.keys(clicks).length>0) daysActive++;
+      Object.entries(clicks).forEach(([k,v])=>{ merged[k]=(merged[k]||0)+v; });
+    });
+
+    const total = Object.values(merged).reduce((s,v)=>s+v,0);
+    const used  = Object.keys(merged).filter(k=>merged[k]>0).length;
+    const never = allKeys.filter(k=>!merged[k]);
+    const critMissing = CRITICAL_REBUTTALS.filter(k=>!merged[k]);
+    const engPct = Math.round((used/allKeys.length)*100);
+    const engColor = engPct>=60?'var(--green)':engPct>=30?'var(--gold)':'var(--red)';
+
+    // Summary row
+    summaryEl.innerHTML=[
+      {label:'Total Opens',val:total,color:'var(--accent)'},
+      {label:'Coverage',val:engPct+'%',color:engColor},
+      {label:'Days Active',val:daysActive,color:'var(--gold)'},
+    ].map(s=>`<div style="background:#0a1020;border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:${s.color};line-height:1;">${s.val}</div>
+      <div style="font-size:0.5rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-top:2px;">${s.label}</div>
+    </div>`).join('');
+
+    // Coaching signals for this rep
+    const repSignals=[];
+    if(!merged['no_ssn']&&!merged['ssn_concerns']) repSignals.push({type:'danger',icon:'🚨',msg:'Never opens SSN rebuttal — likely losing leads at SSN ask'});
+    if(!merged['confidence_mindset']) repSignals.push({type:'warning',icon:'💡',msg:'Never opened Confidence Technique — may be projecting uncertainty'});
+    if((merged['not_interested']||0)>=10) repSignals.push({type:'warning',icon:'🔥',msg:`Opens "Not Interested" ${merged['not_interested']} times — prospects frequently objecting`});
+    if((merged['wants_to_hangup']||0)>=8) repSignals.push({type:'warning',icon:'📞',msg:`Taking Over Technique opened ${merged['wants_to_hangup']} times — high hang-up risk`});
+    if(!merged['pitch_benefit']&&!merged['pitch_urgency']&&!merged['pitch_softpull']) repSignals.push({type:'info',icon:'💬',msg:'No Pitch Boost rebuttals used — not enhancing the pitch'});
+    if(total>=20&&used>=8) repSignals.push({type:'good',icon:'⭐',msg:`Strong engagement — ${total} opens across ${used} different rebuttals`});
+    if(total===0) repSignals.push({type:'danger',icon:'🚫',msg:'Zero rebuttal opens — not using the tool at all'});
+
+    const colMap={danger:{bg:'var(--red-light)',border:'rgba(248,113,113,0.3)',text:'var(--red)'},warning:{bg:'var(--gold-light)',border:'rgba(251,191,36,0.3)',text:'var(--gold)'},info:{bg:'var(--purple-light)',border:'rgba(167,139,250,0.3)',text:'var(--purple)'},good:{bg:'var(--green-light)',border:'rgba(52,211,153,0.3)',text:'var(--green)'}};
+    if(repSignals.length){
+      signalsEl.innerHTML='<div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">COACHING SIGNALS</div>'+
+        repSignals.map(s=>{const c=colMap[s.type];return`<div style="background:${c.bg};border:1px solid ${c.border};border-radius:8px;padding:9px 12px;margin-bottom:5px;display:flex;gap:8px;align-items:flex-start;"><span style="font-size:1rem;flex-shrink:0;">${s.icon}</span><span style="font-size:0.75rem;color:${c.text};">${s.msg}</span></div>`;}).join('');
+    }
+
+    // Bars
+    const sorted=allKeys.sort((a,b)=>(merged[b]||0)-(merged[a]||0));
+    const maxVal=Math.max(...sorted.map(k=>merged[k]||0),1);
+    barsEl.innerHTML=sorted.map(k=>{
+      const v=merged[k]||0;
+      const pct=Math.round((v/maxVal)*100);
+      const isCrit=CRITICAL_REBUTTALS.includes(k);
+      const barColor=v===0?'#1a2540':isCrit?'var(--purple)':'var(--accent)';
+      const textColor=v===0?'var(--muted)':isCrit?'var(--purple)':'var(--accent)';
+      return`<div style="display:flex;align-items:center;gap:8px;">
+        <div style="font-size:0.68rem;color:${textColor};width:150px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${isCrit?'⭐ ':''} ${REBUTTAL_LABELS[k]||k}</div>
+        <div style="flex:1;background:#0a1020;border-radius:4px;height:7px;overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:${barColor};border-radius:4px;transition:width 0.5s;"></div>
+        </div>
+        <div style="font-size:0.7rem;font-weight:800;color:${textColor};width:22px;text-align:right;">${v||''}</div>
+      </div>`;
+    }).join('');
+
+    // Never used
+    if(never.length){
+      neverEl.innerHTML=`<div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">💤 NEVER USED (${never.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;">
+        ${never.map(k=>`<span style="background:#0a1020;border:1px solid #1a2540;border-radius:6px;padding:3px 8px;font-size:0.65rem;color:var(--muted);">${REBUTTAL_LABELS[k]||k}</span>`).join('')}
+      </div>`;
+    } else {
+      neverEl.innerHTML='<div style="color:var(--green);font-size:0.78rem;font-weight:700;">🏆 Used all rebuttals at least once!</div>';
+    }
+
+  }catch(e){
+    summaryEl.innerHTML='<div style="color:var(--red);font-size:0.75rem;grid-column:1/-1;">Error: '+e.message+'</div>';
+  }
+}
+
+// ── REBUTTAL INTEL JS ──
+const REBUTTAL_LABELS = {
+  not_interested:'Not Interested', no_info:'Why No Info?', bad_credit:'Bad Credit',
+  rate_question:'Interest Rate?', how_info:"How'd You Get My Info?", no_loan:"Don't Need a Loan",
+  website:'Give Me the Website', spouse:'Need to Ask Spouse', no_ssn:"Won't Give SSN",
+  company_name:'What Company Is This?', who_are_we:'Who Are You / Where Located?',
+  diff_numbers:'Different Numbers', lower_rate:'My Bank Has Lower Rate',
+  voicemail_approved:'Voicemail Said Approved', dnc_file:'DNC / Enrolled / Bad Lead',
+  llc_question:'Is Your Company LLC?', debt_consolidation:'Is This Debt Consolidation?',
+  soft_pull:'Soft Credit Pull', private_lender:'What Bank / Private Lender?',
+  confidence_mindset:'Confidence Technique', wants_to_hangup:'Taking Over Technique',
+  follow_up_pivot:'Follow Up / Pivot', ssn_concerns:'Concerns About SSN',
+  pitch_benefit:'Pitch — Benefit-Oriented', pitch_urgency:'Pitch — Urgency',
+  pitch_softpull:'Pitch — Soft Pull / Privacy'
+};
+
+const CRITICAL_REBUTTALS = ['no_ssn','ssn_concerns','confidence_mindset','not_interested','wants_to_hangup'];
+let riCurrentView = 'reps';
+let riAllData = [];
+
+function riSetView(view){
+  riCurrentView = view;
+  ['reps','rebuttals','signals'].forEach(v=>{
+    const btn = document.getElementById('ri-view-'+v);
+    if(!btn) return;
+    if(v===view){
+      btn.style.borderColor='var(--accent)';btn.style.background='#0b1a38';btn.style.color='var(--accent)';
+    } else {
+      btn.style.borderColor='var(--border)';btn.style.background='transparent';btn.style.color='var(--muted)';
+    }
+  });
+  riRender();
+}
+
+async function loadRebuttalIntel(){
+  const content = document.getElementById('ri-content');
+  if(!content) return;
+  content.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px;font-size:0.85rem;">⏳ Loading rebuttal data...</div>';
+
+  const teamFilter = document.getElementById('ri-team-filter')?.value || 'all';
+  const dateRange  = document.getElementById('ri-date-range')?.value || 'today';
+
+  try {
+    let query = db.collection('rebuttal_clicks');
+    if(dateRange === 'today'){
+      const today = getTodayGY();
+      query = query.where('date','==',today);
+    } else if(dateRange !== 'all'){
+      const days = parseInt(dateRange);
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate()-days);
+      const cutoffStr = cutoff.toISOString().split('T')[0];
+      query = query.where('date','>=',cutoffStr);
+    }
+    const snap = await query.get();
+    riAllData = [];
+    snap.forEach(doc=>{ riAllData.push(doc.data()); });
+
+    // Filter by team
+    if(teamFilter !== 'all'){
+      riAllData = riAllData.filter(d=>d.team===teamFilter);
+    }
+
+    riRenderSummary();
+    riRender();
+  } catch(e){
+    content.innerHTML='<div style="color:var(--red);padding:20px;font-size:0.82rem;">Error loading data: '+e.message+'</div>';
+  }
+}
+
+function riRenderSummary(){
+  const banner = document.getElementById('ri-summary-banner');
+  if(!banner) return;
+
+  // Aggregate totals
+  const repMap = {};
+  riAllData.forEach(d=>{
+    const repKey = d.id||d.name;
+    if(!repMap[repKey]) repMap[repKey]={name:d.name,id:d.id,team:d.team,totalClicks:0,uniqueRebuttals:new Set()};
+    Object.entries(d.clicks||{}).forEach(([k,v])=>{
+      repMap[repKey].totalClicks+=v;
+      repMap[repKey].uniqueRebuttals.add(k);
+    });
+  });
+
+  const reps = Object.values(repMap);
+  const totalReps = reps.length;
+  const totalClicks = reps.reduce((s,r)=>s+r.totalClicks,0);
+  const avgClicks = totalReps > 0 ? Math.round(totalClicks/totalReps) : 0;
+  const neverOpened = reps.filter(r=>r.totalClicks===0).length;
+  const criticalMissing = reps.filter(r=>CRITICAL_REBUTTALS.some(c=>!r.uniqueRebuttals.has(c))).length;
+
+  banner.innerHTML = [
+    {label:'REPS TRACKED', val:totalReps, color:'var(--accent)'},
+    {label:'TOTAL OPENS', val:totalClicks, color:'var(--green)'},
+    {label:'AVG PER REP', val:avgClicks, color:'var(--gold)'},
+    {label:'MISSING CRITICAL', val:criticalMissing, color:'var(--red)'},
+  ].map(s=>`
+    <div style="background:#0a1020;border:1px solid var(--border);border-radius:10px;padding:12px 16px;text-align:center;">
+      <div style="font-size:0.5rem;font-weight:800;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">${s.label}</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;color:${s.color};line-height:1;">${s.val}</div>
+    </div>`).join('');
+}
+
+function riRender(){
+  if(riCurrentView==='reps') riRenderByRep();
+  else if(riCurrentView==='rebuttals') riRenderByRebuttal();
+  else riRenderSignals();
+}
+
+function riRenderByRep(){
+  const content = document.getElementById('ri-content');
+  if(!content) return;
+  if(!riAllData.length){ content.innerHTML='<div style="color:var(--muted);padding:30px;text-align:center;font-size:0.82rem;">No data for selected filters.</div>'; return; }
+
+  // Aggregate by rep
+  const repMap = {};
+  riAllData.forEach(d=>{
+    const repKey = d.id||d.name;
+    if(!repMap[repKey]) repMap[repKey]={name:d.name,id:d.id,team:d.team,clicks:{}};
+    Object.entries(d.clicks||{}).forEach(([k,v])=>{
+      repMap[repKey].clicks[k]=(repMap[repKey].clicks[k]||0)+v;
+    });
+  });
+
+  const allKeys = Object.keys(REBUTTAL_LABELS);
+  const reps = Object.values(repMap).sort((a,b)=>{
+    const ta=Object.values(a.clicks).reduce((s,v)=>s+v,0);
+    const tb=Object.values(b.clicks).reduce((s,v)=>s+v,0);
+    return tb-ta;
+  });
+
+  let html = '';
+  reps.forEach(rep=>{
+    const total = Object.values(rep.clicks).reduce((s,v)=>s+v,0);
+    const used = Object.keys(rep.clicks).length;
+    const neverUsed = allKeys.filter(k=>!rep.clicks[k]);
+    const critMissing = CRITICAL_REBUTTALS.filter(k=>!rep.clicks[k]);
+    const topEntries = Object.entries(rep.clicks).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+    const engagementPct = Math.round((used/allKeys.length)*100);
+    const engColor = engagementPct>=60?'var(--green)':engagementPct>=30?'var(--gold)':'var(--red)';
+
+    html += `<div style="background:#090f1e;border:1px solid ${critMissing.length>0?'rgba(248,113,113,0.3)':'var(--border)'};border-radius:12px;padding:16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.1rem;color:var(--text);">${rep.name}</div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-top:2px;">${rep.team||''} · ID ${rep.id||''}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span style="background:#0d1a2e;border:1px solid #2a3a5a;border-radius:6px;padding:4px 10px;font-size:0.7rem;font-weight:700;color:var(--accent);">📖 ${total} opens</span>
+          <span style="background:#0d1a2e;border:1px solid #2a3a5a;border-radius:6px;padding:4px 10px;font-size:0.7rem;font-weight:700;color:${engColor};">🎯 ${engagementPct}% coverage</span>
+          ${critMissing.length>0?`<span style="background:var(--red-light);border:1px solid var(--red);border-radius:6px;padding:4px 10px;font-size:0.7rem;font-weight:700;color:var(--red);">⚠️ ${critMissing.length} critical missing</span>`:'<span style="background:var(--green-light);border:1px solid var(--green);border-radius:6px;padding:4px 10px;font-size:0.7rem;font-weight:700;color:var(--green);">✅ All critical covered</span>'}
+        </div>
+      </div>
+
+      ${topEntries.length>0?`
+      <div style="margin-bottom:10px;">
+        <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:6px;">🔥 MOST USED</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;">
+          ${topEntries.map(([k,v])=>`<span style="background:#111c30;border:1px solid #2a3a5a;border-radius:6px;padding:3px 8px;font-size:0.68rem;color:var(--text);">${REBUTTAL_LABELS[k]||k} <strong style="color:var(--gold);">×${v}</strong></span>`).join('')}
+        </div>
+      </div>`:''}
+
+      ${critMissing.length>0?`
+      <div style="margin-bottom:8px;">
+        <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;color:var(--red);text-transform:uppercase;margin-bottom:6px;">🚨 CRITICAL — NEVER OPENED</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;">
+          ${critMissing.map(k=>`<span style="background:var(--red-light);border:1px solid rgba(248,113,113,0.4);border-radius:6px;padding:3px 8px;font-size:0.68rem;color:var(--red);">${REBUTTAL_LABELS[k]||k}</span>`).join('')}
+        </div>
+      </div>`:''}
+
+      ${neverUsed.length>0?`
+      <div>
+        <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">💤 NEVER TOUCHED (${neverUsed.length})</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+          ${neverUsed.map(k=>`<span style="background:#0a1020;border:1px solid #1a2540;border-radius:6px;padding:2px 7px;font-size:0.63rem;color:var(--muted);">${REBUTTAL_LABELS[k]||k}</span>`).join('')}
+        </div>
+      </div>`:''}
+    </div>`;
+  });
+
+  content.innerHTML = html || '<div style="color:var(--muted);padding:30px;text-align:center;">No rep data found.</div>';
+}
+
+function riRenderByRebuttal(){
+  const content = document.getElementById('ri-content');
+  if(!content) return;
+  if(!riAllData.length){ content.innerHTML='<div style="color:var(--muted);padding:30px;text-align:center;font-size:0.82rem;">No data for selected filters.</div>'; return; }
+
+  // Aggregate totals per rebuttal key across all reps
+  const keyTotals = {};
+  const keyReps = {};
+  const allKeys = Object.keys(REBUTTAL_LABELS);
+
+  // Build rep map first
+  const repMap = {};
+  riAllData.forEach(d=>{
+    const repKey = d.id||d.name;
+    if(!repMap[repKey]) repMap[repKey]={name:d.name,clicks:{}};
+    Object.entries(d.clicks||{}).forEach(([k,v])=>{
+      repMap[repKey].clicks[k]=(repMap[repKey].clicks[k]||0)+v;
+    });
+  });
+
+  const repCount = Object.keys(repMap).length;
+
+  allKeys.forEach(k=>{
+    keyTotals[k]=0; keyReps[k]=[];
+    Object.values(repMap).forEach(rep=>{
+      if(rep.clicks[k]){ keyTotals[k]+=rep.clicks[k]; keyReps[k].push({name:rep.name,count:rep.clicks[k]}); }
+    });
+  });
+
+  const sorted = allKeys.sort((a,b)=>keyTotals[b]-keyTotals[a]);
+  const maxVal = Math.max(...sorted.map(k=>keyTotals[k]),1);
+
+  let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+  sorted.forEach(k=>{
+    const total=keyTotals[k];
+    const usedByReps=keyReps[k].length;
+    const pct=Math.round((usedByReps/repCount)*100)||0;
+    const barW=Math.round((total/maxVal)*100);
+    const isCritical=CRITICAL_REBUTTALS.includes(k);
+    const barColor=total===0?'#1a2540':pct<30?'#7f1d1d':pct<60?'#713f12':'#064e3b';
+    const textColor=total===0?'var(--muted)':pct<30?'var(--red)':pct<60?'var(--gold)':'var(--green)';
+
+    html+=`<div style="background:#090f1e;border:1px solid ${isCritical&&total===0?'rgba(248,113,113,0.4)':'var(--border)'};border-radius:10px;padding:12px 14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-size:0.82rem;font-weight:700;color:var(--text);">${isCritical?'⭐ ':''} ${REBUTTAL_LABELS[k]||k}</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="font-size:0.68rem;color:var(--muted);">${usedByReps}/${repCount} reps</span>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:${textColor};">${total}</span>
+        </div>
+      </div>
+      <div style="background:#0a1020;border-radius:4px;height:6px;overflow:hidden;margin-bottom:6px;">
+        <div style="width:${barW}%;height:100%;background:${textColor};border-radius:4px;transition:width 0.4s;"></div>
+      </div>
+      ${keyReps[k].length>0?`<div style="display:flex;flex-wrap:wrap;gap:4px;">${keyReps[k].sort((a,b)=>b.count-a.count).slice(0,6).map(r=>`<span style="font-size:0.62rem;background:#111c30;border-radius:5px;padding:2px 7px;color:var(--muted);">${r.name} <strong style="color:var(--text);">×${r.count}</strong></span>`).join('')}</div>`:`<div style="font-size:0.65rem;color:var(--red);">Nobody has opened this rebuttal</div>`}
+    </div>`;
+  });
+  html+='</div>';
+  content.innerHTML=html;
+}
+
+function riRenderSignals(){
+  const content = document.getElementById('ri-content');
+  if(!content) return;
+  if(!riAllData.length){ content.innerHTML='<div style="color:var(--muted);padding:30px;text-align:center;font-size:0.82rem;">No data for selected filters.</div>'; return; }
+
+  const repMap = {};
+  riAllData.forEach(d=>{
+    const repKey = d.id||d.name;
+    if(!repMap[repKey]) repMap[repKey]={name:d.name,id:d.id,team:d.team,clicks:{}};
+    Object.entries(d.clicks||{}).forEach(([k,v])=>{
+      repMap[repKey].clicks[k]=(repMap[repKey].clicks[k]||0)+v;
+    });
+  });
+
+  const allKeys = Object.keys(REBUTTAL_LABELS);
+  const signals = [];
+
+  Object.values(repMap).forEach(rep=>{
+    const total=Object.values(rep.clicks).reduce((s,v)=>s+v,0);
+    const used=Object.keys(rep.clicks).filter(k=>rep.clicks[k]>0).length;
+
+    // Signal: never opened SSN rebuttal
+    if(!rep.clicks['no_ssn'] && !rep.clicks['ssn_concerns']){
+      signals.push({type:'danger',rep:rep.name,team:rep.team,msg:'Never opens SSN rebuttal — may be losing leads at SSN ask',icon:'🚨'});
+    }
+    // Signal: opens Not Interested excessively
+    if((rep.clicks['not_interested']||0)>=15){
+      signals.push({type:'warning',rep:rep.name,team:rep.team,msg:`Opens "Not Interested" ${rep.clicks['not_interested']} times — prospect might be hanging up frequently`,icon:'🔥'});
+    }
+    // Signal: never uses confidence technique
+    if(!rep.clicks['confidence_mindset']){
+      signals.push({type:'info',rep:rep.name,team:rep.team,msg:'Never opened Confidence Technique — may be projecting uncertainty on calls',icon:'💡'});
+    }
+    // Signal: very low rebuttal usage overall
+    if(total<=2 && total>0){
+      signals.push({type:'warning',rep:rep.name,team:rep.team,msg:`Only ${total} total rebuttal opens — likely not using rebuttals on live calls`,icon:'⚠️'});
+    }
+    if(total===0){
+      signals.push({type:'danger',rep:rep.name,team:rep.team,msg:'Zero rebuttal opens today — not using the tool at all',icon:'🚫'});
+    }
+    // Signal: good engagement
+    if(total>=20 && used>=8){
+      signals.push({type:'good',rep:rep.name,team:rep.team,msg:`High engagement — ${total} opens across ${used} rebuttals. Strong coaching sign.`,icon:'⭐'});
+    }
+    // Signal: wants_to_hangup many times
+    if((rep.clicks['wants_to_hangup']||0)>=8){
+      signals.push({type:'warning',rep:rep.name,team:rep.team,msg:`Opens "Taking Over Technique" ${rep.clicks['wants_to_hangup']} times — prospects frequently trying to end calls`,icon:'📞'});
+    }
+    // Signal: no pitch boost
+    if(!rep.clicks['pitch_benefit'] && !rep.clicks['pitch_urgency'] && !rep.clicks['pitch_softpull']){
+      signals.push({type:'info',rep:rep.name,team:rep.team,msg:'Never opened any Pitch Boost rebuttals — may not be enhancing the pitch',icon:'💬'});
+    }
+  });
+
+  if(!signals.length){
+    content.innerHTML='<div style="color:var(--green);padding:30px;text-align:center;font-size:0.85rem;">✅ No coaching signals detected for current filters.</div>';
+    return;
+  }
+
+  const colorMap={danger:{bg:'var(--red-light)',border:'rgba(248,113,113,0.4)',text:'var(--red)'},warning:{bg:'var(--gold-light)',border:'rgba(251,191,36,0.3)',text:'var(--gold)'},info:{bg:'var(--purple-light)',border:'rgba(167,139,250,0.3)',text:'var(--purple)'},good:{bg:'var(--green-light)',border:'rgba(52,211,153,0.3)',text:'var(--green)'}};
+
+  const grouped={danger:[],warning:[],info:[],good:[]};
+  signals.forEach(s=>grouped[s.type].push(s));
+
+  let html='';
+  const order=['danger','warning','info','good'];
+  const headings={danger:'🚨 CRITICAL COACHING SIGNALS',warning:'⚠️ WARNING SIGNALS',info:'💡 IMPROVEMENT OPPORTUNITIES',good:'⭐ POSITIVE SIGNALS'};
+  order.forEach(type=>{
+    if(!grouped[type].length) return;
+    const c=colorMap[type];
+    html+=`<div style="margin-bottom:14px;">
+      <div style="font-size:0.58rem;font-weight:800;letter-spacing:2.5px;color:${c.text};text-transform:uppercase;margin-bottom:8px;">${headings[type]}</div>
+      ${grouped[type].map(s=>`
+        <div style="background:${c.bg};border:1px solid ${c.border};border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;gap:10px;align-items:flex-start;">
+          <div style="font-size:1.2rem;flex-shrink:0;">${s.icon}</div>
+          <div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:0.95rem;color:${c.text};">${s.rep} <span style="font-size:0.7rem;color:var(--muted);font-weight:600;">${s.team||''}</span></div>
+            <div style="font-size:0.77rem;color:var(--text);margin-top:2px;">${s.msg}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  });
+
+  content.innerHTML=html;
+}
 
 function searchRebuttals(val){
   const resultsEl=document.getElementById('search-results');
