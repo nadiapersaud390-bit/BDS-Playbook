@@ -1637,7 +1637,7 @@ pitch_softpull:{phase:'SALES PITCH BOOSTING \u2014 SOFT PULL / NO WEBSITE / DATA
 };
 
 // ── APPS SCRIPT BRIDGE URL ──
-const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbwTAOyQY7aMZHoX8RT9fA1MtODP91xy_EGFlTswZgnCojxrwwpRbYLujMy1BDNgIwuIBw/exec';
+const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbyMCJAKGnB8jEDr239r0HVtUUTUlDOBjlWzakD-5BXkjVku5RQxJxfsmKCdO0x4ry_41Q/exec';
 
 // ── JSONP helper — bypasses CORS for Google Apps Script ──
 function callBridge(params) {
@@ -3152,99 +3152,39 @@ async function loadMonthlyAttendance(){
   document.getElementById('monthly-month-lbl').textContent = monthNames[monthIdx]+' '+year;
   document.getElementById('monthly-table-wrap').innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;">Loading from Google Sheet...</div>';
 
+  // monthlyCache: keyed by lowercase agent name → { 'YYYY-MM-DD': 'P'/'L'/'A'/... }
   monthlyCache = {};
 
-  // ── Helper: merge agent days into monthlyCache ──
-  function mergeAgent(agentName, agentTeam, daysObj){
-    const rAgent = Object.values(ROSTER).find(r=>{
-      const rn = r.name.toLowerCase().trim();
-      const an = (agentName||'').toLowerCase().trim();
-      const parts = an.split(' ');
-      return rn===an
-        || (parts.length>=2 && rn.includes(parts[0]) && rn.includes(parts.slice(-1)[0]));
-    });
-    const key = rAgent ? String(rAgent.userId) : 'name:'+(agentName||'').toLowerCase().trim();
-    if(!monthlyCache[key]) monthlyCache[key]={};
-    Object.entries(daysObj||{}).forEach(([dayNum, status])=>{
-      const d   = parseInt(dayNum);
-      const code = normalizeStatus(status);
-      if(code && d>=1 && d<=31){
-        const dateStr = monthStart+'-'+(d<10?'0':'')+d;
-        // Only overwrite if no value already (monthly tab wins if loaded first)
-        if(!monthlyCache[key][dateStr]) monthlyCache[key][dateStr] = code;
-      }
-    });
-  }
-
-  // ── 1. Try Monthly Overview tab ──
-  let monthlyLoaded = false;
   try{
     const data = await callBridge({action:'getMonthlyAttendance'});
-    if(data.success && Array.isArray(data.agents) && data.agents.length > 0){
-      data.agents.forEach(agent=>{
-        mergeAgent(agent.name, agent.team, agent.days||{});
-      });
-      monthlyLoaded = true;
-      console.log('[Monthly] Loaded from Monthly Overview tab:', data.agents.length, 'agents');
-    } else {
-      console.warn('[Monthly] Monthly Overview returned no agents — reason:', data.error||'empty');
+    if(!data.success || !Array.isArray(data.agents) || data.agents.length === 0){
+      throw new Error(data.error || 'No agents returned');
     }
-  }catch(e){
-    console.warn('[Monthly] Monthly Overview fetch failed:', e.message);
-  }
 
-  // ── 2. Fallback: build from Weekly Attendance tabs (both teams) ──
-  if(!monthlyLoaded){
-    console.log('[Monthly] Falling back to weekly tabs to build monthly view...');
-    try{
-      const [bbRes, prRes] = await Promise.allSettled([
-        callBridge({action:'getWeeklyAttendance', team:'BB'}),
-        callBridge({action:'getWeeklyAttendance', team:'PR'})
-      ]);
-
-      [bbRes, prRes].forEach(res=>{
-        if(res.status!=='fulfilled' || !res.value.success) return;
-        (res.value.weeks||[]).forEach(week=>{
-          const cols = week.columns||[];
-          (week.agents||[]).forEach(agent=>{
-            // Convert column headers ("Mon 3", "Tue 4" etc.) back to day numbers
-            const daysObj={};
-            cols.forEach(col=>{
-              const hdr = String(col.header||'');
-              // Extract day number from headers like "Mon 3", "3", "Tue 10"
-              const m = hdr.match(/(\d{1,2})$/);
-              if(!m) return;
-              const dayNum = parseInt(m[1]);
-              const status = agent.days[col.header];
-              if(status && dayNum>=1 && dayNum<=31) daysObj[dayNum]=status;
-            });
-            mergeAgent(agent.name, res.value.team, daysObj);
-          });
-        });
+    data.agents.forEach(agent=>{
+      const nameKey = (agent.name||'').toLowerCase().trim();
+      if(!nameKey) return;
+      const dayData = {};
+      // days = { "2": "Present", "3": "Late", ... } — keys are day numbers as strings
+      Object.entries(agent.days||{}).forEach(([dayStr, status])=>{
+        const d = parseInt(dayStr);
+        const code = normalizeStatus(status);
+        if(code && d >= 1 && d <= 31){
+          const dateStr = monthStart+'-'+(d<10?'0':'')+d;
+          dayData[dateStr] = code;
+        }
       });
-      console.log('[Monthly] Built from weekly tabs. Keys:', Object.keys(monthlyCache).length);
-    }catch(e){
-      console.warn('[Monthly] Weekly fallback also failed:', e.message);
-    }
-  }
-
-  // ── 3. Always layer in Firebase attendance for any gaps ──
-  try{
-    const fbSnap = await db.collection('attendance')
-      .where('date','>=',monthStart+'-01')
-      .where('date','<=',monthStart+'-31')
-      .get();
-    fbSnap.forEach(doc=>{
-      const d = doc.data();
-      if(!d.id || !d.date || !d.status) return;
-      const key = String(d.id);
-      if(!monthlyCache[key]) monthlyCache[key]={};
-      // Firebase fills gaps; don't overwrite sheet data
-      if(!monthlyCache[key][d.date]){
-        monthlyCache[key][d.date] = normalizeStatus(d.status);
-      }
+      monthlyCache[nameKey] = dayData;
     });
-  }catch(e){ console.warn('[Monthly] Firebase layer failed:', e.message); }
+
+    console.log('[Monthly] Loaded', Object.keys(monthlyCache).length, 'agents from sheet');
+
+  }catch(e){
+    console.error('[Monthly] Load failed:', e.message);
+    document.getElementById('monthly-table-wrap').innerHTML=
+      `<div style="color:var(--red);text-align:center;padding:20px;">Could not load monthly data: ${e.message}</div>`;
+    return;
+  }
 
   renderMonthly(monthlyCache, monthStart, year, monthIdx);
 }
@@ -3330,10 +3270,9 @@ function renderMonthly(attMap, monthStart, year, monthIdx){
   let totalP=0,totalL=0,totalA=0;
 
   allAgents.forEach((agent,i)=>{
-    // Look up by ID first, then by name as fallback
-    const agentAtt = attMap[String(agent.userId)]
-                  || attMap['name:'+agent.name.toLowerCase().trim()]
-                  || {};
+    // monthlyCache is keyed by lowercase agent name
+    const nameKey  = agent.name.toLowerCase().trim();
+    const agentAtt = monthlyCache[nameKey] || {};
     let p=0,l=0,a=0;
     const rowBg = i%2===0 ? '#070e1c' : '#060b18';
     html+=`<tr style="background:${rowBg};"><td style="padding:7px 10px;font-size:0.72rem;color:var(--text);white-space:nowrap;font-weight:600;border-bottom:1px solid #0f1e35;">${agent.name.split(' ').slice(0,2).join(' ')}</td>`;
