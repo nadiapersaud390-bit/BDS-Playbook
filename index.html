@@ -3552,11 +3552,21 @@ async function loadAdminOverview(){
         const d = doc.data();
         const sid = String(d.id||'').trim();
         if(sid && !attIds.has(sid)){
-          // Rep has a session but no attendance record — add them as Present
+          // Rep has a session but no attendance record
+          // Look up their shift from ROSTER to correctly determine Present vs Late
+          const rosterAgent = ROSTER[sid] || Object.values(ROSTER).find(r=>r.name===d.name);
+          const shift = rosterAgent ? (rosterAgent.shift||'') : '';
+          const status = getAttendanceStatus(shift) || 'P';
           allAttRecords.push({
             id: sid, name: d.name||'', team: d.team||'',
-            date: today, status: 'P', shift: ''
+            date: today, status, shift
           });
+          // Also backfill Firebase so next refresh doesn't need the fallback
+          db.collection('attendance').doc(sid+'_'+today).set({
+            id: sid, name: d.name||'', team: d.team||'',
+            date: today, status, shift,
+            loginTime: firebase.firestore.FieldValue.serverTimestamp()
+          },{merge:true}).catch(()=>{});
           attIds.add(sid);
         }
       });
