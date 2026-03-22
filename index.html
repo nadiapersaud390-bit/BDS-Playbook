@@ -3351,17 +3351,27 @@ function loadObjection(key){
   if(currentUser && !currentUser.isAdmin){
     const today = getTodayGY();
     const docId = currentUser.id+'_'+today;
-    const ref = db.collection('rebuttal_clicks').doc(docId);
+    const ref   = db.collection('rebuttal_clicks').doc(docId);
+    const tsNow = Date.now(); // client timestamp in ms
+
     ref.get().then(snap=>{
-      const dat = snap.exists ? snap.data() : {};
-      const clicks = dat.clicks || {};
+      const dat    = snap.exists ? snap.data() : {};
+      const clicks = dat.clicks  || {};
+      const events = dat.events  || []; // array of {key, ts} for burst detection
+
       clicks[key] = (clicks[key]||0)+1;
+
+      // Keep last 200 events max to avoid doc bloat
+      events.push({key, ts: tsNow});
+      if(events.length > 200) events.splice(0, events.length - 200);
+
       ref.set({
-        id: String(currentUser.id),
+        id:   String(currentUser.id),
         name: currentUser.name||'',
         team: currentUser.team||'',
         date: today,
         clicks,
+        events,
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
       },{merge:true});
     }).catch(()=>{});
@@ -5528,11 +5538,14 @@ async function apLoadRebuttalUsage(id, name){
     }
     const snap = await query.get();
     const merged = {};
+    const allEvents = [];
     let daysActive = 0;
     snap.forEach(doc=>{
-      const clicks = doc.data().clicks||{};
+      const d = doc.data();
+      const clicks = d.clicks||{};
       if(Object.keys(clicks).length>0) daysActive++;
       Object.entries(clicks).forEach(([k,v])=>{ merged[k]=(merged[k]||0)+v; });
+      if(d.events && Array.isArray(d.events)) allEvents.push(...d.events);
     });
 
     const total = Object.values(merged).reduce((s,v)=>s+v,0);
@@ -5562,11 +5575,26 @@ async function apLoadRebuttalUsage(id, name){
     if(total>=20&&used>=8) repSignals.push({type:'good',icon:'⭐',msg:`Strong engagement — ${total} opens across ${used} different rebuttals`});
     if(total===0) repSignals.push({type:'danger',icon:'🚫',msg:'Zero rebuttal opens — not using the tool at all'});
 
+    // ── Fraud detection ──
+    const fraudFlags = analyzeRebuttalFraud(allEvents);
     const colMap={danger:{bg:'var(--red-light)',border:'rgba(248,113,113,0.3)',text:'var(--red)'},warning:{bg:'var(--gold-light)',border:'rgba(251,191,36,0.3)',text:'var(--gold)'},info:{bg:'var(--purple-light)',border:'rgba(167,139,250,0.3)',text:'var(--purple)'},good:{bg:'var(--green-light)',border:'rgba(52,211,153,0.3)',text:'var(--green)'}};
+    
+    let signalsHtml = '';
+    if(fraudFlags.length){
+      signalsHtml += `<div style="background:rgba(239,68,68,0.06);border:2px solid rgba(239,68,68,0.4);border-radius:10px;padding:12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <span style="font-size:1rem;">🕵️</span>
+          <div style="font-size:0.58rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#ef4444;">SUSPICIOUS CLICKING DETECTED</div>
+          <span style="margin-left:auto;font-family:'Bebas Neue',sans-serif;font-size:0.95rem;color:#ef4444;">${fraudFlags.length} FLAG${fraudFlags.length!==1?'S':''}</span>
+        </div>
+        ${fraudFlags.map(f=>{const c=fraudLevelColor(f.level);return`<div style="background:${c.bg};border:1px solid ${c.border};border-radius:7px;padding:8px 10px;margin-bottom:4px;"><div style="font-size:0.78rem;font-weight:700;color:${c.text};">${f.icon} ${f.title}</div><div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">${f.detail}</div></div>`;}).join('')}
+      </div>`;
+    }
     if(repSignals.length){
-      signalsEl.innerHTML='<div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">COACHING SIGNALS</div>'+
+      signalsHtml += '<div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">COACHING SIGNALS</div>'+
         repSignals.map(s=>{const c=colMap[s.type];return`<div style="background:${c.bg};border:1px solid ${c.border};border-radius:8px;padding:9px 12px;margin-bottom:5px;display:flex;gap:8px;align-items:flex-start;"><span style="font-size:1rem;flex-shrink:0;">${s.icon}</span><span style="font-size:0.75rem;color:${c.text};">${s.msg}</span></div>`;}).join('');
     }
+    if(signalsHtml) signalsEl.innerHTML = signalsHtml;
 
     // Bars
     const sorted=allKeys.sort((a,b)=>(merged[b]||0)-(merged[a]||0));
@@ -5846,6 +5874,105 @@ function riRenderByRebuttal(){
   content.innerHTML=html;
 }
 
+// ══════════════════════════════════════════════
+//  REBUTTAL FRAUD DETECTION
+//  Analyzes the events[] timestamp array to find
+//  suspicious clicking patterns
+// ══════════════════════════════════════════════
+function analyzeRebuttalFraud(events){
+  if(!events || events.length < 3) return [];
+  const flags = [];
+
+  // Sort events by timestamp
+  const sorted = [...events].sort((a,b)=>a.ts-b.ts);
+
+  // ── RULE 1: Rapid burst — 4+ different rebuttals clicked within 15 seconds ──
+  // On a live call you physically can't be on 4 different objections in 15s
+  for(let i=0; i<sorted.length; i++){
+    const window15 = sorted.filter(e=>e.ts>=sorted[i].ts && e.ts<=sorted[i].ts+15000);
+    const uniqueKeys = new Set(window15.map(e=>e.key));
+    if(uniqueKeys.size>=4){
+      const keys = [...uniqueKeys].slice(0,5).map(k=>REBUTTAL_LABELS[k]||k).join(', ');
+      flags.push({
+        level:'critical',
+        icon:'🤖',
+        title:'Rapid Browse — '+uniqueKeys.size+' rebuttals in 15 seconds',
+        detail:`Clicked: ${keys}${uniqueKeys.size>5?' + more':''} — looks like browsing, not live use`
+      });
+      break; // one flag per burst window is enough
+    }
+  }
+
+  // ── RULE 2: Same rebuttal clicked 3+ times within 30 seconds ──
+  // Genuine use means they read it once and apply it — clicking the same one
+  // 3 times in a row quickly suggests they're not actually on a call
+  const keyGroups = {};
+  sorted.forEach(e=>{ if(!keyGroups[e.key]) keyGroups[e.key]=[]; keyGroups[e.key].push(e.ts); });
+  for(const [key, timestamps] of Object.entries(keyGroups)){
+    for(let i=0; i<=timestamps.length-3; i++){
+      if(timestamps[i+2]-timestamps[i] <= 30000){
+        flags.push({
+          level:'suspicious',
+          icon:'👆',
+          title:'Rapid repeats — "'+( REBUTTAL_LABELS[key]||key)+'" clicked 3x in 30 seconds',
+          detail:'Clicking the same rebuttal repeatedly in quick succession — not consistent with live call use'
+        });
+        break;
+      }
+    }
+  }
+
+  // ── RULE 3: Mass session — 10+ clicks within any 2-minute window ──
+  // Even the busiest rep can't get 10 objections in 2 minutes on one call
+  for(let i=0; i<sorted.length; i++){
+    const window2m = sorted.filter(e=>e.ts>=sorted[i].ts && e.ts<=sorted[i].ts+120000);
+    if(window2m.length>=10){
+      flags.push({
+        level:'suspicious',
+        icon:'⚡',
+        title:window2m.length+' clicks in a 2-minute window',
+        detail:'Very high activity burst — could indicate browsing the tool during downtime rather than on live calls'
+      });
+      break;
+    }
+  }
+
+  // ── RULE 4: Click velocity — avg time between clicks < 8 seconds over 10+ clicks ──
+  if(sorted.length>=10){
+    const gaps = [];
+    for(let i=1; i<sorted.length; i++) gaps.push(sorted[i].ts - sorted[i-1].ts);
+    const avgGap = gaps.reduce((s,v)=>s+v,0)/gaps.length;
+    if(avgGap < 8000){
+      flags.push({
+        level:'suspicious',
+        icon:'⏱',
+        title:'Average '+Math.round(avgGap/1000)+'s between clicks',
+        detail:'Very fast average click pace across the day — real calls need time between objections to actually work through them'
+      });
+    }
+  }
+
+  // ── RULE 5: All clicks within first/last 5 minutes of shift — padding stats ──
+  if(sorted.length>=8){
+    const span = sorted[sorted.length-1].ts - sorted[0].ts;
+    if(span < 5*60*1000){
+      flags.push({
+        level:'critical',
+        icon:'🎯',
+        title:sorted.length+' clicks all within a '+Math.round(span/60000)+'-minute window',
+        detail:'All rebuttal activity happened in one concentrated burst — looks like padding the count at start or end of shift'
+      });
+    }
+  }
+
+  return flags;
+}
+
+function fraudLevelColor(level){
+  if(level==='critical') return {bg:'rgba(239,68,68,0.12)',border:'rgba(239,68,68,0.5)',text:'#ef4444'};
+  return {bg:'rgba(251,191,36,0.1)',border:'rgba(251,191,36,0.35)',text:'var(--gold)'};
+}
+
 function riRenderSignals(){
   const content = document.getElementById('ri-content');
   if(!content) return;
@@ -5854,18 +5981,33 @@ function riRenderSignals(){
   const repMap = {};
   riAllData.forEach(d=>{
     const repKey = d.id||d.name;
-    if(!repMap[repKey]) repMap[repKey]={name:d.name,id:d.id,team:d.team,clicks:{}};
+    if(!repMap[repKey]) repMap[repKey]={name:d.name,id:d.id,team:d.team,clicks:{},events:[]};
     Object.entries(d.clicks||{}).forEach(([k,v])=>{
       repMap[repKey].clicks[k]=(repMap[repKey].clicks[k]||0)+v;
     });
+    // Merge events from all docs for this rep
+    if(d.events && Array.isArray(d.events)){
+      repMap[repKey].events.push(...d.events);
+    }
   });
 
   const allKeys = Object.keys(REBUTTAL_LABELS);
   const signals = [];
+  const fraudSignals = []; // separate bucket — always shown first
 
   Object.values(repMap).forEach(rep=>{
     const total=Object.values(rep.clicks).reduce((s,v)=>s+v,0);
     const used=Object.keys(rep.clicks).filter(k=>rep.clicks[k]>0).length;
+
+    // ── FRAUD DETECTION ──
+    const fraudFlags = analyzeRebuttalFraud(rep.events);
+    fraudFlags.forEach(flag=>{
+      fraudSignals.push({
+        rep:rep.name, team:rep.team,
+        level:flag.level, icon:flag.icon,
+        title:flag.title, detail:flag.detail
+      });
+    });
 
     // Signal: never opened SSN rebuttal
     if(!rep.clicks['no_ssn'] && !rep.clicks['ssn_concerns']){
@@ -5900,17 +6042,46 @@ function riRenderSignals(){
     }
   });
 
-  if(!signals.length){
-    content.innerHTML='<div style="color:var(--green);padding:30px;text-align:center;font-size:0.85rem;">✅ No coaching signals detected for current filters.</div>';
+  if(!signals.length && !fraudSignals.length){
+    content.innerHTML='<div style="color:var(--green);padding:30px;text-align:center;font-size:0.85rem;">✅ No signals detected for current filters.</div>';
     return;
   }
 
   const colorMap={danger:{bg:'var(--red-light)',border:'rgba(248,113,113,0.4)',text:'var(--red)'},warning:{bg:'var(--gold-light)',border:'rgba(251,191,36,0.3)',text:'var(--gold)'},info:{bg:'var(--purple-light)',border:'rgba(167,139,250,0.3)',text:'var(--purple)'},good:{bg:'var(--green-light)',border:'rgba(52,211,153,0.3)',text:'var(--green)'}};
 
+  let html='';
+
+  // ── FRAUD FLAGS — always first, most prominent ──
+  if(fraudSignals.length){
+    html+=`<div style="background:rgba(239,68,68,0.06);border:2px solid rgba(239,68,68,0.4);border-radius:12px;padding:14px;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:1.3rem;">🕵️</span>
+        <div>
+          <div style="font-size:0.62rem;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#ef4444;">SUSPICIOUS ACTIVITY DETECTED</div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:1px;">Clicking patterns that don't match genuine live-call usage</div>
+        </div>
+        <span style="margin-left:auto;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.5);border-radius:20px;padding:3px 10px;font-family:'Bebas Neue',sans-serif;font-size:1rem;color:#ef4444;">${fraudSignals.length} FLAG${fraudSignals.length!==1?'S':''}</span>
+      </div>
+      ${fraudSignals.map(f=>{
+        const c=fraudLevelColor(f.level);
+        return`<div style="background:${c.bg};border:1px solid ${c.border};border-radius:9px;padding:10px 12px;margin-bottom:6px;display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:1.1rem;flex-shrink:0;">${f.icon}</span>
+          <div style="flex:1;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:0.92rem;color:${c.text};">${f.rep} <span style="font-size:0.65rem;color:var(--muted);font-weight:600;">${f.team||''}</span></div>
+              <span style="font-size:0.6rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:${c.text};background:${c.bg};border:1px solid ${c.border};border-radius:4px;padding:2px 6px;white-space:nowrap;">${f.level.toUpperCase()}</span>
+            </div>
+            <div style="font-size:0.8rem;font-weight:700;color:var(--text);margin-top:3px;">${f.title}</div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${f.detail}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
   const grouped={danger:[],warning:[],info:[],good:[]};
   signals.forEach(s=>grouped[s.type].push(s));
 
-  let html='';
   const order=['danger','warning','info','good'];
   const headings={danger:'🚨 CRITICAL COACHING SIGNALS',warning:'⚠️ WARNING SIGNALS',info:'💡 IMPROVEMENT OPPORTUNITIES',good:'⭐ POSITIVE SIGNALS'};
   order.forEach(type=>{
