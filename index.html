@@ -462,6 +462,39 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 </div>
 </div>
 
+<!-- TEAM BREAKDOWN MODAL -->
+<div id="team-breakdown-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:9000;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:520px;margin:auto;">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div id="tbm-title" style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;letter-spacing:1px;"></div>
+        <div id="tbm-subtitle" style="font-size:0.62rem;color:var(--muted);margin-top:2px;"></div>
+      </div>
+      <button onclick="closeTeamBreakdown()" style="background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 8px;border-radius:6px;">✕</button>
+    </div>
+    <div style="padding:14px 18px;">
+      <!-- Summary bar -->
+      <div id="tbm-summary" style="background:#0d1424;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.65rem;color:var(--muted);font-weight:700;">TEAM TRANSFERS</span>
+        <span id="tbm-total" style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;"></span>
+      </div>
+      <!-- Agent list -->
+      <div style="overflow-x:auto;">
+        <table class="adm-table" id="tbm-table">
+          <thead><tr>
+            <th>#</th>
+            <th>Agent Name</th>
+            <th style="text-align:center;">Transfers</th>
+            <th style="text-align:center;">Calls</th>
+            <th style="text-align:center;">Conv%</th>
+          </tr></thead>
+          <tbody id="tbm-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- REP PROFILE OVERLAY -->
 <div class="rep-profile-overlay" id="rep-profile-overlay">
   <div class="rep-profile-card">
@@ -545,7 +578,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
     <!-- ── CENTERED ADMIN SUB TABS ── -->
     <div style="background:#060d1a;border-bottom:2px solid #1a2a45;padding:14px 16px;">
       <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
-        <button class="adm-tab active" id="atab-overview"    onclick="switchAdminTab('overview',this)">⚡ Overview</button>
+        <button class="adm-tab active" id="atab-overview"    onclick="switchAdminTab('overview',this)">⚡ Daily Overview</button>
         <button class="adm-tab"        id="atab-attendance"  onclick="switchAdminTab('attendance',this)">📅 Daily Attendance</button>
         <button class="adm-tab"        id="atab-weekly"      onclick="switchAdminTab('weekly',this)">📋 Weekly Attendance</button>
         <button class="adm-tab"        id="atab-monthly"     onclick="switchAdminTab('monthly',this)">📆 Monthly Attendance</button>
@@ -553,7 +586,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
       </div>
     </div>
 
-    <!-- ── OVERVIEW ── -->
+    <!-- ── DAILY OVERVIEW ── -->
     <div id="admin-overview" class="admin-section">
       <div class="admin-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -564,25 +597,33 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
             <button onclick="editGoal()" style="background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:0.65rem;padding:2px 8px;border-radius:4px;">✏️ Edit</button>
           </div>
         </div>
+        <!-- Combined bar -->
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:0.65rem;color:var(--muted);font-weight:700;letter-spacing:1px;">TEAM TOTAL</span>
+            <span id="combined-xfer" style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--green);">0 / 300</span>
+          </div>
+          <div class="goal-bar" style="height:12px;">
+            <div class="goal-fill" id="combined-bar" style="width:0%;background:linear-gradient(90deg,#60a5fa,#a78bfa,#34d399);transition:width 0.6s ease;"></div>
+          </div>
+          <div id="combined-pct" style="font-size:0.62rem;color:var(--green);font-weight:800;margin-top:4px;text-align:right;">0%</div>
+        </div>
+        <!-- Clickable team split -->
         <div class="goal-split">
-          <div class="goal-side">
-            <div class="goal-side-title" style="color:var(--accent);">🏠 BERBICE (BB)</div>
+          <div class="goal-side" onclick="openTeamBreakdown('BB')" style="cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''">
+            <div class="goal-side-title" style="color:var(--accent);">🏠 BERBICE (BB) <span style="font-size:0.55rem;opacity:0.6;">— tap to view</span></div>
             <div class="goal-val" id="bb-xfer-val" style="color:var(--accent);">0</div>
             <div class="goal-bar"><div class="goal-fill" id="bb-xfer-bar" style="width:0%;background:linear-gradient(90deg,#60a5fa,#22d3ee);"></div></div>
-            <div class="goal-pct" id="bb-xfer-pct" style="color:var(--accent);">0% of 300</div>
+            <div class="goal-pct" id="bb-xfer-pct" style="color:var(--accent);">0 transfers</div>
           </div>
-          <div class="goal-side">
-            <div class="goal-side-title" style="color:var(--purple);">🌴 PROVIDENCE (PR)</div>
+          <div class="goal-side" onclick="openTeamBreakdown('PR')" style="cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor=''">
+            <div class="goal-side-title" style="color:var(--purple);">🌴 PROVIDENCE (PR) <span style="font-size:0.55rem;opacity:0.6;">— tap to view</span></div>
             <div class="goal-val" id="pr-xfer-val" style="color:var(--purple);">0</div>
             <div class="goal-bar"><div class="goal-fill" id="pr-xfer-bar" style="width:0%;background:linear-gradient(90deg,#a78bfa,#c084fc);"></div></div>
-            <div class="goal-pct" id="pr-xfer-pct" style="color:var(--purple);">0% of 300</div>
+            <div class="goal-pct" id="pr-xfer-pct" style="color:var(--purple);">0 transfers</div>
           </div>
         </div>
-        <div style="margin-top:8px;background:#0d1424;border-radius:8px;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:0.65rem;color:var(--muted);font-weight:700;letter-spacing:1px;">COMBINED TOTAL</span>
-          <span id="combined-xfer" style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--green);">0 / 300</span>
-        </div>
-        <div style="font-size:0.6rem;color:var(--muted);text-align:center;margin-top:6px;">Upload CSV in Agent Stats tab · tap the tab 5 times quickly</div>
+        <div style="font-size:0.6rem;color:var(--muted);text-align:center;margin-top:8px;">Upload CSV in Agent Stats · tap 5 times · click a team to see individual reps</div>
       </div>
 
       <div class="admin-card">
@@ -1786,21 +1827,84 @@ function updateGoalBars(){
   const bbXfer = statsData.filter(r=>r.team==='BB').reduce((s,r)=>s+r.xfer,0);
   const prXfer = statsData.filter(r=>r.team==='PR').reduce((s,r)=>s+r.xfer,0);
   const combined = bbXfer + prXfer;
-  setGoalBar('bb', bbXfer);
-  setGoalBar('pr', prXfer);
-  const el=document.getElementById('combined-xfer');
-  if(el) el.textContent = combined + ' / ' + dailyGoal;
+  const combPct  = Math.min(Math.round((combined/dailyGoal)*100),100);
+
+  // Combined bar
+  const combEl = document.getElementById('combined-xfer');
+  const combBar = document.getElementById('combined-bar');
+  const combPctEl = document.getElementById('combined-pct');
+  if(combEl)    combEl.textContent    = combined + ' / ' + dailyGoal;
+  if(combBar)   combBar.style.width   = combPct + '%';
+  if(combPctEl) combPctEl.textContent = combPct + '% of goal';
+
+  // BB bar
+  const bbPct = Math.min(Math.round((bbXfer/dailyGoal)*100),100);
+  const bbVal = document.getElementById('bb-xfer-val');
+  const bbBar = document.getElementById('bb-xfer-bar');
+  const bbPctEl = document.getElementById('bb-xfer-pct');
+  if(bbVal)   bbVal.textContent   = bbXfer;
+  if(bbBar)   bbBar.style.width   = bbPct+'%';
+  if(bbPctEl) bbPctEl.textContent = bbXfer + ' transfers';
+
+  // PR bar
+  const prPct = Math.min(Math.round((prXfer/dailyGoal)*100),100);
+  const prVal = document.getElementById('pr-xfer-val');
+  const prBar = document.getElementById('pr-xfer-bar');
+  const prPctEl = document.getElementById('pr-xfer-pct');
+  if(prVal)   prVal.textContent   = prXfer;
+  if(prBar)   prBar.style.width   = prPct+'%';
+  if(prPctEl) prPctEl.textContent = prXfer + ' transfers';
 }
 
-function setGoalBar(team, val){
-  const pct = Math.min(Math.round((val/dailyGoal)*100),100);
-  const vEl=document.getElementById(team+'-xfer-val');
-  const bEl=document.getElementById(team+'-xfer-bar');
-  const pEl=document.getElementById(team+'-xfer-pct');
-  if(vEl) vEl.textContent=val;
-  if(bEl) bEl.style.width=pct+'%';
-  if(pEl) pEl.textContent=pct+'% of '+dailyGoal;
+function openTeamBreakdown(team){
+  if(!statsData.length){
+    alert('No CSV data loaded yet. Upload the daily CSV first in Agent Stats tab.');
+    return;
+  }
+  const overlay = document.getElementById('team-breakdown-overlay');
+  const title   = document.getElementById('tbm-title');
+  const sub     = document.getElementById('tbm-subtitle');
+  const totalEl = document.getElementById('tbm-total');
+  const tbody   = document.getElementById('tbm-tbody');
+
+  if(team==='BB'){
+    title.textContent   = '🏠 Berbice (BB) — Rep Breakdown';
+    title.style.color   = 'var(--accent)';
+    totalEl.style.color = 'var(--accent)';
+  } else {
+    title.textContent   = '🌴 Providence (PR) — Rep Breakdown';
+    title.style.color   = 'var(--purple)';
+    totalEl.style.color = 'var(--purple)';
+  }
+
+  // Filter and sort by transfers desc
+  const agents = statsData.filter(r=>r.team===team).sort((a,b)=>b.xfer-a.xfer);
+  const teamTotal = agents.reduce((s,r)=>s+r.xfer,0);
+  sub.textContent   = agents.length + ' agents · ' + getTodayGY();
+  totalEl.textContent = teamTotal + ' transfers';
+
+  if(!agents.length){
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">No data for this team yet.</td></tr>`;
+  } else {
+    tbody.innerHTML = agents.map((r,i)=>{
+      const cc = r.conv>=5?'var(--green)':r.conv>=2?'var(--gold)':'var(--red)';
+      return `<tr>
+        <td style="color:var(--muted);font-size:0.7rem;">${i+1}</td>
+        <td style="font-weight:700;">${r.name}</td>
+        <td style="text-align:center;"><span class="att-badge att-p">${r.xfer}</span></td>
+        <td style="text-align:center;color:var(--muted);">${r.calls.toLocaleString()}</td>
+        <td style="text-align:center;color:${cc};font-weight:800;">${r.conv}%</td>
+      </tr>`;
+    }).join('');
+  }
+
+  overlay.style.display = 'flex';
 }
+
+function closeTeamBreakdown(){
+  document.getElementById('team-breakdown-overlay').style.display='none';
+}
+
 
 // ── LOAD OVERVIEW ──
 async function loadAdminOverview(){
@@ -1816,8 +1920,17 @@ async function loadAdminOverview(){
     const online = allAttRecords.filter(r=>r.status==='Present'||r.status==='P');
     const late   = allAttRecords.filter(r=>r.status==='Late'||r.status==='L');
     const allAgents = Object.values(ROSTER);
-    const loggedIds = allAttRecords.map(r=>String(r.id));
-    const notLogged = allAgents.filter(a=>!loggedIds.includes(String(a.userId||a.id||'')));
+
+    // Build sets of logged-in IDs AND names for matching
+    const loggedIds   = new Set(allAttRecords.map(r=>String(r.id||'').trim()));
+    const loggedNames = new Set(allAttRecords.map(r=>(r.name||'').toLowerCase().trim()));
+
+    // Agent is "logged in" if their ID OR name appears in attendance records
+    const notLogged = allAgents.filter(a=>{
+      const byId   = loggedIds.has(String(a.userId||'').trim());
+      const byName = loggedNames.has((a.name||'').toLowerCase().trim());
+      return !byId && !byName;
+    }).sort((a,b)=>a.name.localeCompare(b.name));
 
     document.getElementById('glance-total').textContent  = allAgents.length||'—';
     document.getElementById('glance-online').textContent = online.length;
@@ -1836,7 +1949,7 @@ async function loadAdminOverview(){
 
     const ag2=document.getElementById('absent-grid');
     ag2.innerHTML = notLogged.length
-      ? notLogged.slice(0,30).map(a=>`<div class="status-chip absent-chip" onclick="openRepProfile('${a.userId||''}','${a.name}','${a.team||''}','${a.shift||''}')"><span class="pulse red-p"></span>${a.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
+      ? notLogged.map(a=>`<div class="status-chip absent-chip" onclick="openRepProfile('${a.userId||''}','${a.name}','${a.team||''}','${a.shift||''}')"><span class="pulse red-p"></span>${a.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
       : '<div style="font-size:0.72rem;color:var(--green);">Everyone is logged in! ✅</div>';
 
   }catch(e){ console.error('Overview error:',e); }
