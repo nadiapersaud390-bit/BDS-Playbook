@@ -4465,68 +4465,79 @@ async function confirmCSVUpload(){
 function resolveAgentTeam(agent){
   const rosterAgents = Object.values(ROSTER);
 
-  // 1. Ytel ID direct lookup
+  // Helper: get team from a ytelName string
+  const teamFromYtel = (yn)=>{
+    const u = (yn||'').toUpperCase().replace(/[\s-]/g,'');
+    if(u.startsWith('GUYP')) return 'PR';
+    if(u.startsWith('GUY'))  return 'BB';
+    return null;
+  };
+
+  // 1. ytelId → ROSTER lookup → use ytelName prefix
   if(agent.ytelId){
-    const byId = rosterAgents.find(r=>String(r.userId).trim()===String(agent.ytelId).trim());
-    if(byId) return byId.team;
+    const r = ROSTER[String(agent.ytelId).trim()];
+    if(r){ return teamFromYtel(r.ytelName) || r.team || 'BB'; }
   }
 
-  // 2. nameRaw prefix from saved CSV row — always accurate
+  // 2. nameRaw prefix from saved CSV
   if(agent.nameRaw){
-    const yn = agent.nameRaw.toUpperCase().replace(/[\s-]/g,'');
-    if(yn.startsWith('GUYP')) return 'PR';
-    if(yn.startsWith('GUY'))  return 'BB';
+    const t = teamFromYtel(agent.nameRaw);
+    if(t) return t;
   }
 
-  // 3. Match name against ROSTER, then use that roster entry's ytelName prefix
-  //    This correctly handles old reports that have no nameRaw/ytelId saved
+  // 3. Match name in ROSTER → use that entry's ytelName
   const nameLow = (agent.name||'').toLowerCase().trim();
-  const nameParts = nameLow.split(' ').filter(p=>p.length>1);
-  const firstName = nameParts[0]||'';
-  const lastName  = nameParts[nameParts.length-1]||'';
+  const parts   = nameLow.split(' ').filter(p=>p.length>1);
+  const first   = parts[0]||'';
+  const last    = parts[parts.length-1]||'';
 
-  // Try exact name first
-  let rosterMatch = rosterAgents.find(r=>r.name.toLowerCase()===nameLow);
+  // Exact name match first
+  let match = rosterAgents.find(r=>r.name.toLowerCase()===nameLow);
 
-  // Then try first+last both present (must match both, at least 3 chars each)
-  if(!rosterMatch && firstName.length>=2 && lastName.length>=2){
-    rosterMatch = rosterAgents.find(r=>{
+  // First + last name match (both must be 2+ chars)
+  if(!match && first.length>=2 && last.length>=2 && first!==last){
+    match = rosterAgents.find(r=>{
       const rn = r.name.toLowerCase();
-      const rParts = rn.split(' ').filter(p=>p.length>1);
-      const rFirst = rParts[0]||'';
-      const rLast  = rParts[rParts.length-1]||'';
-      return rFirst===firstName && rLast===lastName;
+      const rp = rn.split(' ').filter(p=>p.length>1);
+      return rp[0]===first && rp[rp.length-1]===last;
     });
   }
 
-  if(rosterMatch){
-    // Use the roster entry's ytelName to determine team — never wrong
-    if(rosterMatch.ytelName){
-      const yn = rosterMatch.ytelName.toUpperCase().replace(/[\s-]/g,'');
-      if(yn.startsWith('GUYP')) return 'PR';
-      if(yn.startsWith('GUY'))  return 'BB';
-    }
-    return rosterMatch.team || 'BB';
-  }
+  if(match){ return teamFromYtel(match.ytelName) || match.team || 'BB'; }
 
-  // 4. Keep saved value as last resort
+  // 4. Keep saved value
   return agent.team || 'BB';
 }
 
 // ── CHECK IF AN AGENT IS INACTIVE ──
 // Used to filter out NH agents and inactive roster entries from weekly performance
 function isAgentInactive(agent){
-  // NH tag in nameRaw is the clearest signal from the CSV
-  if(agent.nameRaw && /NH/i.test(agent.nameRaw)) return true;
-  // Check INACTIVE_AGENTS hardcoded list
-  const nameLow = (agent.name||'').toLowerCase();
+  const nameLow = (agent.name||'').toLowerCase().trim();
+
+  // 1. NH tag in nameRaw (new reports have this)
+  if(agent.nameRaw && agent.nameRaw.toUpperCase().includes(' NH ')) return true;
+  if(agent.nameRaw && agent.nameRaw.toUpperCase().includes(' NH-')) return true;
+  if(agent.nameRaw && / NH$/i.test(agent.nameRaw.split('-')[0].trim())) return true;
+
+  // 2. Known NH agent names — these people are confirmed inactive
+  const knownNH = ['angelica alert','angelina campbell','esha singh','keisha graig','kleon williams'];
+  if(knownNH.some(n=>nameLow===n)) return true;
+
+  // 3. Hardcoded INACTIVE_AGENTS list
   if(INACTIVE_AGENTS.some(n=>n.toLowerCase()===nameLow)) return true;
-  // Check if they exist in ROSTER — if not found and not a known active agent, skip
+
+  // 4. ytelId found in ROSTER — check status
   if(agent.ytelId){
     const inRoster = ROSTER[String(agent.ytelId).trim()];
-    // Only flag as inactive if we specifically know they're inactive
-    if(inRoster && inRoster.status && inRoster.status.toLowerCase()==='inactive') return true;
+    if(inRoster && (inRoster.status||'').toLowerCase()==='inactive') return true;
+    // If ytelId exists but NOT in ROSTER at all = removed agent
+    if(!inRoster && Object.keys(ROSTER).length > 10) return true;
   }
+
+  // 5. Check by name in ROSTER — if found and inactive
+  const byName = Object.values(ROSTER).find(r=>r.name.toLowerCase()===nameLow);
+  if(byName && (byName.status||'').toLowerCase()==='inactive') return true;
+
   return false;
 }
 
@@ -5467,11 +5478,17 @@ async function loadWeeklyPerformance(){
     return;
   }
 
-  // Parse all reports
+  // Parse all reports — re-resolve team and inactive status fresh from ROSTER
   wpAllReports = [];
   reportHistory.forEach(r=>{
     try{
-      const agents = JSON.parse(r.statsJSON);
+      const raw = JSON.parse(r.statsJSON);
+      // Re-resolve each agent's team and inactive flag right now
+      const agents = raw.map(a=>({
+        ...a,
+        team: resolveAgentTeam(a),
+        _inactive: isAgentInactive(a)
+      }));
       wpAllReports.push({date: r.date, agents});
     }catch(e){}
   });
@@ -5539,10 +5556,10 @@ function renderWeeklyPerformance(){
   const agentMap = {};
   weekReports.forEach(report=>{
     report.agents.forEach(a=>{
-      // Skip inactive/NH agents
-      if(isAgentInactive(a)) return;
-      // Always resolve team fresh from nameRaw/ytelId/roster — never trust saved team field
-      const resolvedTeam = resolveAgentTeam(a);
+      // Skip inactive/NH agents (pre-computed at load time)
+      if(a._inactive) return;
+      // Team already resolved at load time
+      const resolvedTeam = a.team;
       // Key by ytelId if available, else cleaned name — prevents duplicates across reports
       const key = a.ytelId ? 'id_'+a.ytelId : 'name_'+a.name.toLowerCase().trim();
       if(!agentMap[key]){
