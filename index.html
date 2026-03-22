@@ -496,121 +496,327 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 </div>
 
 <!-- REP PROFILE OVERLAY -->
-<div class="rep-profile-overlay" id="rep-profile-overlay">
-  <div class="rep-profile-card">
-    <div class="rep-profile-header">
-      <div>
-        <div class="rep-profile-name" id="rp-name">Agent Name</div>
-        <div style="font-size:0.6rem;color:var(--muted);margin-top:3px;" id="rp-meta">Team · Shift</div>
+<!-- ═══════════════════════════════════════════════════════════
+     FULL-SCREEN AGENT ANALYSIS PANEL
+═══════════════════════════════════════════════════════════ -->
+<style>
+.agent-panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9000;display:none;overflow-y:auto;}
+.agent-panel-overlay.open{display:block;}
+.agent-panel{max-width:960px;margin:0 auto;padding:16px;min-height:100vh;}
+
+/* Header */
+.ap-header{background:linear-gradient(135deg,#0d1a2e 0%,#0a1020 100%);border:1px solid #1e3050;border-radius:16px;padding:20px 24px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.ap-avatar{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#1e3a6e,#2d5aa0);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:#60a5fa;flex-shrink:0;}
+.ap-name{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:2px;line-height:1;}
+.ap-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+.ap-badge{padding:2px 10px;border-radius:20px;font-size:0.55rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;}
+.ap-close{background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);color:#f87171;border-radius:10px;padding:8px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:0.85rem;cursor:pointer;letter-spacing:1px;transition:all 0.15s;}
+.ap-close:hover{background:rgba(248,113,113,0.3);}
+
+/* Tab nav */
+.ap-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.ap-tab{padding:8px 16px;border-radius:10px;border:1px solid #1e2d4a;background:#0d1424;color:#4a6080;font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
+.ap-tab:hover{border-color:#3a4a6a;color:#8a9ab0;}
+.ap-tab.active{background:#0b1a38;border-color:#3b6fd4;color:#60a5fa;box-shadow:0 0 12px rgba(59,111,212,0.25);}
+
+/* Section cards */
+.ap-card{background:#0d1424;border:1px solid #1e2d4a;border-radius:14px;padding:18px;margin-bottom:12px;}
+.ap-card-title{font-size:0.55rem;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#64748b;margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+.ap-card-title span{color:#e2e8f0;font-size:0.85rem;}
+
+/* Stat grid */
+.ap-stat-row{display:grid;gap:8px;margin-bottom:12px;}
+.ap-stat-row.cols-4{grid-template-columns:repeat(4,1fr);}
+.ap-stat-row.cols-3{grid-template-columns:repeat(3,1fr);}
+.ap-stat-row.cols-2{grid-template-columns:repeat(2,1fr);}
+.ap-stat-box{background:#060b18;border:1px solid #1a2540;border-radius:10px;padding:12px;text-align:center;}
+.ap-stat-val{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;line-height:1;}
+.ap-stat-lbl{font-size:0.48rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;margin-top:3px;}
+
+/* Mini calendar for attendance */
+.ap-mini-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:8px;}
+.ap-cal-hdr{font-size:0.45rem;font-weight:800;text-align:center;color:#64748b;padding:2px;}
+.ap-cal-cell{aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.48rem;font-weight:800;cursor:default;}
+.ap-cal-p{background:rgba(52,211,153,0.2);color:#34d399;}
+.ap-cal-l{background:rgba(251,191,36,0.2);color:#fbbf24;}
+.ap-cal-a{background:rgba(248,113,113,0.2);color:#f87171;}
+.ap-cal-s{background:rgba(96,165,250,0.15);color:#60a5fa;}
+.ap-cal-off{background:#0d1424;color:#2a3a55;}
+.ap-cal-future{background:transparent;color:#1a2540;}
+.ap-cal-today{outline:2px solid #60a5fa;outline-offset:1px;}
+
+/* Week bar chart */
+.ap-week-bars{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+.ap-week-row{display:flex;align-items:center;gap:8px;}
+.ap-week-lbl{font-size:0.6rem;font-weight:700;color:#64748b;width:90px;flex-shrink:0;white-space:nowrap;}
+.ap-week-bar-wrap{flex:1;background:#060b18;border-radius:4px;height:18px;overflow:hidden;display:flex;}
+.ap-week-seg{height:100%;display:flex;align-items:center;justify-content:center;font-size:0.42rem;font-weight:800;transition:width 0.4s;}
+.ap-week-seg.p{background:rgba(52,211,153,0.35);}
+.ap-week-seg.l{background:rgba(251,191,36,0.35);}
+.ap-week-seg.a{background:rgba(248,113,113,0.35);}
+.ap-week-counts{font-size:0.55rem;color:#64748b;width:60px;flex-shrink:0;text-align:right;}
+
+/* Chart canvas wrapper */
+.ap-chart-wrap{position:relative;height:160px;margin-top:8px;}
+
+/* Coaching/monitoring notes */
+.ap-note{background:#060b18;border-left:3px solid #3b6fd4;border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:8px;}
+.ap-note.monitor{border-left-color:#a78bfa;}
+.ap-note-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px;}
+.ap-note-type{font-size:0.55rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;}
+.ap-note-date{font-size:0.6rem;color:#64748b;}
+.ap-note-field{margin-top:5px;font-size:0.75rem;color:#cbd5e1;line-height:1.5;}
+.ap-note-field-lbl{font-size:0.5rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#64748b;}
+
+/* Schedule inputs */
+.ap-input-row{display:flex;gap:8px;align-items:center;}
+.ap-input{flex:1;padding:9px 13px;background:#060b18;border:1.5px solid #2a3a5a;border-radius:8px;color:#e2e8f0;font-size:0.85rem;font-family:'Nunito',sans-serif;outline:none;transition:border-color 0.15s;}
+.ap-input:focus{border-color:#60a5fa;}
+.ap-save-btn{padding:8px 14px;border-radius:8px;border:none;background:#1e3a6e;color:#60a5fa;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:0.8rem;cursor:pointer;white-space:nowrap;transition:background 0.15s;}
+.ap-save-btn:hover{background:#2a4a8a;}
+.ap-field-status{font-size:0.62rem;margin-top:3px;min-height:14px;}
+
+/* Login history */
+.ap-login-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #0f1e35;font-size:0.72rem;}
+.ap-login-row:last-child{border-bottom:none;}
+
+@media(max-width:600px){
+  .ap-stat-row.cols-4{grid-template-columns:repeat(2,1fr);}
+  .ap-stat-row.cols-3{grid-template-columns:repeat(3,1fr);}
+  .ap-name{font-size:1.3rem;}
+}
+</style>
+
+<div class="agent-panel-overlay" id="rep-profile-overlay" onclick="if(event.target===this)closeRepProfile()">
+  <div class="agent-panel">
+
+    <!-- Header -->
+    <div class="ap-header">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="ap-avatar" id="ap-avatar">A</div>
+        <div>
+          <div class="ap-name" id="rp-name">Agent Name</div>
+          <div class="ap-badges">
+            <span class="ap-badge" id="ap-team-badge" style="background:rgba(96,165,250,0.15);color:#60a5fa;">BB</span>
+            <span class="ap-badge" id="ap-status-badge" style="background:rgba(52,211,153,0.15);color:#34d399;">Agent</span>
+            <span class="ap-badge" id="ap-shift-badge" style="background:rgba(251,191,36,0.1);color:#fbbf24;">—</span>
+          </div>
+          <div style="font-size:0.6rem;color:#64748b;margin-top:4px;" id="rp-meta"></div>
+        </div>
       </div>
-      <button class="close-btn" onclick="closeRepProfile()">✕</button>
+      <button class="ap-close" onclick="closeRepProfile()">✕ CLOSE</button>
     </div>
-    <div class="rep-profile-body">
-      <!-- Sub tabs -->
-      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
-        <button class="sub-tab st-ok active" id="rpt-perf"     onclick="rpTab('perf',this)">📊 Performance</button>
-        <button class="sub-tab st-ok"        id="rpt-schedule" onclick="rpTab('schedule',this)">⏰ Schedule</button>
-        <button class="sub-tab st-ok"        id="rpt-att"      onclick="rpTab('att',this)">📅 Attendance</button>
-        <button class="sub-tab st-ok"        id="rpt-coach"    onclick="rpTab('coach',this)">📝 Coaching</button>
-        <button class="sub-tab st-ok"        id="rpt-audit"    onclick="rpTab('audit',this)">🔍 Audit</button>
-      </div>
-      <!-- Schedule Edit -->
-      <div id="rp-schedule" style="display:none;">
-        <div class="rp-section">
-          <div class="rp-section-title">⏰ SHIFT &amp; SCHEDULE — edits save to Google Sheet</div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
 
-            <!-- Shift -->
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;">
-              <div style="font-size:0.6rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">Shift Time</div>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <input id="rp-shift-input" type="text" placeholder="e.g. 11:45am-9:00pm"
-                  style="flex:1;padding:8px 12px;background:#060b18;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.85rem;font-family:'Nunito',sans-serif;outline:none;transition:border-color 0.15s;"
-                  onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#2a3a5a'">
-                <button onclick="saveRosterField('shift')" class="save-btn" style="white-space:nowrap;">💾 Save</button>
-              </div>
-              <div id="rp-shift-status" style="font-size:0.65rem;margin-top:4px;"></div>
-            </div>
+    <!-- Nav tabs -->
+    <div class="ap-tabs">
+      <button class="ap-tab active" id="apt-overview"    onclick="apTab('overview',this)">📊 Overview</button>
+      <button class="ap-tab"        id="apt-attendance"  onclick="apTab('attendance',this)">📅 Attendance</button>
+      <button class="ap-tab"        id="apt-coaching"    onclick="apTab('coaching',this)">📝 Coaching</button>
+      <button class="ap-tab"        id="apt-monitoring"  onclick="apTab('monitoring',this)">🎧 Monitoring</button>
+      <button class="ap-tab"        id="apt-schedule"    onclick="apTab('schedule',this)">⏰ Schedule</button>
+      <button class="ap-tab"        id="apt-audit"       onclick="apTab('audit',this)">🔍 Login History</button>
+    </div>
 
-            <!-- Lunch -->
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;">
-              <div style="font-size:0.6rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--green);margin-bottom:6px;">Lunch Time</div>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <input id="rp-lunch-input" type="text" placeholder="e.g. 3:30-4:00 pm"
-                  style="flex:1;padding:8px 12px;background:#060b18;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.85rem;font-family:'Nunito',sans-serif;outline:none;transition:border-color 0.15s;"
-                  onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='#2a3a5a'">
-                <button onclick="saveRosterField('lunch')" class="save-btn" style="white-space:nowrap;background:var(--green);">💾 Save</button>
-              </div>
-              <div id="rp-lunch-status" style="font-size:0.65rem;margin-top:4px;"></div>
-            </div>
+    <!-- ── OVERVIEW TAB ── -->
+    <div id="ap-overview">
+      <!-- Today snapshot -->
+      <div class="ap-card">
+        <div class="ap-card-title">⚡ TODAY'S SNAPSHOT</div>
+        <div class="ap-stat-row cols-4">
+          <div class="ap-stat-box">
+            <div class="ap-stat-val" id="rp-live-calls" style="color:#60a5fa;">—</div>
+            <div class="ap-stat-lbl">Calls</div>
+          </div>
+          <div class="ap-stat-box">
+            <div class="ap-stat-val" id="rp-live-xfer" style="color:#34d399;">—</div>
+            <div class="ap-stat-lbl">Transfers</div>
+          </div>
+          <div class="ap-stat-box">
+            <div class="ap-stat-val" id="rp-live-conv" style="color:#22d3ee;">—</div>
+            <div class="ap-stat-lbl">Conv %</div>
+          </div>
+          <div class="ap-stat-box">
+            <div id="rp-att-status" style="padding-top:6px;font-size:0.75rem;">—</div>
+            <div class="ap-stat-lbl">Status</div>
+          </div>
+        </div>
+      </div>
 
-            <!-- Break -->
-            <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;">
-              <div style="font-size:0.6rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">Break Time <span style="opacity:0.6;">(Firebase only)</span></div>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <input id="rp-break-input" type="text" placeholder="e.g. 2:00-2:15 pm"
-                  style="flex:1;padding:8px 12px;background:#060b18;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.85rem;font-family:'Nunito',sans-serif;outline:none;transition:border-color 0.15s;"
-                  onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#2a3a5a'">
-                <button onclick="saveRosterField('break')" class="save-btn" style="white-space:nowrap;background:var(--gold);color:#000;">💾 Save</button>
-              </div>
-              <div id="rp-break-status" style="font-size:0.65rem;margin-top:4px;"></div>
-            </div>
+      <!-- Monthly attendance summary -->
+      <div class="ap-card">
+        <div class="ap-card-title">📅 THIS MONTH — ATTENDANCE SUMMARY</div>
+        <div class="ap-stat-row cols-4">
+          <div class="ap-stat-box">
+            <div class="ap-stat-val" id="rp-att-p" style="color:#34d399;">—</div>
+            <div class="ap-stat-lbl">Present</div>
+          </div>
+          <div class="ap-stat-box">
+            <div class="ap-stat-val" id="rp-att-l" style="color:#fbbf24;">—</div>
+            <div class="ap-stat-lbl">Late</div>
+          </div>
+          <div class="ap-stat-box">
+            <div class="ap-stat-val" id="rp-att-a" style="color:#f87171;">—</div>
+            <div class="ap-stat-lbl">Absent/Sick</div>
+          </div>
+          <div class="ap-stat-box">
+            <div class="ap-stat-val" id="rp-att-rate" style="color:#60a5fa;">—</div>
+            <div class="ap-stat-lbl">Att Rate</div>
+          </div>
+        </div>
+        <!-- Mini attendance bar chart -->
+        <div style="background:#060b18;border-radius:8px;height:12px;overflow:hidden;display:flex;margin-top:4px;">
+          <div id="ap-bar-p" style="background:#34d399;height:100%;transition:width 0.5s;"></div>
+          <div id="ap-bar-l" style="background:#fbbf24;height:100%;transition:width 0.5s;"></div>
+          <div id="ap-bar-a" style="background:#f87171;height:100%;transition:width 0.5s;"></div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:5px;font-size:0.5rem;font-weight:800;letter-spacing:1px;color:#64748b;">
+          <span style="color:#34d399;">● Present</span>
+          <span style="color:#fbbf24;">● Late</span>
+          <span style="color:#f87171;">● Absent/Sick</span>
+        </div>
+      </div>
 
+      <!-- Coaching & monitoring summary -->
+      <div class="ap-card">
+        <div class="ap-card-title">📋 COACHING &amp; MONITORING COUNT</div>
+        <div class="ap-stat-row cols-2">
+          <div class="ap-stat-box">
+            <div class="ap-stat-val" id="rp-coach-count" style="color:#60a5fa;">—</div>
+            <div class="ap-stat-lbl">Coaching Sessions</div>
           </div>
-          <div style="font-size:0.62rem;color:var(--muted);margin-top:10px;text-align:center;">
-            Shift &amp; Lunch save directly to <strong style="color:var(--text);">Google Sheet</strong> · Break saves to Firebase · Agent sees changes on next login
+          <div class="ap-stat-box">
+            <div class="ap-stat-val" id="rp-monitor-count" style="color:#a78bfa;">—</div>
+            <div class="ap-stat-lbl">Monitoring Sessions</div>
           </div>
         </div>
+        <div id="rp-last-coach" style="font-size:0.68rem;color:#64748b;margin-top:8px;"></div>
       </div>
-        <div class="rp-section">
-          <div class="rp-section-title">Live Session</div>
-          <div class="rp-stat-grid">
-            <div class="rp-stat"><div class="rp-stat-val" id="rp-live-calls" style="color:var(--accent);">—</div><div class="rp-stat-lbl">Calls</div></div>
-            <div class="rp-stat"><div class="rp-stat-val" id="rp-live-xfer" style="color:var(--green);">—</div><div class="rp-stat-lbl">Transfers</div></div>
-            <div class="rp-stat"><div class="rp-stat-val" id="rp-live-conv" style="color:var(--cyan);">—</div><div class="rp-stat-lbl">Conv %</div></div>
-          </div>
-        </div>
-        <div class="rp-section">
-          <div class="rp-section-title">Today's Status</div>
-          <div id="rp-att-status" style="font-size:0.85rem;color:var(--muted);">Loading...</div>
-        </div>
-      </div>
-      <!-- Attendance -->
-      <div id="rp-att" style="display:none;">
-        <div class="rp-section">
-          <div class="rp-section-title">This Month</div>
-          <div class="rp-stat-grid">
-            <div class="rp-stat"><div class="rp-stat-val" id="rp-att-p" style="color:var(--green);">—</div><div class="rp-stat-lbl">Present</div></div>
-            <div class="rp-stat"><div class="rp-stat-val" id="rp-att-l" style="color:var(--gold);">—</div><div class="rp-stat-lbl">Late</div></div>
-            <div class="rp-stat"><div class="rp-stat-val" id="rp-att-a" style="color:var(--red);">—</div><div class="rp-stat-lbl">Absent</div></div>
-          </div>
-        </div>
-        <div class="rp-section">
-          <div class="rp-section-title">Mark Today</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="mark-absent-btn" onclick="markAgentAbsent('A')">Mark Absent</button>
-            <button class="mark-absent-btn" onclick="markAgentAbsent('S')" style="border-color:rgba(96,165,250,0.3);color:var(--accent);">Mark Sick</button>
-            <button class="mark-absent-btn" onclick="markAgentAbsent('PO')" style="border-color:rgba(167,139,250,0.3);color:var(--purple);">Personal Out</button>
-          </div>
-        </div>
-      </div>
-      <!-- Coaching -->
-      <div id="rp-coach" style="display:none;">
-        <div class="rp-section">
-          <div class="rp-section-title">📝 Coaching &amp; 🎧 Monitoring History</div>
-          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:10px;">Added from Admin Panel → Coaching or Live Monitoring tab</div>
-          <div id="coach-notes-list" style="font-size:0.78rem;color:var(--muted);">Loading...</div>
-        </div>
-      </div>
-      <!-- Audit -->
-      <div id="rp-audit" style="display:none;">
-        <div class="rp-section">
-          <div class="rp-section-title">Login History</div>
-          <div id="audit-list" style="font-size:0.78rem;color:var(--muted);">Loading...</div>
+
+      <!-- Mark today -->
+      <div class="ap-card">
+        <div class="ap-card-title">✏️ MARK TODAY'S ATTENDANCE</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="mark-absent-btn" onclick="markAgentAbsent('A')">Mark Absent</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('S')" style="border-color:rgba(96,165,250,0.3);color:var(--accent);">Mark Sick</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('PO')" style="border-color:rgba(167,139,250,0.3);color:var(--purple);">Personal Out</button>
         </div>
       </div>
     </div>
-  </div>
+
+    <!-- ── ATTENDANCE TAB ── -->
+    <div id="ap-attendance" style="display:none;">
+
+      <!-- Current month calendar -->
+      <div class="ap-card">
+        <div class="ap-card-title">📅 <span id="ap-cal-month-lbl">THIS MONTH</span> — DAILY VIEW</div>
+        <div class="ap-mini-cal" id="ap-cal-current"></div>
+        <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;font-size:0.5rem;font-weight:800;letter-spacing:1px;">
+          <span style="color:#34d399;">■ Present</span>
+          <span style="color:#fbbf24;">■ Late</span>
+          <span style="color:#f87171;">■ Absent/Sick</span>
+          <span style="color:#60a5fa;">■ Other</span>
+          <span style="color:#2a3a55;">■ No Data / OFF</span>
+        </div>
+      </div>
+
+      <!-- Previous month calendar -->
+      <div class="ap-card">
+        <div class="ap-card-title">📅 <span id="ap-prev-month-lbl">PREVIOUS MONTH</span> — DAILY VIEW</div>
+        <div class="ap-mini-cal" id="ap-cal-prev"></div>
+      </div>
+
+      <!-- Weekly breakdown bars -->
+      <div class="ap-card">
+        <div class="ap-card-title">📊 WEEKLY BREAKDOWN — THIS MONTH</div>
+        <div class="ap-week-bars" id="ap-week-bars"></div>
+      </div>
+
+      <!-- Mark today -->
+      <div class="ap-card">
+        <div class="ap-card-title">✏️ MARK TODAY</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="mark-absent-btn" onclick="markAgentAbsent('A')">Mark Absent</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('S')" style="border-color:rgba(96,165,250,0.3);color:var(--accent);">Mark Sick</button>
+          <button class="mark-absent-btn" onclick="markAgentAbsent('PO')" style="border-color:rgba(167,139,250,0.3);color:var(--purple);">Personal Out</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COACHING TAB ── -->
+    <div id="ap-coaching" style="display:none;">
+      <div class="ap-card">
+        <div class="ap-card-title">📝 ALL COACHING SESSIONS</div>
+        <div id="ap-coaching-list"><div style="color:#64748b;font-size:0.78rem;">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- ── MONITORING TAB ── -->
+    <div id="ap-monitoring" style="display:none;">
+      <div class="ap-card">
+        <div class="ap-card-title">🎧 ALL LIVE MONITORING SESSIONS</div>
+        <div id="ap-monitoring-list"><div style="color:#64748b;font-size:0.78rem;">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- ── SCHEDULE TAB ── -->
+    <div id="ap-schedule" style="display:none;">
+      <div class="ap-card">
+        <div class="ap-card-title">⏰ SHIFT &amp; SCHEDULE — saves directly to Google Sheet</div>
+
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="background:#060b18;border:1px solid #1a2540;border-radius:10px;padding:14px;">
+            <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#60a5fa;margin-bottom:8px;">Shift Time</div>
+            <div class="ap-input-row">
+              <input id="rp-shift-input" type="text" placeholder="e.g. 11:45am-9:00pm" class="ap-input"
+                onfocus="this.style.borderColor='#60a5fa'" onblur="this.style.borderColor='#2a3a5a'">
+              <button class="ap-save-btn" onclick="saveRosterField('shift')">💾 Save</button>
+            </div>
+            <div id="rp-shift-status" class="ap-field-status"></div>
+          </div>
+
+          <div style="background:#060b18;border:1px solid #1a2540;border-radius:10px;padding:14px;">
+            <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#34d399;margin-bottom:8px;">Lunch Time</div>
+            <div class="ap-input-row">
+              <input id="rp-lunch-input" type="text" placeholder="e.g. 3:30-4:00 pm" class="ap-input"
+                onfocus="this.style.borderColor='#34d399'" onblur="this.style.borderColor='#2a3a5a'">
+              <button class="ap-save-btn" onclick="saveRosterField('lunch')" style="background:#064020;color:#34d399;">💾 Save</button>
+            </div>
+            <div id="rp-lunch-status" class="ap-field-status"></div>
+          </div>
+
+          <div style="background:#060b18;border:1px solid #1a2540;border-radius:10px;padding:14px;">
+            <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#fbbf24;margin-bottom:8px;">Break Time <span style="opacity:0.5;">(Firebase only)</span></div>
+            <div class="ap-input-row">
+              <input id="rp-break-input" type="text" placeholder="e.g. 2:00-2:15 pm" class="ap-input"
+                onfocus="this.style.borderColor='#fbbf24'" onblur="this.style.borderColor='#2a3a5a'">
+              <button class="ap-save-btn" onclick="saveRosterField('break')" style="background:#1a1000;color:#fbbf24;">💾 Save</button>
+            </div>
+            <div id="rp-break-status" class="ap-field-status"></div>
+          </div>
+        </div>
+        <div style="font-size:0.6rem;color:#64748b;margin-top:12px;text-align:center;">
+          Shift &amp; Lunch → Google Sheet · Break → Firebase · Agent sees changes on next login
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AUDIT TAB ── -->
+    <div id="ap-audit" style="display:none;">
+      <div class="ap-card">
+        <div class="ap-card-title">🔍 LOGIN HISTORY — LAST 20 SESSIONS</div>
+        <div id="audit-list"><div style="color:#64748b;font-size:0.78rem;">Loading...</div></div>
+      </div>
+    </div>
+
+  </div><!-- end .agent-panel -->
+</div><!-- end overlay -->
+
+<!-- Keep legacy hidden elements so old code references don't break -->
+<div style="display:none;">
+  <div id="rp-att"></div>
+  <div id="rp-coach"><div id="coach-notes-list"></div></div>
+  <div id="rp-perf"></div>
+  <div id="rp-schedule"></div>
 </div>
 
 <div class="main">
@@ -3553,47 +3759,370 @@ function sortStats(col){
 function filterStatsTable(){ renderStatsTable(); }
 
 // ── REP PROFILE ──
+// ══════════════════════════════════════════════
+//  FULL AGENT ANALYSIS PANEL
+// ══════════════════════════════════════════════
+
 async function openRepProfile(id,name,team,shift){
-  currentRepProfile={id,name,team,shift};
-  document.getElementById('rp-name').textContent=name;
-  const teamName=team==='BB'?'Berbice':team==='PR'?'Providence':team||'—';
-  document.getElementById('rp-meta').textContent=teamName+' · '+(shift||'No shift set');
+  const rAgent = ROSTER[String(id)] || Object.values(ROSTER).find(r=>r.name===name) || {};
+  currentRepProfile = {
+    id, name, team:team||rAgent.team||'BB',
+    shift: shift||rAgent.shift||'',
+    lunch: rAgent.lunch||'', brk: rAgent.brk||'',
+    status: rAgent.status||'Agent'
+  };
+
+  // Header
+  document.getElementById('rp-name').textContent = name;
+  const initials = name.split(' ').map(p=>p[0]).join('').substring(0,2).toUpperCase();
+  document.getElementById('ap-avatar').textContent = initials;
+  const teamName = currentRepProfile.team==='BB'?'Berbice':'Providence';
+  document.getElementById('rp-meta').textContent = 'ID: '+id+' · Lunch: '+(currentRepProfile.lunch||'—');
+  document.getElementById('ap-team-badge').textContent = currentRepProfile.team+' · '+teamName;
+  document.getElementById('ap-status-badge').textContent = currentRepProfile.status||'Agent';
+  document.getElementById('ap-shift-badge').textContent = currentRepProfile.shift||'No shift';
+
+  // Show panel
   document.getElementById('rep-profile-overlay').classList.add('open');
-  rpTab('perf',document.getElementById('rpt-perf'));
-  loadRepPerf(id,name,team);
+  document.body.style.overflow='hidden';
+
+  // Load overview by default
+  apTab('overview', document.getElementById('apt-overview'));
 }
 
 function closeRepProfile(){
   document.getElementById('rep-profile-overlay').classList.remove('open');
-  currentRepProfile=null;
+  document.body.style.overflow='';
+  currentRepProfile = null;
 }
 
-function rpTab(tab,btn){
-  ['perf','schedule','att','coach','audit'].forEach(t=>{
-    const el=document.getElementById('rp-'+t);
-    if(el) el.style.display=t===tab?'':'none';
-    const b=document.getElementById('rpt-'+t);
-    if(b) b.classList.toggle('active',t===tab);
+function apTab(tab, btn){
+  ['overview','attendance','coaching','monitoring','schedule','audit'].forEach(t=>{
+    const el = document.getElementById('ap-'+t);
+    if(el) el.style.display = t===tab ? '' : 'none';
+    const b  = document.getElementById('apt-'+t);
+    if(b){ b.classList.toggle('active', t===tab); }
   });
-  if(tab==='schedule' && currentRepProfile) loadRepSchedule();
-  if(tab==='att'      && currentRepProfile) loadRepAtt(currentRepProfile.id);
-  if(tab==='coach'    && currentRepProfile) loadRepCoach(currentRepProfile.id);
-  if(tab==='audit'    && currentRepProfile) loadRepAudit(currentRepProfile.id);
+  if(!currentRepProfile) return;
+  const {id, name} = currentRepProfile;
+  if(tab==='overview')   { apLoadOverview(id,name); }
+  if(tab==='attendance') { apLoadAttendance(id,name); }
+  if(tab==='coaching')   { apLoadSessions(id,'coaching'); }
+  if(tab==='monitoring') { apLoadSessions(id,'monitoring'); }
+  if(tab==='schedule')   { apLoadSchedule(); }
+  if(tab==='audit')      { loadRepAudit(id); }
 }
 
-function loadRepSchedule(){
+// ── OVERVIEW ──
+async function apLoadOverview(id,name){
+  const today = getTodayGY();
+  const monthStart = today.substring(0,7);
+
+  // Today's attendance status
+  try{
+    const snap = await db.collection('attendance').doc(id+'_'+today).get();
+    const el = document.getElementById('rp-att-status');
+    if(snap.exists){
+      const d=snap.data();
+      const s = normalizeStatus(d.status);
+      const label = s==='P'?'Present':s==='L'?'Late':s==='A'?'Absent':s==='S'?'Sick':d.status||'Unknown';
+      const cls   = s==='P'?'#34d399':s==='L'?'#fbbf24':'#f87171';
+      el.innerHTML=`<span style="color:${cls};font-weight:800;font-size:0.9rem;">● ${label}</span>`;
+    } else {
+      el.innerHTML='<span style="color:#64748b;font-size:0.75rem;">Not logged in</span>';
+    }
+  }catch(e){ document.getElementById('rp-att-status').innerHTML='<span style="color:#64748b;">—</span>'; }
+
+  // Today's calls/xfer from CSV or Firebase
+  document.getElementById('rp-live-calls').textContent='—';
+  document.getElementById('rp-live-xfer').textContent='—';
+  document.getElementById('rp-live-conv').textContent='—';
+  const csvAgent = statsData.find(r=>r.name.toLowerCase()===name.toLowerCase()||name.toLowerCase().includes(r.name.toLowerCase()));
+  if(csvAgent){
+    document.getElementById('rp-live-calls').textContent = csvAgent.calls||'0';
+    document.getElementById('rp-live-xfer').textContent  = csvAgent.xfer||'0';
+    document.getElementById('rp-live-conv').textContent  = (csvAgent.conv||'0')+'%';
+  } else {
+    try{
+      const t = await db.collection('taps').doc(id+'_'+today).get();
+      if(t.exists){
+        const d=t.data();
+        document.getElementById('rp-live-calls').textContent = d.calls||0;
+        document.getElementById('rp-live-xfer').textContent  = d.xfer||0;
+        document.getElementById('rp-live-conv').textContent  = d.calls>0?Math.round((d.xfer/d.calls)*100)+'%':'0%';
+      }
+    }catch(e){}
+  }
+
+  // Monthly attendance totals from monthlyCache
+  const nameKey = name.toLowerCase().trim();
+  const agentAtt = monthlyCache[nameKey] || {};
+  let p=0,l=0,a=0;
+  // Also pull from Firebase for accuracy
+  try{
+    const snap = await db.collection('attendance')
+      .where('id','==',id)
+      .where('date','>=',monthStart+'-01')
+      .get();
+    snap.forEach(doc=>{
+      const d=doc.data();
+      const s=normalizeStatus(d.status);
+      if(s==='P') p++;
+      else if(s==='L') l++;
+      else a++;
+    });
+  }catch(e){
+    // Fall back to monthlyCache
+    Object.values(agentAtt).forEach(s=>{ if(s==='P')p++; else if(s==='L')l++; else if(s&&s!=='OFF')a++; });
+  }
+  const total = p+l+a;
+  const rate  = total>0?Math.round((p/total)*100):0;
+  document.getElementById('rp-att-p').textContent    = p;
+  document.getElementById('rp-att-l').textContent    = l;
+  document.getElementById('rp-att-a').textContent    = a;
+  document.getElementById('rp-att-rate').textContent = rate+'%';
+  // Progress bar
+  if(total>0){
+    document.getElementById('ap-bar-p').style.width = (p/total*100)+'%';
+    document.getElementById('ap-bar-l').style.width = (l/total*100)+'%';
+    document.getElementById('ap-bar-a').style.width = (a/total*100)+'%';
+  }
+
+  // Coaching & monitoring counts
+  try{
+    const cSnap = await db.collection('coaching_sessions').where('repId','==',String(id)).get();
+    let coaching=0, monitoring=0, lastDate='';
+    cSnap.forEach(doc=>{
+      const d=doc.data();
+      if(d.type==='monitoring') monitoring++;
+      else coaching++;
+      const ds = d.date || (d.createdAt?new Date(d.createdAt.seconds*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/Guyana'}):'');
+      if(ds && ds>lastDate) lastDate=ds;
+    });
+    document.getElementById('rp-coach-count').textContent   = coaching;
+    document.getElementById('rp-monitor-count').textContent = monitoring;
+    document.getElementById('rp-last-coach').textContent    = lastDate?'Last session: '+lastDate:'No sessions recorded yet';
+  }catch(e){
+    document.getElementById('rp-coach-count').textContent   = '—';
+    document.getElementById('rp-monitor-count').textContent = '—';
+  }
+}
+
+// ── ATTENDANCE ──
+async function apLoadAttendance(id,name){
+  const today      = getTodayGY();
+  const monthStart = today.substring(0,7);
+  const year       = parseInt(monthStart.split('-')[0]);
+  const monthIdx   = parseInt(monthStart.split('-')[1])-1;
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  document.getElementById('ap-cal-month-lbl').textContent = monthNames[monthIdx].toUpperCase()+' '+year;
+
+  // Collect all attendance for this month from Firebase
+  const attMap = {}; // 'YYYY-MM-DD' -> normalized status
+  try{
+    const snap = await db.collection('attendance')
+      .where('id','==',id)
+      .where('date','>=',monthStart+'-01')
+      .get();
+    snap.forEach(doc=>{
+      const d=doc.data();
+      if(d.date) attMap[d.date] = normalizeStatus(d.status);
+    });
+  }catch(e){}
+  // Also merge monthlyCache (sheet data)
+  const nameKey = name.toLowerCase().trim();
+  const sheetAtt = monthlyCache[nameKey]||{};
+  Object.entries(sheetAtt).forEach(([date,s])=>{ if(!attMap[date]) attMap[date]=s; });
+
+  // Render current month calendar
+  renderAgentCalendar('ap-cal-current', year, monthIdx, attMap, today);
+
+  // Previous month
+  const prevMonthIdx = monthIdx===0 ? 11 : monthIdx-1;
+  const prevYear     = monthIdx===0 ? year-1 : year;
+  const prevStart    = prevYear+'-'+(prevMonthIdx+1<10?'0':'')+(prevMonthIdx+1);
+  document.getElementById('ap-prev-month-lbl').textContent = monthNames[prevMonthIdx].toUpperCase()+' '+prevYear;
+
+  const prevAtt = {};
+  try{
+    const snap2 = await db.collection('attendance')
+      .where('id','==',id)
+      .where('date','>=',prevStart+'-01')
+      .where('date','<=',prevStart+'-31')
+      .get();
+    snap2.forEach(doc=>{ const d=doc.data(); if(d.date) prevAtt[d.date]=normalizeStatus(d.status); });
+  }catch(e){}
+  renderAgentCalendar('ap-cal-prev', prevYear, prevMonthIdx, prevAtt, '');
+
+  // Weekly breakdown bars
+  renderWeekBars('ap-week-bars', year, monthIdx, attMap);
+}
+
+function renderAgentCalendar(elId, year, monthIdx, attMap, todayStr){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  const dayNames = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const daysInMonth = new Date(year, monthIdx+1, 0).getDate();
+  const firstDow    = new Date(year, monthIdx, 1).getDay();
+
+  let html = dayNames.map(d=>`<div class="ap-cal-hdr">${d}</div>`).join('');
+  // Empty cells before day 1
+  for(let i=0;i<firstDow;i++) html+='<div class="ap-cal-cell ap-cal-future"></div>';
+
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr = year+'-'+(monthIdx+1<10?'0':'')+(monthIdx+1)+'-'+(d<10?'0':'')+d;
+    const isToday = dateStr===todayStr;
+    const isFuture= dateStr>todayStr;
+    const status  = attMap[dateStr]||'';
+    let cls='ap-cal-off', lbl='·';
+
+    if(isFuture){ cls='ap-cal-future'; lbl=d; }
+    else if(status==='P'){ cls='ap-cal-p'; lbl='P'; }
+    else if(status==='L'){ cls='ap-cal-l'; lbl='L'; }
+    else if(status==='A'){ cls='ap-cal-a'; lbl='A'; }
+    else if(status==='S'){ cls='ap-cal-s'; lbl='S'; }
+    else if(status==='PO'){ cls='ap-cal-a'; lbl='PO'; }
+    else if(status==='OFF'){ cls='ap-cal-off'; lbl='OFF'; }
+    else { cls='ap-cal-off'; lbl=d; }
+
+    html+=`<div class="ap-cal-cell ${cls}${isToday?' ap-cal-today':''}" title="${dateStr}: ${status||'No data'}">${lbl}</div>`;
+  }
+  el.innerHTML=html;
+}
+
+function renderWeekBars(elId, year, monthIdx, attMap){
+  const el=document.getElementById(elId);
+  if(!el) return;
+  const daysInMonth=new Date(year,monthIdx+1,0).getDate();
+  const monthStr=year+'-'+(monthIdx+1<10?'0':'')+(monthIdx+1);
+
+  // Group into Mon–Sun weeks
+  const weeks=[];
+  let week=null;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=monthStr+'-'+(d<10?'0':'')+d;
+    const dow=new Date(year,monthIdx,d).getDay();
+    if(!week||dow===1){ // start new week on Monday
+      if(week) weeks.push(week);
+      week={label:'',days:[]};
+    }
+    if(!week.label) week.label=monthStr.split('-')[1]+'/'+String(d).padStart(2,'0');
+    else week.end=String(d).padStart(2,'0');
+    week.days.push({dateStr,dow});
+  }
+  if(week) weeks.push(week);
+
+  el.innerHTML=weeks.map(w=>{
+    let p=0,l=0,a=0,worked=0;
+    w.days.forEach(({dateStr,dow})=>{
+      const s=attMap[dateStr]||'';
+      if(dow===0) return; // skip Sunday for bar (still in calendar)
+      if(s==='P'){p++;worked++;}
+      else if(s==='L'){l++;worked++;}
+      else if(s==='A'||s==='S'||s==='PO'){a++;worked++;}
+    });
+    const total=p+l+a||1;
+    const lbl=w.label+(w.end?'–'+w.end:'');
+    return `<div class="ap-week-row">
+      <div class="ap-week-lbl">Week ${lbl}</div>
+      <div class="ap-week-bar-wrap">
+        <div class="ap-week-seg p" style="width:${p/total*100}%">${p>0?p:''}</div>
+        <div class="ap-week-seg l" style="width:${l/total*100}%">${l>0?l:''}</div>
+        <div class="ap-week-seg a" style="width:${a/total*100}%">${a>0?a:''}</div>
+      </div>
+      <div class="ap-week-counts" style="color:#34d399;">${p}P ${l>0?'<span style="color:#fbbf24;">'+l+'L</span>':''} ${a>0?'<span style="color:#f87171;">'+a+'A</span>':''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── COACHING / MONITORING SESSIONS ──
+async function apLoadSessions(id, type){
+  const listId = type==='coaching' ? 'ap-coaching-list' : 'ap-monitoring-list';
+  const el = document.getElementById(listId);
+  if(!el) return;
+  el.innerHTML='<div style="color:#64748b;font-size:0.78rem;">Loading...</div>';
+
+  const filterType = type==='monitoring' ? 'monitoring' : null; // null = coaching (non-monitoring)
+
+  const renderDocs = docs => {
+    const filtered = filterType
+      ? docs.filter(d=>d.type==='monitoring')
+      : docs.filter(d=>d.type!=='monitoring');
+    if(!filtered.length){
+      el.innerHTML=`<div style="color:#64748b;font-size:0.78rem;">No ${type} sessions recorded yet.</div>`;
+      return;
+    }
+    const color = type==='monitoring'?'#a78bfa':'#60a5fa';
+    el.innerHTML = filtered.map(d=>{
+      const date = d.createdAt
+        ? new Date(d.createdAt.seconds*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',weekday:'short',timeZone:'America/Guyana'})
+        : d.date||'—';
+      const fields=[
+        ['Discussion',    d.discussion],
+        ['Goal',          d.goal],
+        ['Key Points',    d.keypoints],
+        ['Advice',        d.advice],
+        ['Outcome',       d.outcome],
+        ['Dial Behavior', d.dial],
+        ['Voice & Tone',  d.voice],
+        ['Script',        d.script],
+        ['Objection',     d.objection],
+        ['Points',        d.points],
+      ].filter(f=>f[1]);
+      return `<div class="ap-note ${type==='monitoring'?'monitor':''}">
+        <div class="ap-note-hdr">
+          <span class="ap-note-type" style="color:${color};">${type==='monitoring'?'🎧 Live Monitoring':'📝 Coaching'}</span>
+          <span class="ap-note-date">${date} · <strong style="color:#e2e8f0;">${d.adminName||'Admin'}</strong></span>
+        </div>
+        ${fields.map(f=>`<div class="ap-note-field"><span class="ap-note-field-lbl">${f[0]}: </span>${f[1]}</div>`).join('')}
+      </div>`;
+    }).join('');
+  };
+
+  try{
+    const snap = await db.collection('coaching_sessions')
+      .where('repId','==',String(id))
+      .orderBy('createdAt','desc').limit(50).get();
+    const docs=[]; snap.forEach(doc=>docs.push(doc.data()));
+    renderDocs(docs);
+  }catch(e){
+    try{
+      const snap2 = await db.collection('coaching_sessions').where('repId','==',String(id)).get();
+      const docs=[]; snap2.forEach(doc=>docs.push(doc.data()));
+      docs.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+      renderDocs(docs);
+    }catch(e2){ el.innerHTML='<div style="color:#f87171;">Could not load sessions.</div>'; }
+  }
+}
+
+// ── SCHEDULE ──
+function apLoadSchedule(){
   if(!currentRepProfile) return;
-  const r = currentRepProfile;
-  const shiftEl = document.getElementById('rp-shift-input');
-  const lunchEl = document.getElementById('rp-lunch-input');
-  const breakEl = document.getElementById('rp-break-input');
-  if(shiftEl) shiftEl.value = r.shift || '';
-  if(lunchEl) lunchEl.value = r.lunch || '';
-  if(breakEl) breakEl.value = r.brk   || '';
-  // Clear status messages
+  const r=currentRepProfile;
+  const s=document.getElementById('rp-shift-input');
+  const l=document.getElementById('rp-lunch-input');
+  const b=document.getElementById('rp-break-input');
+  if(s) s.value=r.shift||'';
+  if(l) l.value=r.lunch||'';
+  if(b) b.value=r.brk||'';
   ['rp-shift-status','rp-lunch-status','rp-break-status'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.textContent='';
   });
+}
+
+// Keep old rpTab as alias for backward compat
+function rpTab(tab,btn){
+  const map={perf:'overview',schedule:'schedule',att:'attendance',coach:'coaching',audit:'audit'};
+  apTab(map[tab]||tab, document.getElementById('apt-'+(map[tab]||tab)));
+}
+
+async function loadRepPerf(id,name,team){ apLoadOverview(id,name); }
+async function loadRepAtt(id){
+  if(currentRepProfile) apLoadAttendance(id, currentRepProfile.name);
+}
+async function loadRepCoach(id){
+  apLoadSessions(id,'coaching');
 }
 
 async function saveRosterField(field){
@@ -3707,16 +4236,23 @@ async function loadRepAtt(id){
 
 async function loadRepAudit(id){
   try{
-    const snap=await db.collection('sessions').where('id','==',id).orderBy('loginTime','desc').limit(15).get();
+    const snap=await db.collection('sessions').where('id','==',id).orderBy('loginTime','desc').limit(20).get();
     const list=document.getElementById('audit-list');
-    if(snap.empty){list.innerHTML='<div style="color:var(--muted);">No login history found.</div>';return;}
+    if(!list) return;
+    if(snap.empty){list.innerHTML='<div style="color:#64748b;font-size:0.78rem;">No login history found.</div>';return;}
     list.innerHTML='';
     snap.forEach(doc=>{
       const d=doc.data();
       const date=d.loginTime?new Date(d.loginTime.seconds*1000).toLocaleString('en-US',{timeZone:'America/Guyana',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
-      list.innerHTML+=`<div class="note-item"><div class="note-date">${d.date||'—'}</div>Logged in at ${date}</div>`;
+      list.innerHTML+=`<div class="ap-login-row">
+        <span style="color:#e2e8f0;font-weight:600;">${d.date||'—'}</span>
+        <span style="color:#64748b;">Logged in at <strong style="color:#60a5fa;">${date}</strong></span>
+      </div>`;
     });
-  }catch(e){document.getElementById('audit-list').innerHTML='<div style="color:var(--muted);">Could not load audit.</div>';}
+  }catch(e){
+    const list=document.getElementById('audit-list');
+    if(list) list.innerHTML='<div style="color:#64748b;">Could not load audit log.</div>';
+  }
 }
 
 async function markAgentAbsent(status){
