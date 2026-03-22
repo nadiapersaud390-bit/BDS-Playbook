@@ -4349,6 +4349,8 @@ function renderMonthly(attMap, monthStart, year, monthIdx){
 function handleStatsCSV(input){
   const file=input.files[0];
   if(!file) return;
+  // Reset input value so re-uploading the same file triggers onchange again
+  input.value='';
   const reader=new FileReader();
   reader.onload=e=>{
     const text = e.target.result;
@@ -4454,6 +4456,22 @@ async function confirmCSVUpload(){
 
   // Reload report history so the new upload appears in the buttons immediately
   await loadReportHistory();
+
+  // Clear weekly performance cache so it rebuilds with new data on next view
+  wpAllReports = [];
+  wpWeekRanges = [];
+
+  // If weekly performance tab is currently open, refresh it immediately
+  const wpEl = document.getElementById('admin-weekperf');
+  if(wpEl && wpEl.style.display !== 'none'){
+    loadWeeklyPerformance();
+  }
+
+  // Refresh daily overview if it's open — same-day upload should update transfer counts
+  const ovEl = document.getElementById('admin-overview');
+  if(ovEl && ovEl.style.display !== 'none'){
+    loadAdminOverview();
+  }
 }
 
 // ── CANONICAL TEAM RESOLVER ──
