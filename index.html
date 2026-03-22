@@ -3966,38 +3966,37 @@ function apTab(tab, btn){
 
 // ── OVERVIEW ──
 async function apLoadOverview(id,name){
-  const today = getTodayGY();
+  const today      = getTodayGY();
   const monthStart = today.substring(0,7);
+  const idStr      = String(id||'');
 
-  // Today's attendance status
+  // ── Today's attendance status ──
   try{
-    const snap = await db.collection('attendance').doc(id+'_'+today).get();
+    const attSnap = await db.collection('attendance').doc(idStr+'_'+today).get();
     const el = document.getElementById('rp-att-status');
-    if(snap.exists){
-      const d=snap.data();
-      const s = normalizeStatus(d.status);
-      const label = s==='P'?'Present':s==='L'?'Late':s==='A'?'Absent':s==='S'?'Sick':d.status||'Unknown';
-      const cls   = s==='P'?'#34d399':s==='L'?'#fbbf24':'#f87171';
-      el.innerHTML=`<span style="color:${cls};font-weight:800;font-size:0.9rem;">● ${label}</span>`;
+    if(attSnap && attSnap.exists){
+      const d=attSnap.data();
+      const s=normalizeStatus(d.status);
+      const label=s==='P'?'Present':s==='L'?'Late':s==='A'?'Absent':s==='S'?'Sick':d.status||'—';
+      const col=s==='P'?'#34d399':s==='L'?'#fbbf24':'#f87171';
+      el.innerHTML=`<span style="color:${col};font-weight:800;font-size:0.9rem;">● ${label}</span>`;
     } else {
-      el.innerHTML='<span style="color:#64748b;font-size:0.75rem;">Not logged in</span>';
+      el.innerHTML='<span style="color:#64748b;font-size:0.75rem;">Not logged in today</span>';
     }
   }catch(e){ document.getElementById('rp-att-status').innerHTML='<span style="color:#64748b;">—</span>'; }
 
-  // Today's calls/xfer from CSV or Firebase
-  document.getElementById('rp-live-calls').textContent='—';
-  document.getElementById('rp-live-xfer').textContent='—';
-  document.getElementById('rp-live-conv').textContent='—';
-  const csvAgent = statsData.find(r=>r.name.toLowerCase()===name.toLowerCase()||name.toLowerCase().includes(r.name.toLowerCase()));
+  // ── Today's calls/xfer ──
+  ['rp-live-calls','rp-live-xfer','rp-live-conv'].forEach(i=>{ const el=document.getElementById(i); if(el) el.textContent='0'; });
+  const csvAgent = statsData.find(r=>r.name&&(r.name.toLowerCase()===name.toLowerCase()||name.toLowerCase().includes(r.name.toLowerCase())));
   if(csvAgent){
     document.getElementById('rp-live-calls').textContent = csvAgent.calls||'0';
     document.getElementById('rp-live-xfer').textContent  = csvAgent.xfer||'0';
     document.getElementById('rp-live-conv').textContent  = (csvAgent.conv||'0')+'%';
   } else {
     try{
-      const t = await db.collection('taps').doc(id+'_'+today).get();
-      if(t.exists){
-        const d=t.data();
+      const tSnap = await db.collection('taps').doc(idStr+'_'+today).get();
+      if(tSnap && tSnap.exists){
+        const d=tSnap.data();
         document.getElementById('rp-live-calls').textContent = d.calls||0;
         document.getElementById('rp-live-xfer').textContent  = d.xfer||0;
         document.getElementById('rp-live-conv').textContent  = d.calls>0?Math.round((d.xfer/d.calls)*100)+'%':'0%';
@@ -4005,57 +4004,89 @@ async function apLoadOverview(id,name){
     }catch(e){}
   }
 
-  // Monthly attendance totals from monthlyCache
-  const nameKey = name.toLowerCase().trim();
-  const agentAtt = monthlyCache[nameKey] || {};
+  // ── Monthly attendance ──
+  // 1. Try monthlyCache (populated if Monthly tab was visited)
   let p=0,l=0,a=0;
-  // Also pull from Firebase for accuracy
-  try{
-    const snap = await db.collection('attendance')
-      .where('id','==',id)
-      .where('date','>=',monthStart+'-01')
-      .get();
-    snap.forEach(doc=>{
-      const d=doc.data();
-      const s=normalizeStatus(d.status);
-      if(s==='P') p++;
-      else if(s==='L') l++;
-      else a++;
+  const nameKey  = name.toLowerCase().trim();
+  const sheetAtt = monthlyCache[nameKey]||{};
+
+  if(Object.keys(sheetAtt).length > 0){
+    Object.values(sheetAtt).forEach(s=>{
+      const c=normalizeStatus(s);
+      if(c==='P') p++;
+      else if(c==='L') l++;
+      else if(c&&c!=='OFF') a++;
     });
-  }catch(e){
-    // Fall back to monthlyCache
-    Object.values(agentAtt).forEach(s=>{ if(s==='P')p++; else if(s==='L')l++; else if(s&&s!=='OFF')a++; });
+  } else {
+    // 2. Fallback: scan all attendance docs for this agent this month
+    // Use a simple collection scan filtered client-side to avoid index requirement
+    try{
+      const allDocs = await db.collection('attendance')
+        .where('id','==',idStr)
+        .get();
+      allDocs.forEach(doc=>{
+        const d=doc.data();
+        if(!d.date || !d.date.startsWith(monthStart)) return;
+        const c=normalizeStatus(d.status);
+        if(c==='P') p++;
+        else if(c==='L') l++;
+        else if(c&&c!=='OFF') a++;
+      });
+    }catch(e){
+      // Last resort: scan by doc ID prefix pattern
+      try{
+        const daysInMonth = new Date(parseInt(monthStart.split('-')[0]), parseInt(monthStart.split('-')[1]), 0).getDate();
+        const promises = [];
+        for(let d=1;d<=daysInMonth;d++){
+          const dateStr = monthStart+'-'+(d<10?'0':'')+d;
+          promises.push(db.collection('attendance').doc(idStr+'_'+dateStr).get());
+        }
+        const snaps = await Promise.all(promises);
+        snaps.forEach(snap=>{
+          if(!snap.exists) return;
+          const c=normalizeStatus(snap.data().status);
+          if(c==='P') p++;
+          else if(c==='L') l++;
+          else if(c&&c!=='OFF') a++;
+        });
+      }catch(e2){}
+    }
   }
+
   const total = p+l+a;
   const rate  = total>0?Math.round((p/total)*100):0;
   document.getElementById('rp-att-p').textContent    = p;
   document.getElementById('rp-att-l').textContent    = l;
   document.getElementById('rp-att-a').textContent    = a;
-  document.getElementById('rp-att-rate').textContent = rate+'%';
-  // Progress bar
+  document.getElementById('rp-att-rate').textContent = total>0?rate+'%':'—';
   if(total>0){
     document.getElementById('ap-bar-p').style.width = (p/total*100)+'%';
     document.getElementById('ap-bar-l').style.width = (l/total*100)+'%';
     document.getElementById('ap-bar-a').style.width = (a/total*100)+'%';
+  } else {
+    ['ap-bar-p','ap-bar-l','ap-bar-a'].forEach(i=>{ const el=document.getElementById(i); if(el) el.style.width='0%'; });
   }
 
-  // Coaching & monitoring counts
+  // ── Coaching & monitoring counts ──
   try{
-    const cSnap = await db.collection('coaching_sessions').where('repId','==',String(id)).get();
+    let cSnap = await db.collection('coaching_sessions').where('repId','==',idStr).get();
+    if(cSnap.empty){
+      cSnap = await db.collection('coaching_sessions').where('repName','==',name).get();
+    }
     let coaching=0, monitoring=0, lastDate='';
     cSnap.forEach(doc=>{
       const d=doc.data();
-      if(d.type==='monitoring') monitoring++;
-      else coaching++;
-      const ds = d.date || (d.createdAt?new Date(d.createdAt.seconds*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/Guyana'}):'');
-      if(ds && ds>lastDate) lastDate=ds;
+      if(d.type==='monitoring') monitoring++; else coaching++;
+      const ds=d.date||(d.createdAt?new Date(d.createdAt.seconds*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/Guyana'}):'');
+      if(ds>lastDate) lastDate=ds;
     });
     document.getElementById('rp-coach-count').textContent   = coaching;
     document.getElementById('rp-monitor-count').textContent = monitoring;
-    document.getElementById('rp-last-coach').textContent    = lastDate?'Last session: '+lastDate:'No sessions recorded yet';
+    document.getElementById('rp-last-coach').textContent    = lastDate?'Last session: '+lastDate:'No sessions yet';
   }catch(e){
-    document.getElementById('rp-coach-count').textContent   = '—';
-    document.getElementById('rp-monitor-count').textContent = '—';
+    document.getElementById('rp-coach-count').textContent   = '0';
+    document.getElementById('rp-monitor-count').textContent = '0';
+    document.getElementById('rp-last-coach').textContent    = '';
   }
 }
 
@@ -4066,48 +4097,55 @@ async function apLoadAttendance(id,name){
   const year       = parseInt(monthStart.split('-')[0]);
   const monthIdx   = parseInt(monthStart.split('-')[1])-1;
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const idStr      = String(id||'');
 
   document.getElementById('ap-cal-month-lbl').textContent = monthNames[monthIdx].toUpperCase()+' '+year;
 
-  // Collect all attendance for this month from Firebase
-  const attMap = {}; // 'YYYY-MM-DD' -> normalized status
+  // Build attMap from monthlyCache first, then overlay Firebase docs
+  const nameKey = name.toLowerCase().trim();
+  const attMap  = {...(monthlyCache[nameKey]||{})};
+
+  // Fetch all attendance docs for this month by doc ID (no index needed)
+  const daysInMonth = new Date(year, monthIdx+1, 0).getDate();
   try{
-    const snap = await db.collection('attendance')
-      .where('id','==',id)
-      .where('date','>=',monthStart+'-01')
-      .get();
-    snap.forEach(doc=>{
-      const d=doc.data();
+    const promises = [];
+    for(let d=1;d<=daysInMonth;d++){
+      const dateStr = monthStart+'-'+String(d).padStart(2,'0');
+      promises.push(db.collection('attendance').doc(idStr+'_'+dateStr).get());
+    }
+    const snaps = await Promise.all(promises);
+    snaps.forEach(snap=>{
+      if(!snap.exists) return;
+      const d=snap.data();
       if(d.date) attMap[d.date] = normalizeStatus(d.status);
     });
   }catch(e){}
-  // Also merge monthlyCache (sheet data)
-  const nameKey = name.toLowerCase().trim();
-  const sheetAtt = monthlyCache[nameKey]||{};
-  Object.entries(sheetAtt).forEach(([date,s])=>{ if(!attMap[date]) attMap[date]=s; });
 
-  // Render current month calendar
   renderAgentCalendar('ap-cal-current', year, monthIdx, attMap, today);
+  renderWeekBars('ap-week-bars', year, monthIdx, attMap);
 
   // Previous month
-  const prevMonthIdx = monthIdx===0 ? 11 : monthIdx-1;
-  const prevYear     = monthIdx===0 ? year-1 : year;
-  const prevStart    = prevYear+'-'+(prevMonthIdx+1<10?'0':'')+(prevMonthIdx+1);
+  const prevMonthIdx = monthIdx===0?11:monthIdx-1;
+  const prevYear     = monthIdx===0?year-1:year;
+  const prevStart    = prevYear+'-'+String(prevMonthIdx+1).padStart(2,'0');
   document.getElementById('ap-prev-month-lbl').textContent = monthNames[prevMonthIdx].toUpperCase()+' '+prevYear;
 
   const prevAtt = {};
+  const daysInPrev = new Date(prevYear, prevMonthIdx+1, 0).getDate();
   try{
-    const snap2 = await db.collection('attendance')
-      .where('id','==',id)
-      .where('date','>=',prevStart+'-01')
-      .where('date','<=',prevStart+'-31')
-      .get();
-    snap2.forEach(doc=>{ const d=doc.data(); if(d.date) prevAtt[d.date]=normalizeStatus(d.status); });
+    const promises2 = [];
+    for(let d=1;d<=daysInPrev;d++){
+      const dateStr = prevStart+'-'+String(d).padStart(2,'0');
+      promises2.push(db.collection('attendance').doc(idStr+'_'+dateStr).get());
+    }
+    const snaps2 = await Promise.all(promises2);
+    snaps2.forEach(snap=>{
+      if(!snap.exists) return;
+      const d=snap.data();
+      if(d.date) prevAtt[d.date] = normalizeStatus(d.status);
+    });
   }catch(e){}
   renderAgentCalendar('ap-cal-prev', prevYear, prevMonthIdx, prevAtt, '');
-
-  // Weekly breakdown bars
-  renderWeekBars('ap-week-bars', year, monthIdx, attMap);
 }
 
 function renderAgentCalendar(elId, year, monthIdx, attMap, todayStr){
@@ -4206,20 +4244,47 @@ async function apLoadSessions(id, type){
     el.innerHTML = filtered.map(d=>renderNoteCard(d, type)).join('');
   };
 
-  try{
-    const snap = await db.collection('coaching_sessions')
-      .where('repId','==',String(id))
-      .orderBy('createdAt','desc').limit(100).get();
-    const docs=[]; snap.forEach(doc=>docs.push({id:doc.id,...doc.data()}));
-    renderDocs(docs);
-  }catch(e){
+  const idStr = String(id||'');
+  const idNum = parseFloat(id);
+
+  const fetchDocs = async () => {
+    // Try string id first
     try{
-      const snap2 = await db.collection('coaching_sessions').where('repId','==',String(id)).get();
-      const docs=[]; snap2.forEach(doc=>docs.push({id:doc.id,...doc.data()}));
-      docs.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
-      renderDocs(docs);
-    }catch(e2){ el.innerHTML='<div style="color:#f87171;">Could not load sessions.</div>'; }
-  }
+      const snap = await db.collection('coaching_sessions')
+        .where('repId','==',idStr)
+        .orderBy('createdAt','desc').limit(100).get();
+      if(!snap.empty){ const d=[]; snap.forEach(doc=>d.push({id:doc.id,...doc.data()})); return d; }
+    }catch(e){}
+    // Try numeric id
+    if(!isNaN(idNum)){
+      try{
+        const snap = await db.collection('coaching_sessions')
+          .where('repId','==',idNum)
+          .orderBy('createdAt','desc').limit(100).get();
+        if(!snap.empty){ const d=[]; snap.forEach(doc=>d.push({id:doc.id,...doc.data()})); return d; }
+      }catch(e){}
+    }
+    // Fallback: by agent name
+    try{
+      const agentName = currentRepProfile ? currentRepProfile.name : '';
+      if(agentName){
+        const snap = await db.collection('coaching_sessions').where('repName','==',agentName).get();
+        const d=[]; snap.forEach(doc=>d.push({id:doc.id,...doc.data()}));
+        return d.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+      }
+    }catch(e){}
+    // Last resort: no-order query
+    try{
+      const snap = await db.collection('coaching_sessions').where('repId','==',idStr).get();
+      const d=[]; snap.forEach(doc=>d.push({id:doc.id,...doc.data()}));
+      return d.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+    }catch(e){ return []; }
+  };
+
+  try{
+    const docs = await fetchDocs();
+    renderDocs(docs);
+  }catch(e){ el.innerHTML='<div style="color:#f87171;">Could not load sessions.</div>'; }
 }
 
 // ── SCHEDULE ──
@@ -4381,11 +4446,17 @@ async function loadRepAtt(id){
 }
 
 async function loadRepAudit(id){
+  const list = document.getElementById('audit-list');
+  if(!list) return;
+  list.innerHTML='<div style="color:#64748b;font-size:0.78rem;">Loading...</div>';
+  const idStr = String(id||'');
+  const idNum = parseFloat(id);
   try{
-    const snap=await db.collection('sessions').where('id','==',id).orderBy('loginTime','desc').limit(20).get();
-    const list=document.getElementById('audit-list');
-    if(!list) return;
-    if(snap.empty){list.innerHTML='<div style="color:#64748b;font-size:0.78rem;">No login history found.</div>';return;}
+    let snap = await db.collection('sessions').where('id','==',idStr).orderBy('loginTime','desc').limit(20).get();
+    if(snap.empty && !isNaN(idNum)){
+      snap = await db.collection('sessions').where('id','==',idNum).orderBy('loginTime','desc').limit(20).get();
+    }
+    if(snap.empty){ list.innerHTML='<div style="color:#64748b;font-size:0.78rem;">No login history found.</div>'; return; }
     list.innerHTML='';
     snap.forEach(doc=>{
       const d=doc.data();
@@ -4396,8 +4467,7 @@ async function loadRepAudit(id){
       </div>`;
     });
   }catch(e){
-    const list=document.getElementById('audit-list');
-    if(list) list.innerHTML='<div style="color:#64748b;">Could not load audit log.</div>';
+    list.innerHTML='<div style="color:#64748b;">Could not load audit log.</div>';
   }
 }
 
