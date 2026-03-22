@@ -1134,8 +1134,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
             <span id="csv-date-lbl"   style="font-size:0.68rem;color:var(--accent2);font-weight:700;"></span>
             <span id="csv-expiry-lbl" style="font-size:0.68rem;color:var(--red);font-weight:700;"></span>
-            <button id="compare-toggle-btn" onclick="toggleCompareMode()" style="display:none;padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;">⚖️ COMPARE</button>
-            <button id="compare-clear-btn" onclick="clearCompare()" style="display:none;padding:5px 12px;border-radius:7px;border:1px solid rgba(248,113,113,0.4);background:transparent;color:var(--red);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;">✕ CLEAR</button>
+            <button onclick="document.getElementById('stats-csv-upload').click()" style="padding:9px 18px;border-radius:9px;border:none;background:linear-gradient(90deg,var(--accent),var(--cyan));color:#000;font-family:'Barlow Condensed',sans-serif;font-size:0.88rem;font-weight:800;letter-spacing:1.5px;cursor:pointer;">⬆ UPLOAD CSV</button>
           </div>
         </div>
         <!-- Compare mode banner -->
@@ -4605,8 +4604,11 @@ function renderStatsTable(){
 
   if(!statsData.length){
     tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:40px;">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:#64748b;letter-spacing:2px;margin-bottom:8px;">NO DATA FOR TODAY</div>
-      <div style="font-size:0.78rem;color:#3a4a6a;">Upload today's CSV report to see agent stats</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;color:#64748b;letter-spacing:2px;margin-bottom:12px;">NO DATA YET</div>
+      <div style="margin-bottom:16px;">
+        <button onclick="document.getElementById('stats-csv-upload').click()" style="padding:12px 28px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--accent),var(--cyan));color:#000;font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;letter-spacing:2px;cursor:pointer;">⬆ CLICK HERE TO UPLOAD CSV</button>
+      </div>
+      <div style="font-size:0.72rem;color:#3a4a6a;">Upload a daily CSV report to see agent stats</div>
     </td></tr>`;
     return;
   }
