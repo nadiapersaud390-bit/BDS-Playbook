@@ -651,6 +651,13 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
           <div class="admin-card-title" style="margin-bottom:0;font-size:0.9rem;">📅 DAILY ATTENDANCE</div>
           <span id="att-date" style="color:var(--accent2);font-size:0.72rem;font-weight:700;"></span>
         </div>
+        <!-- Team toggle -->
+        <div style="display:flex;justify-content:center;gap:10px;margin-bottom:12px;">
+          <button class="adm-team-btn active" id="att-bb-btn" onclick="switchAttTeam('all',this)" style="font-size:0.82rem;padding:8px 18px;">🌐 All</button>
+          <button class="adm-team-btn" id="att-bb-only" onclick="switchAttTeam('BB',this)" style="font-size:0.82rem;padding:8px 18px;">🏠 Berbice (BB)</button>
+          <button class="adm-team-btn" id="att-pr-only" onclick="switchAttTeam('PR',this)" style="font-size:0.82rem;padding:8px 18px;">🌴 Providence (PR)</button>
+        </div>
+        <!-- Status filters -->
         <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
           <button class="adm-filter active" id="att-filter-all"  onclick="filterAtt('all',this)">All</button>
           <button class="adm-filter green"  id="att-filter-P"    onclick="filterAtt('P',this)">✅ Present</button>
@@ -1744,7 +1751,15 @@ let adminStatsTapTimer = null;
 let pendingCSVData = null;
 let selectedExpiryDays = 7;
 let dailyGoal = 300;
-let attFilter = 'all';
+let attFilter     = 'all';
+let attTeamFilter = 'all'; // 'all', 'BB', 'PR'
+
+function switchAttTeam(team, btn){
+  attTeamFilter = team;
+  document.querySelectorAll('[id^="att-bb"],[id^="att-pr"]').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderAttTable();
+}
 let allAttRecords = [];
 
 function showAdminUI(){
@@ -1987,8 +2002,10 @@ function renderAttTable(){
   const tbody=document.getElementById('att-tbody');
   if(!tbody) return;
 
-  // Get ALL agents from roster sorted alphabetically
-  const allAgents = Object.values(ROSTER).sort((a,b)=>a.name.localeCompare(b.name));
+  // Get ALL agents from roster sorted alphabetically — apply team filter
+  const allAgents = Object.values(ROSTER)
+    .filter(a => attTeamFilter === 'all' || a.team === attTeamFilter)
+    .sort((a,b)=>a.name.localeCompare(b.name));
 
   if(!allAgents.length){
     tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">Loading roster... please wait a moment and try again.</td></tr>';
