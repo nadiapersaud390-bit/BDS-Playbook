@@ -1637,7 +1637,7 @@ pitch_softpull:{phase:'SALES PITCH BOOSTING \u2014 SOFT PULL / NO WEBSITE / DATA
 };
 
 // ── APPS SCRIPT BRIDGE URL ──
-const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbyZ2JIqslFV_8JMxYEIi2Lv_55BX5cF2EKAKfHcwNx_gg_9XlTpLfEdI33DFIx6bmDyCw/exec';
+const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbzHJZJsL24bnAZj8d3VvRHYRsoi5Yve915hxbZdGMxCyugez8zZQzf86kziJORtcBNuUw/exec';
 
 // ── JSONP helper — bypasses CORS for Google Apps Script ──
 function callBridge(params) {
@@ -3152,91 +3152,44 @@ async function loadMonthlyAttendance(){
   document.getElementById('monthly-month-lbl').textContent = monthNames[monthIdx]+' '+year;
   document.getElementById('monthly-table-wrap').innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;">Loading from Google Sheet...</div>';
 
-  // ── Google Sheet is the ONLY source for monthly — no Firebase merge ──
-  // Pull BB and PR weekly tabs in parallel and build monthly from them
-  const [bbResult, prResult] = await Promise.allSettled([
-    callBridge({action:'getWeeklyAttendance', team:'BB'}),
-    callBridge({action:'getWeeklyAttendance', team:'PR'})
-  ]);
+  try{
+    // Read directly from Monthly Overview tab — single source of truth
+    const data = await callBridge({action:'getMonthlyAttendance'});
 
-  monthlyCache = {};
+    if(!data.success) throw new Error(data.error||'Failed to load Monthly Overview');
 
-  const processWeeks = (result, team) => {
-    if(result.status !== 'fulfilled' || !result.value.success){
-      console.warn('Weekly load failed for', team, result.status==='fulfilled' ? result.value.error : result.reason);
-      return;
-    }
-    const weeks = result.value.weeks || [];
-    console.log(`Monthly: processing ${weeks.length} weeks for ${team}`);
+    monthlyCache = {};
 
-    weeks.forEach(week => {
-      const cols    = week.columns || [];
-      const agents  = week.agents  || [];
-      const label   = week.label   || '';
-      console.log(`  Week "${label}" — ${cols.length} cols, ${agents.length} agents`);
-      if(cols.length) console.log('  Col headers:', cols.map(c=>c.header).join(', '));
+    (data.agents||[]).forEach(agent=>{
+      // Match to roster by name to get userId as key
+      const rAgent = Object.values(ROSTER).find(r=>{
+        const rn = r.name.toLowerCase();
+        const an = agent.name.toLowerCase();
+        const parts = an.split(' ');
+        return rn===an
+          || (parts.length>=2 && rn.includes(parts[0]) && rn.includes(parts.slice(-1)[0]));
+      });
 
-      // Parse week date range from label e.g. "March 15 – 21" or "March 1-7"
-      const rangeMatch = label.match(/(\d{1,2})\s*[–\-]\s*(\d{1,2})/);
-      const startDay = rangeMatch ? parseInt(rangeMatch[1]) : 1;
-      const endDay   = rangeMatch ? parseInt(rangeMatch[2]) : 7;
+      const key = rAgent ? String(rAgent.userId) : 'name:'+agent.name.toLowerCase();
+      monthlyCache[key] = {};
 
-      agents.forEach(agent => {
-        const rAgent = Object.values(ROSTER).find(r => {
-          const rn = r.name.toLowerCase();
-          const an = agent.name.toLowerCase();
-          const anParts = an.split(' ');
-          return rn === an
-            || (anParts.length >= 2 && rn.includes(anParts[0]) && rn.includes(anParts.slice(-1)[0]));
-        });
-        const key = rAgent ? String(rAgent.userId) : 'name:' + agent.name.toLowerCase();
-        if(!monthlyCache[key]) monthlyCache[key] = {};
-
-        cols.forEach(col => {
-          const rawVal = agent.days[col.header] || '';
-          const status = normalizeStatus(rawVal);
-          if(!status) return;
-
-          const h = col.header.toLowerCase().trim();
-
-          // Case 1: header is a day abbreviation — Mon/Tue/Wed/Thu/Fri/Sat/Sun
-          const dayNameMap = {mon:1,tue:2,wed:3,thu:4,fri:5,sat:6,sun:0,
-                              monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,sunday:0};
-          if(dayNameMap[h] !== undefined){
-            const targetDow = dayNameMap[h];
-            for(let d = startDay; d <= endDay; d++){
-              if(new Date(parseInt(year), monthIdx, d).getDay() === targetDow){
-                monthlyCache[key][monthStart+'-'+(d<10?'0':'')+d] = status;
-                break;
-              }
-            }
-            return;
-          }
-
-          // Case 2: header is a date number e.g. "16", "17"
-          const dayNum = parseInt(h);
-          if(!isNaN(dayNum) && dayNum >= 1 && dayNum <= 31){
-            monthlyCache[key][monthStart+'-'+(dayNum<10?'0':'')+dayNum] = status;
-            return;
-          }
-
-          // Case 3: header contains a date like "Mon 16" or "16 Mon"
-          const numInHeader = h.match(/\d{1,2}/);
-          if(numInHeader){
-            const d = parseInt(numInHeader[0]);
-            if(d >= 1 && d <= 31){
-              monthlyCache[key][monthStart+'-'+(d<10?'0':'')+d] = status;
-            }
-          }
-        });
+      // days = {1:'Present', 2:'Present', 11:'Sick', ...}
+      Object.entries(agent.days||{}).forEach(([dayNum, status])=>{
+        const d   = parseInt(dayNum);
+        const code = normalizeStatus(status);
+        if(code && d>=1 && d<=31){
+          const dateStr = monthStart+'-'+(d<10?'0':'')+d;
+          monthlyCache[key][dateStr] = code;
+        }
       });
     });
-  };
 
-  processWeeks(bbResult, 'BB');
-  processWeeks(prResult, 'PR');
-
-  renderMonthly(monthlyCache, monthStart, year, monthIdx);
+    renderMonthly(monthlyCache, monthStart, year, monthIdx);
+  }catch(e){
+    console.error('Monthly load error:',e);
+    document.getElementById('monthly-table-wrap').innerHTML=
+      `<div style="color:var(--red);text-align:center;padding:20px;">Could not load monthly data: ${e.message}</div>`;
+  }
 }
 
 function reRenderMonthly(){
@@ -3329,15 +3282,17 @@ function renderMonthly(attMap, monthStart, year, monthIdx){
       const isFuture = dateStr > getTodayGY();
       const rawStatus = agentAtt[dateStr];
       const status    = normalizeStatus(rawStatus);
-      let cls='mcal-empty', lbl='';
-      if(isSun){cls='mcal-off';lbl='·';}
-      else if(isFuture){cls='mcal-off';lbl='';}
-      else if(status==='P'){cls='mcal-p';lbl='P';p++;}
+      let cls='mcal-off', lbl='';
+
+      if(status==='P'){cls='mcal-p';lbl='P';p++;}
       else if(status==='L'){cls='mcal-l';lbl='L';l++;}
-      else if(status==='A'||status==='S'||status==='PO'){cls='mcal-a';lbl=status;a++;}
+      else if(status==='A'){cls='mcal-a';lbl='A';a++;}
+      else if(status==='S'){cls='mcal-a';lbl='S';a++;}
+      else if(status==='PO'){cls='mcal-a';lbl='PO';a++;}
       else if(status==='V'){cls='mcal-l';lbl='V';}
-      else if(status==='OFF'){cls='mcal-off';lbl='';}
-      else if(status){cls='mcal-off';lbl=status;}
+      else if(status==='OFF'){cls='mcal-off';lbl='OFF';}
+      else if(isFuture){cls='mcal-off';lbl='';}
+      else if(isSun && !status){cls='mcal-off';lbl='·';}
       else{cls='mcal-off';lbl='';}
       html+=`<td style="padding:4px 3px;text-align:center;border-bottom:1px solid #0f1e35;"><div class="mcal-cell ${cls}" title="${dateStr}">${lbl}</div></td>`;
     }
