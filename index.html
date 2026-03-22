@@ -4188,10 +4188,13 @@ async function loadReportHistory(){
 function renderReportHistory(){
   const el=document.getElementById('report-history');
   if(!el||!reportHistory.length){if(el)el.innerHTML='';return;}
+  // Always newest date first
+  const sorted = [...reportHistory].sort((a,b)=>b.date.localeCompare(a.date));
   el.innerHTML='<div style="font-size:0.6rem;font-weight:800;letter-spacing:2px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">📂 Previous Reports — click to load</div>'
-    +reportHistory.map((r,i)=>{
+    +sorted.map((r,i)=>{
+      const origIdx = reportHistory.indexOf(r);
       const isToday=r.date===getTodayGY();
-      return `<button onclick="loadReportByIndex(${i})" style="margin:0 4px 4px 0;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:1.5px solid ${isToday?'var(--green)':'var(--border)'};background:${isToday?'rgba(52,211,153,0.1)':'transparent'};color:${isToday?'var(--green)':'var(--muted)'};font-family:Barlow Condensed,sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">${isToday?'⚡ ':''} ${r.date} <span style="opacity:0.6;">(${r.agentCount||'?'} agents)</span></button>`;
+      return `<button onclick="loadReportByIndex(${origIdx})" style="margin:0 4px 4px 0;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:1.5px solid ${isToday?'var(--green)':'var(--border)'};background:${isToday?'rgba(52,211,153,0.1)':'transparent'};color:${isToday?'var(--green)':'var(--muted)'};font-family:Barlow Condensed,sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">${isToday?'⚡ ':''} ${r.date} <span style="opacity:0.6;">(${r.agentCount||'?'} agents)</span></button>`;
     }).join('');
 }
 let compareData     = [];   // second dataset for comparison
@@ -4441,7 +4444,7 @@ async function confirmCSVUpload(){
 }
 
 // ── CANONICAL TEAM RESOLVER ──
-// Priority: 1) Ytel ID in ROSTER  2) nameRaw prefix (GUYP=PR, else BB)  3) name fuzzy match
+// Priority: 1) Ytel ID in ROSTER  2) nameRaw prefix (GUYP=PR, else BB)  3) exact name match
 function resolveAgentTeam(agent){
   const rosterAgents = Object.values(ROSTER);
 
@@ -4451,26 +4454,38 @@ function resolveAgentTeam(agent){
     if(byId) return byId.team;
   }
 
-  // 2. nameRaw prefix — directly from the CSV source, always correct
+  // 2. nameRaw prefix — directly from CSV, always correct
+  //    "GUYP ..." = PR,  "GUY ..." or "GUYB ..." = BB
   if(agent.nameRaw){
     const yn = agent.nameRaw.toUpperCase().replace(/[\s-]/g,'');
     if(yn.startsWith('GUYP')) return 'PR';
-    if(yn.startsWith('GUY'))  return 'BB'; // covers GUY, GUYB
+    if(yn.startsWith('GUY'))  return 'BB';
   }
 
-  // 3. Fuzzy name match against roster
+  // 3. Exact name match only — no fuzzy to avoid cross-matching
   const nameLow = (agent.name||'').toLowerCase().trim();
-  const byName = rosterAgents.find(r=>{
-    const rn = r.name.toLowerCase();
-    const cF = nameLow.split(' ')[0], cL = nameLow.split(' ').slice(-1)[0];
-    const rF = rn.split(' ')[0],      rL = rn.split(' ').slice(-1)[0];
-    return rn===nameLow || (rF===cF && cL.length>2 && rL.length>2 &&
-      (rL.startsWith(cL.substring(0,4))||cL.startsWith(rL.substring(0,4))));
-  });
-  if(byName) return byName.team;
+  const byExact = rosterAgents.find(r=>r.name.toLowerCase()===nameLow);
+  if(byExact) return byExact.team;
 
   // 4. Fallback — keep existing or default BB
   return agent.team || 'BB';
+}
+
+// ── CHECK IF AN AGENT IS INACTIVE ──
+// Used to filter out NH agents and inactive roster entries from weekly performance
+function isAgentInactive(agent){
+  // NH tag in nameRaw is the clearest signal from the CSV
+  if(agent.nameRaw && /NH/i.test(agent.nameRaw)) return true;
+  // Check INACTIVE_AGENTS hardcoded list
+  const nameLow = (agent.name||'').toLowerCase();
+  if(INACTIVE_AGENTS.some(n=>n.toLowerCase()===nameLow)) return true;
+  // Check if they exist in ROSTER — if not found and not a known active agent, skip
+  if(agent.ytelId){
+    const inRoster = ROSTER[String(agent.ytelId).trim()];
+    // Only flag as inactive if we specifically know they're inactive
+    if(inRoster && inRoster.status && inRoster.status.toLowerCase()==='inactive') return true;
+  }
+  return false;
 }
 
 function parseStatsCSV(text){
@@ -4518,6 +4533,8 @@ function parseStatsCSV(text){
     const nameRaw = cols[iName]||'';
     // Skip total row, meta rows, empty rows
     if(!nameRaw || nameRaw.startsWith('TOTAL') || nameRaw.startsWith('AGENT STATUS') || nameRaw.startsWith('Time Range')) continue;
+    // Skip NH (No Hire / inactive) agents right at parse time
+    if(/\bNH\b/i.test(nameRaw)) continue;
 
     // Clean name — remove prefix and extension number
     const name = nameRaw
@@ -4620,7 +4637,7 @@ function renderStatsTable(){
   if(bannerTxt && isOldReport) bannerTxt.textContent = statsDataDate;
 
   const q=(document.getElementById('stats-search')||{value:''}).value.toLowerCase();
-  let rows=[...statsData].filter(r=>!q||r.name.toLowerCase().includes(q));
+  let rows=[...statsData].filter(r=>!isAgentInactive(r) && (!q||r.name.toLowerCase().includes(q)));
   const keys=['name','calls','ci','xfer','dnc','ni','conv'];
   rows.sort((a,b)=>typeof a[keys[statsSortCol]]==='string'
     ? a[keys[statsSortCol]].localeCompare(b[keys[statsSortCol]])*statsSortDir
@@ -5480,6 +5497,8 @@ function renderWeeklyPerformance(){
   const agentMap = {};
   weekReports.forEach(report=>{
     report.agents.forEach(a=>{
+      // Skip inactive/NH agents
+      if(isAgentInactive(a)) return;
       // Always resolve team fresh from nameRaw/ytelId/roster — never trust saved team field
       const resolvedTeam = resolveAgentTeam(a);
       // Key by ytelId if available, else cleaned name — prevents duplicates across reports
