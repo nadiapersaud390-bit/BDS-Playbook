@@ -1153,6 +1153,10 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
         <input type="file" id="stats-csv-upload" accept=".csv" style="display:none;" onchange="handleStatsCSV(this)">
         <div id="expiry-picker" style="display:none;background:#0d1424;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
           <div style="font-size:0.62rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">⏱ SET AUTO-DELETE DATE</div>
+          <div style="margin-bottom:10px;">
+            <div style="font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">📅 REPORT DATE (auto-detected — override if wrong)</div>
+            <input type="date" id="csv-date-override" style="width:100%;padding:7px 12px;background:#090f1e;border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:0.82rem;outline:none;box-sizing:border-box;" oninput="if(this.value) pendingCSVData.date=this.value;">
+          </div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;">
             <button class="expiry-opt active" onclick="selectExpiry(7,this)">7 days</button>
             <button class="expiry-opt" onclick="selectExpiry(30,this)">30 days</button>
@@ -4176,7 +4180,7 @@ function reRenderMonthly(){
 let reportHistory=[];
 async function loadReportHistory(){
   try{
-    const snap=await db.collection('reports').orderBy('uploadedAt','desc').limit(7).get();
+    const snap=await db.collection('reports').orderBy('uploadedAt','desc').get();
     reportHistory=[];
     snap.forEach(doc=>{ const d=doc.data(); if(d.statsJSON) reportHistory.push(d); });
     renderReportHistory();
@@ -4238,17 +4242,8 @@ function loadReportByIndex(idx){
   try{
     statsData=JSON.parse(r.statsJSON);
 
-    // Re-apply current roster teams — overrides any stale team from saved JSON
-    statsData.forEach(agent=>{
-      const rosterAgents = Object.values(ROSTER);
-      // Match by name
-      const match = rosterAgents.find(ra=>{
-        const rn = ra.name.toLowerCase();
-        const an = agent.name.toLowerCase();
-        return rn===an || rn.includes(an.split(' ')[0]) && rn.includes(an.split(' ').slice(-1)[0]);
-      });
-      if(match) agent.team = match.team;
-    });
+    // Re-apply correct teams from ytelId → nameRaw prefix → name match
+    statsData.forEach(agent=>{ agent.team = resolveAgentTeam(agent); });
 
     document.getElementById('csv-date-lbl').textContent='📅 '+r.date;
     document.getElementById('csv-expiry-lbl').textContent=r.expiryDate?'🗑 Expires: '+r.expiryDate:'';
@@ -4344,10 +4339,41 @@ function handleStatsCSV(input){
   if(!file) return;
   const reader=new FileReader();
   reader.onload=e=>{
-    pendingCSVData={text:e.target.result, filename:file.name, date:getTodayGY()};
+    const text = e.target.result;
+
+    // ── Extract real report date from the CSV content ──
+    // The CSV contains a line like:
+    //   "AGENT STATUS DETAIL REPORTS 2026-03-21 07:31:57"
+    // OR a Time Range line like:
+    //   "Time Range - 2026-03-15 00:00:00  To 2026-03-22 23:59:59"
+    // We use the report timestamp date (first match) as the canonical date.
+    let reportDate = getTodayGY(); // fallback
+
+    // Try: "AGENT STATUS DETAIL REPORTS YYYY-MM-DD"
+    const m1 = text.match(/AGENT STATUS DETAIL REPORTS\s+(\d{4}-\d{2}-\d{2})/i);
+    if(m1){ reportDate = m1[1]; }
+    else {
+      // Try: filename contains a date e.g. "Agent_Status_Details_Report_03_21_2026"
+      const mf = file.name.match(/(\d{2})_(\d{2})_(\d{4})/);
+      if(mf){ reportDate = `${mf[3]}-${mf[1]}-${mf[2]}`; }
+      else {
+        // Try: "Time Range - YYYY-MM-DD ... To YYYY-MM-DD"
+        // Use the END date of the range as the report date
+        const m2 = text.match(/To\s+(\d{4}-\d{2}-\d{2})/i);
+        if(m2){ reportDate = m2[1]; }
+      }
+    }
+
+    pendingCSVData={text, filename:file.name, date:reportDate};
     selectedExpiryDays=7;
     updateExpiryDisplay();
-    document.getElementById('expiry-picker').style.display='';
+
+    // Show the detected date to the admin before they confirm
+    const picker = document.getElementById('expiry-picker');
+    picker.style.display='';
+    // Pre-fill the date override field with detected date
+    const overrideEl = document.getElementById('csv-date-override');
+    if(overrideEl) overrideEl.value = reportDate;
   };
   reader.readAsText(file);
 }
@@ -4413,6 +4439,39 @@ async function confirmCSVUpload(){
 
   updateGoalBars();
   renderStatsTable();
+}
+
+// ── CANONICAL TEAM RESOLVER ──
+// Priority: 1) Ytel ID in ROSTER  2) nameRaw prefix (GUYP=PR, else BB)  3) name fuzzy match
+function resolveAgentTeam(agent){
+  const rosterAgents = Object.values(ROSTER);
+
+  // 1. Ytel ID match — most reliable
+  if(agent.ytelId){
+    const byId = rosterAgents.find(r=>String(r.userId).trim()===String(agent.ytelId).trim());
+    if(byId) return byId.team;
+  }
+
+  // 2. nameRaw prefix — directly from the CSV source, always correct
+  if(agent.nameRaw){
+    const yn = agent.nameRaw.toUpperCase().replace(/[\s-]/g,'');
+    if(yn.startsWith('GUYP')) return 'PR';
+    if(yn.startsWith('GUY'))  return 'BB'; // covers GUY, GUYB
+  }
+
+  // 3. Fuzzy name match against roster
+  const nameLow = (agent.name||'').toLowerCase().trim();
+  const byName = rosterAgents.find(r=>{
+    const rn = r.name.toLowerCase();
+    const cF = nameLow.split(' ')[0], cL = nameLow.split(' ').slice(-1)[0];
+    const rF = rn.split(' ')[0],      rL = rn.split(' ').slice(-1)[0];
+    return rn===nameLow || (rF===cF && cL.length>2 && rL.length>2 &&
+      (rL.startsWith(cL.substring(0,4))||cL.startsWith(rL.substring(0,4))));
+  });
+  if(byName) return byName.team;
+
+  // 4. Fallback — keep existing or default BB
+  return agent.team || 'BB';
 }
 
 function parseStatsCSV(text){
@@ -4519,7 +4578,7 @@ function parseStatsCSV(text){
     const callbk = n(iCallbk);
     const conv   = calls > 0 ? parseFloat(((xfer/calls)*100).toFixed(1)) : 0;
 
-    statsData.push({name, team, calls, ci, xfer, dnc, ni, hangup, spnsh, crpull, callbk, conv});
+    statsData.push({name, nameRaw, ytelId: csvYtelId||'', team, calls, ci, xfer, dnc, ni, hangup, spnsh, crpull, callbk, conv});
   }
 
   console.log('CSV parsed:', statsData.length, 'agents');
@@ -5301,19 +5360,27 @@ function wpSetTeam(team, btn){
 }
 
 // Get Monday of week containing a date string YYYY-MM-DD
+// Uses T12:00:00 to avoid UTC timezone shifting the date
 function getMondayOf(dateStr){
   const d = new Date(dateStr+'T12:00:00');
-  const day = d.getDay(); // 0=Sun
-  const diff = (day === 0) ? -6 : 1 - day;
+  const day = d.getDay(); // 0=Sun,1=Mon...6=Sat
+  const diff = (day === 0) ? -6 : 1 - day; // Monday = day 1, diff=0; Sun = day 0, diff=-6
   const mon = new Date(d);
   mon.setDate(d.getDate() + diff);
-  return mon.toISOString().split('T')[0];
+  // Return as YYYY-MM-DD using local date parts (not toISOString which is UTC)
+  const y = mon.getFullYear();
+  const m = String(mon.getMonth()+1).padStart(2,'0');
+  const dd= String(mon.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
 }
 
 function getSundayOf(mondayStr){
   const d = new Date(mondayStr+'T12:00:00');
   d.setDate(d.getDate() + 6);
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd= String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
 }
 
 function fmtDate(str){
@@ -5327,14 +5394,12 @@ async function loadWeeklyPerformance(){
   if(!content) return;
   content.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px;font-size:0.85rem;">⏳ Loading reports...</div>';
 
-  // Load report history if not yet loaded
-  if(!reportHistory.length){
-    try{
-      const snap = await db.collection('stat_reports').orderBy('date','desc').get();
-      reportHistory=[];
-      snap.forEach(doc=>{ const d=doc.data(); if(d.statsJSON) reportHistory.push(d); });
-    }catch(e){}
-  }
+  // Always reload all reports fresh — need full history across all weeks
+  try{
+    const snap = await db.collection('reports').orderBy('uploadedAt','desc').get();
+    reportHistory=[];
+    snap.forEach(doc=>{ const d=doc.data(); if(d.statsJSON) reportHistory.push(d); });
+  }catch(e){ console.error('Weekly perf load error:',e); }
 
   if(!reportHistory.length){
     content.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px;">No saved reports yet. Upload CSVs in Agent Stats to build history.</div>';
@@ -5409,13 +5474,23 @@ function renderWeeklyPerformance(){
   }
 
   // Aggregate per agent across all days in the week
+  // Use ytelId as primary key so same person across reports is always merged correctly
   const agentMap = {};
   weekReports.forEach(report=>{
     report.agents.forEach(a=>{
-      const key = a.name.toLowerCase().trim();
+      // Always resolve team fresh from nameRaw/ytelId/roster — never trust saved team field
+      const resolvedTeam = resolveAgentTeam(a);
+      // Key by ytelId if available, else cleaned name — prevents duplicates across reports
+      const key = a.ytelId ? 'id_'+a.ytelId : 'name_'+a.name.toLowerCase().trim();
       if(!agentMap[key]){
-        agentMap[key] = {name:a.name, team:a.team, xfer:0, calls:0, ci:0, dnc:0, ni:0, convSum:0, days:0, dailyXfer:{}};
+        agentMap[key] = {
+          name: a.name, nameRaw: a.nameRaw||'', ytelId: a.ytelId||'',
+          team: resolvedTeam, xfer:0, calls:0, ci:0, dnc:0, ni:0,
+          convSum:0, days:0, dailyXfer:{}
+        };
       }
+      // Always keep the most accurate team from latest resolution
+      agentMap[key].team = resolvedTeam;
       agentMap[key].xfer    += (a.xfer||0);
       agentMap[key].calls   += (a.calls||0);
       agentMap[key].ci      += (a.ci||0);
@@ -5424,8 +5499,6 @@ function renderWeeklyPerformance(){
       agentMap[key].convSum += (a.conv||0);
       agentMap[key].days    += 1;
       agentMap[key].dailyXfer[report.date] = (agentMap[key].dailyXfer[report.date]||0) + (a.xfer||0);
-      // Keep most recent team assignment
-      if(a.team) agentMap[key].team = a.team;
     });
   });
 
@@ -5564,7 +5637,7 @@ async function apLoadStatsHistory(name){
   if(!reportHistory.length){
     // Try loading from Firestore if not yet loaded
     try{
-      const snap = await db.collection('stat_reports').orderBy('date','desc').get();
+      const snap = await db.collection('reports').orderBy('uploadedAt','desc').get();
       reportHistory=[];
       snap.forEach(doc=>{ const d=doc.data(); if(d.statsJSON) reportHistory.push(d); });
     }catch(e){}
