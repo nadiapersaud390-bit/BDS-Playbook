@@ -971,6 +971,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
         <button class="adm-tab"        id="atab-coaching"    onclick="switchAdminTab('coaching',this)">📝 Coaching</button>
         <button class="adm-tab"        id="atab-monitoring"  onclick="switchAdminTab('monitoring',this)">🎧 Live Monitoring</button>
         <button class="adm-tab"        id="atab-rebuttal"    onclick="switchAdminTab('rebuttal',this)">🧠 Rebuttal Intel</button>
+        <button class="adm-tab"        id="atab-weekperf"    onclick="switchAdminTab('weekperf',this)">🏆 Weekly Performance</button>
       </div>
     </div>
 
@@ -1536,6 +1537,35 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 
         <div id="ri-content">
           <div style="text-align:center;color:var(--muted);padding:40px;font-size:0.85rem;">Loading rebuttal intelligence...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── WEEKLY PERFORMANCE ── -->
+    <div id="admin-weekperf" class="admin-section" style="display:none;">
+      <div class="admin-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+          <div class="admin-card-title" style="margin-bottom:0;">🏆 WEEKLY PERFORMANCE — TRANSFERS</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <span id="wp-week-label" style="font-size:0.68rem;color:var(--gold);font-weight:700;"></span>
+            <select id="wp-week-select" onchange="renderWeeklyPerformance()" style="padding:7px 12px;background:#0d1424;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.78rem;outline:none;"></select>
+            <button onclick="loadWeeklyPerformance()" style="padding:7px 12px;border-radius:8px;border:none;background:#1a2a45;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:800;letter-spacing:1px;cursor:pointer;">🔄 REFRESH</button>
+          </div>
+        </div>
+
+        <!-- Team filter tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:14px;">
+          <button id="wp-all"  onclick="wpSetTeam('all',this)"  style="flex:1;padding:10px;border-radius:9px;border:2px solid var(--accent);background:#0b1a38;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;font-weight:800;letter-spacing:1.5px;cursor:pointer;">ALL TEAMS</button>
+          <button id="wp-bb"   onclick="wpSetTeam('BB',this)"   style="flex:1;padding:10px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;font-weight:800;letter-spacing:1.5px;cursor:pointer;">🏠 BERBICE</button>
+          <button id="wp-pr"   onclick="wpSetTeam('PR',this)"   style="flex:1;padding:10px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;font-weight:800;letter-spacing:1.5px;cursor:pointer;">🌴 PROVIDENCE</button>
+        </div>
+
+        <!-- Summary cards -->
+        <div id="wp-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:16px;"></div>
+
+        <!-- Leaderboard -->
+        <div id="wp-content">
+          <div style="text-align:center;color:var(--muted);padding:40px;font-size:0.85rem;">⏳ Loading weekly performance...</div>
         </div>
       </div>
     </div>
@@ -3430,7 +3460,7 @@ function switchAdminTab(tab, btn){
   const adminBtn = document.getElementById('tab-admin');
   if(adminBtn) adminBtn.classList.add('active');
   // Show correct sub-section
-  ['overview','attendance','weekly','monthly','stats','profiles','coaching','monitoring','rebuttal'].forEach(t=>{
+  ['overview','attendance','weekly','monthly','stats','profiles','coaching','monitoring','rebuttal','weekperf'].forEach(t=>{
     const el=document.getElementById('admin-'+t);
     if(el) el.style.display = t===tab?'':'none';
     const b=document.getElementById('atab-'+t);
@@ -3444,6 +3474,7 @@ function switchAdminTab(tab, btn){
   if(tab==='coaching')    loadCoachingNotes();
   if(tab==='monitoring')  loadMonitoringNotes();
   if(tab==='rebuttal')    loadRebuttalIntel();
+  if(tab==='weekperf')   loadWeeklyPerformance();
   if(tab==='stats'){
     rosterLoaded = false;
     loadRoster().then(()=>{
@@ -5245,6 +5276,259 @@ async function markAgentAbsentDirect(id,name,team){
   }catch(e){alert('Could not save.');}
 }
 
+
+// ══════════════════════════════════════════════
+//  WEEKLY PERFORMANCE TAB
+//  Aggregates all saved CSV reports within the
+//  current Mon–Sun week (and past weeks) and
+//  ranks every rep by total transfers
+// ══════════════════════════════════════════════
+let wpTeamFilter  = 'all';
+let wpWeekRanges  = []; // [{label, start, end}] populated from reports
+let wpAllReports  = []; // all parsed reports with dates
+
+function wpSetTeam(team, btn){
+  wpTeamFilter = team;
+  ['all','bb','pr'].forEach(t=>{
+    const b = document.getElementById('wp-'+t);
+    if(!b) return;
+    const active = t === team.toLowerCase() || (team==='all'&&t==='all') || (team==='BB'&&t==='bb') || (team==='PR'&&t==='pr');
+    b.style.borderColor = active ? (team==='BB'?'var(--accent)':team==='PR'?'var(--purple)':'var(--accent)') : 'var(--border)';
+    b.style.background  = active ? (team==='BB'?'#0b1a38':team==='PR'?'#160e2c':'#0b1a38') : 'transparent';
+    b.style.color       = active ? (team==='BB'?'var(--accent)':team==='PR'?'var(--purple)':'var(--accent)') : 'var(--muted)';
+  });
+  renderWeeklyPerformance();
+}
+
+// Get Monday of week containing a date string YYYY-MM-DD
+function getMondayOf(dateStr){
+  const d = new Date(dateStr+'T12:00:00');
+  const day = d.getDay(); // 0=Sun
+  const diff = (day === 0) ? -6 : 1 - day;
+  const mon = new Date(d);
+  mon.setDate(d.getDate() + diff);
+  return mon.toISOString().split('T')[0];
+}
+
+function getSundayOf(mondayStr){
+  const d = new Date(mondayStr+'T12:00:00');
+  d.setDate(d.getDate() + 6);
+  return d.toISOString().split('T')[0];
+}
+
+function fmtDate(str){
+  const d = new Date(str+'T12:00:00');
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+
+async function loadWeeklyPerformance(){
+  const content = document.getElementById('wp-content');
+  const summary = document.getElementById('wp-summary');
+  if(!content) return;
+  content.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px;font-size:0.85rem;">⏳ Loading reports...</div>';
+
+  // Load report history if not yet loaded
+  if(!reportHistory.length){
+    try{
+      const snap = await db.collection('stat_reports').orderBy('date','desc').get();
+      reportHistory=[];
+      snap.forEach(doc=>{ const d=doc.data(); if(d.statsJSON) reportHistory.push(d); });
+    }catch(e){}
+  }
+
+  if(!reportHistory.length){
+    content.innerHTML='<div style="color:var(--muted);text-align:center;padding:40px;">No saved reports yet. Upload CSVs in Agent Stats to build history.</div>';
+    return;
+  }
+
+  // Parse all reports
+  wpAllReports = [];
+  reportHistory.forEach(r=>{
+    try{
+      const agents = JSON.parse(r.statsJSON);
+      wpAllReports.push({date: r.date, agents});
+    }catch(e){}
+  });
+
+  // Build week ranges from all report dates
+  const weekSet = {};
+  wpAllReports.forEach(r=>{
+    const mon = getMondayOf(r.date);
+    const sun = getSundayOf(mon);
+    const label = fmtDate(mon)+' – '+fmtDate(sun);
+    weekSet[mon] = {label, start:mon, end:sun};
+  });
+  wpWeekRanges = Object.values(weekSet).sort((a,b)=>b.start.localeCompare(a.start));
+
+  // Populate week selector
+  const sel = document.getElementById('wp-week-select');
+  if(sel){
+    // Get current week's Monday to flag it
+    const todayMon = getMondayOf(getTodayGY());
+    sel.innerHTML = wpWeekRanges.map((w,i)=>{
+      const isCurrent = w.start === todayMon;
+      const isPrev    = w.start < todayMon;
+      const prefix    = isCurrent ? '⚡ This Week — ' : isPrev ? '📅 ' : '📅 ';
+      return `<option value="${i}">${prefix}${w.label}</option>`;
+    }).join('');
+    // Always default to current week if it exists, else most recent
+    const currentIdx = wpWeekRanges.findIndex(w=>w.start===todayMon);
+    sel.value = currentIdx >= 0 ? String(currentIdx) : '0';
+  }
+
+  renderWeeklyPerformance();
+}
+
+function renderWeeklyPerformance(){
+  const content = document.getElementById('wp-content');
+  const summary = document.getElementById('wp-summary');
+  if(!content || !wpWeekRanges.length) return;
+
+  const sel = document.getElementById('wp-week-select');
+  const weekIdx = sel ? parseInt(sel.value)||0 : 0;
+  const week = wpWeekRanges[weekIdx];
+  if(!week) return;
+
+  // Update label
+  const todayMon2 = getMondayOf(getTodayGY());
+  const isCurrentWeek = week.start === todayMon2;
+  const isPastWeek    = week.start < todayMon2;
+  const lbl = document.getElementById('wp-week-label');
+  if(lbl){
+    lbl.textContent = (isCurrentWeek ? '⚡ CURRENT WEEK — ' : isPastWeek ? '📅 PREV WEEK — ' : '📅 ') + week.label;
+    lbl.style.color = isCurrentWeek ? 'var(--green)' : 'var(--gold)';
+  }
+
+  // Get all reports within this Mon–Sun window
+  const weekReports = wpAllReports.filter(r=> r.date >= week.start && r.date <= week.end);
+
+  if(!weekReports.length){
+    content.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;">No reports uploaded for this week.</div>';
+    summary.innerHTML='';
+    return;
+  }
+
+  // Aggregate per agent across all days in the week
+  const agentMap = {};
+  weekReports.forEach(report=>{
+    report.agents.forEach(a=>{
+      const key = a.name.toLowerCase().trim();
+      if(!agentMap[key]){
+        agentMap[key] = {name:a.name, team:a.team, xfer:0, calls:0, ci:0, dnc:0, ni:0, convSum:0, days:0, dailyXfer:{}};
+      }
+      agentMap[key].xfer    += (a.xfer||0);
+      agentMap[key].calls   += (a.calls||0);
+      agentMap[key].ci      += (a.ci||0);
+      agentMap[key].dnc     += (a.dnc||0);
+      agentMap[key].ni      += (a.ni||0);
+      agentMap[key].convSum += (a.conv||0);
+      agentMap[key].days    += 1;
+      agentMap[key].dailyXfer[report.date] = (agentMap[key].dailyXfer[report.date]||0) + (a.xfer||0);
+      // Keep most recent team assignment
+      if(a.team) agentMap[key].team = a.team;
+    });
+  });
+
+  // Get sorted days for the week
+  const weekDays = [...new Set(weekReports.map(r=>r.date))].sort();
+
+  // Filter by team
+  let agents = Object.values(agentMap);
+  if(wpTeamFilter === 'BB') agents = agents.filter(a=>a.team==='BB');
+  if(wpTeamFilter === 'PR') agents = agents.filter(a=>a.team==='PR');
+
+  // Sort by total xfer descending
+  agents.sort((a,b)=>b.xfer - a.xfer);
+
+  if(!agents.length){
+    content.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;">No data for selected team.</div>';
+    summary.innerHTML='';
+    return;
+  }
+
+  // Summary cards
+  const totalXfer  = agents.reduce((s,a)=>s+a.xfer,0);
+  const totalCalls = agents.reduce((s,a)=>s+a.calls,0);
+  const bbXfer     = Object.values(agentMap).filter(a=>a.team==='BB').reduce((s,a)=>s+a.xfer,0);
+  const prXfer     = Object.values(agentMap).filter(a=>a.team==='PR').reduce((s,a)=>s+a.xfer,0);
+  const topRep     = agents[0];
+
+  summary.innerHTML = [
+    {label:'TOTAL XFERS',   val:totalXfer,              color:'var(--green)'},
+    {label:'TOTAL CALLS',   val:totalCalls.toLocaleString(), color:'var(--accent)'},
+    {label:'🏠 BERBICE',    val:bbXfer,                 color:'var(--accent)'},
+    {label:'🌴 PROVIDENCE', val:prXfer,                 color:'var(--purple)'},
+    {label:'DAYS LOADED',   val:weekDays.length,        color:'var(--gold)'},
+    {label:'REPS TRACKED',  val:agents.length,          color:'var(--cyan)'},
+  ].map(s=>`<div style="background:#0a1020;border:1px solid var(--border);border-radius:9px;padding:10px;text-align:center;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:1.7rem;color:${s.color};line-height:1;">${s.val}</div>
+    <div style="font-size:0.48rem;color:var(--muted);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;">${s.label}</div>
+  </div>`).join('');
+
+  // Build the leaderboard
+  const maxXfer = agents[0].xfer || 1;
+  let html = `
+  <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">
+    RANKED BY TRANSFERS — ${weekDays.length} DAY${weekDays.length!==1?'S':''} (${weekDays.map(fmtDate).join(', ')})
+  </div>`;
+
+  agents.forEach((a, idx)=>{
+    const rank     = idx+1;
+    const avgConv  = a.days>0 ? (a.convSum/a.days).toFixed(1) : '0.0';
+    const barPct   = Math.round((a.xfer/maxXfer)*100);
+    const teamColor= a.team==='BB'?'var(--accent)':'var(--purple)';
+    const teamLabel= a.team==='BB'?'BB':'PR';
+    const medal    = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'';
+    const convColor= avgConv>=5?'var(--green)':avgConv>=2?'var(--gold)':'var(--red)';
+
+    // Daily breakdown dots
+    const dots = weekDays.map(d=>{
+      const v = a.dailyXfer[d]||0;
+      const dotColor = v>=5?'var(--green)':v>=2?'var(--gold)':v>0?'var(--accent)':'#1a2540';
+      return `<span title="${fmtDate(d)}: ${v} xfer" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin:0 1px;"></span>`;
+    }).join('');
+
+    html += `
+    <div style="background:#090f1e;border:1px solid ${rank<=3?teamColor:'var(--border)'};border-radius:11px;padding:13px 14px;margin-bottom:7px;${rank<=3?'box-shadow:0 0 12px rgba(0,0,0,0.3);':''}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:${rank<=3?teamColor:'var(--muted)'};min-width:28px;">${medal||'#'+rank}</div>
+        <div style="flex:1;">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1rem;color:var(--text);">${a.name}</div>
+          <div style="font-size:0.6rem;color:${teamColor};font-weight:700;letter-spacing:1px;">${teamLabel}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--green);line-height:1;">${a.xfer}</div>
+          <div style="font-size:0.5rem;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;">xfers</div>
+        </div>
+      </div>
+
+      <!-- Transfer bar -->
+      <div style="background:#0a1020;border-radius:4px;height:6px;overflow:hidden;margin-bottom:8px;">
+        <div style="width:${barPct}%;height:100%;background:linear-gradient(90deg,${teamColor},var(--green));border-radius:4px;transition:width 0.5s;"></div>
+      </div>
+
+      <!-- Stats row -->
+      <div style="display:flex;gap:14px;font-size:0.7rem;margin-bottom:8px;">
+        <span style="color:var(--muted);">Calls: <strong style="color:var(--text);">${a.calls.toLocaleString()}</strong></span>
+        <span style="color:var(--muted);">CI: <strong style="color:var(--text);">${a.ci.toLocaleString()}</strong></span>
+        <span style="color:var(--muted);">Avg Conv: <strong style="color:${convColor};">${avgConv}%</strong></span>
+        <span style="color:var(--muted);">Days: <strong style="color:var(--text);">${a.days}</strong></span>
+      </div>
+
+      <!-- Daily dots -->
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span style="font-size:0.55rem;color:var(--muted);margin-right:4px;">Daily:</span>
+        ${dots}
+        <span style="font-size:0.62rem;color:var(--muted);margin-left:6px;">${weekDays.map(d=>{
+          const v=a.dailyXfer[d]||0;
+          return `<span style="margin-right:4px;">${fmtDate(d)}: <strong style="color:${v>=5?'var(--green)':v>=2?'var(--gold)':v>0?'var(--accent)':'var(--muted)'}">${v}</strong></span>`;
+        }).join('')}</span>
+      </div>
+    </div>`;
+  });
+
+  content.innerHTML = html;
+}
 
 // ── LOAD TODAY REPORT SHORTCUT ──
 function loadTodayReport(){
