@@ -1637,7 +1637,7 @@ pitch_softpull:{phase:'SALES PITCH BOOSTING \u2014 SOFT PULL / NO WEBSITE / DATA
 };
 
 // ── APPS SCRIPT BRIDGE URL ──
-const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbzHJZJsL24bnAZj8d3VvRHYRsoi5Yve915hxbZdGMxCyugez8zZQzf86kziJORtcBNuUw/exec';
+const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbzvO-eS0kxWCAs9612EWnKtVy8r5VkDeTPbRFG5X6Im3aFoc-ZAH-ias2sA1QUYbQzs9A/exec';
 
 // ── JSONP helper — bypasses CORS for Google Apps Script ──
 function callBridge(params) {
@@ -3152,44 +3152,101 @@ async function loadMonthlyAttendance(){
   document.getElementById('monthly-month-lbl').textContent = monthNames[monthIdx]+' '+year;
   document.getElementById('monthly-table-wrap').innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;">Loading from Google Sheet...</div>';
 
-  try{
-    // Read directly from Monthly Overview tab — single source of truth
-    const data = await callBridge({action:'getMonthlyAttendance'});
+  monthlyCache = {};
 
-    if(!data.success) throw new Error(data.error||'Failed to load Monthly Overview');
-
-    monthlyCache = {};
-
-    (data.agents||[]).forEach(agent=>{
-      // Match to roster by name to get userId as key
-      const rAgent = Object.values(ROSTER).find(r=>{
-        const rn = r.name.toLowerCase();
-        const an = agent.name.toLowerCase();
-        const parts = an.split(' ');
-        return rn===an
-          || (parts.length>=2 && rn.includes(parts[0]) && rn.includes(parts.slice(-1)[0]));
-      });
-
-      const key = rAgent ? String(rAgent.userId) : 'name:'+agent.name.toLowerCase();
-      monthlyCache[key] = {};
-
-      // days = {1:'Present', 2:'Present', 11:'Sick', ...}
-      Object.entries(agent.days||{}).forEach(([dayNum, status])=>{
-        const d   = parseInt(dayNum);
-        const code = normalizeStatus(status);
-        if(code && d>=1 && d<=31){
-          const dateStr = monthStart+'-'+(d<10?'0':'')+d;
-          monthlyCache[key][dateStr] = code;
-        }
-      });
+  // ── Helper: merge agent days into monthlyCache ──
+  function mergeAgent(agentName, agentTeam, daysObj){
+    const rAgent = Object.values(ROSTER).find(r=>{
+      const rn = r.name.toLowerCase().trim();
+      const an = (agentName||'').toLowerCase().trim();
+      const parts = an.split(' ');
+      return rn===an
+        || (parts.length>=2 && rn.includes(parts[0]) && rn.includes(parts.slice(-1)[0]));
     });
-
-    renderMonthly(monthlyCache, monthStart, year, monthIdx);
-  }catch(e){
-    console.error('Monthly load error:',e);
-    document.getElementById('monthly-table-wrap').innerHTML=
-      `<div style="color:var(--red);text-align:center;padding:20px;">Could not load monthly data: ${e.message}</div>`;
+    const key = rAgent ? String(rAgent.userId) : 'name:'+(agentName||'').toLowerCase().trim();
+    if(!monthlyCache[key]) monthlyCache[key]={};
+    Object.entries(daysObj||{}).forEach(([dayNum, status])=>{
+      const d   = parseInt(dayNum);
+      const code = normalizeStatus(status);
+      if(code && d>=1 && d<=31){
+        const dateStr = monthStart+'-'+(d<10?'0':'')+d;
+        // Only overwrite if no value already (monthly tab wins if loaded first)
+        if(!monthlyCache[key][dateStr]) monthlyCache[key][dateStr] = code;
+      }
+    });
   }
+
+  // ── 1. Try Monthly Overview tab ──
+  let monthlyLoaded = false;
+  try{
+    const data = await callBridge({action:'getMonthlyAttendance'});
+    if(data.success && Array.isArray(data.agents) && data.agents.length > 0){
+      data.agents.forEach(agent=>{
+        mergeAgent(agent.name, agent.team, agent.days||{});
+      });
+      monthlyLoaded = true;
+      console.log('[Monthly] Loaded from Monthly Overview tab:', data.agents.length, 'agents');
+    } else {
+      console.warn('[Monthly] Monthly Overview returned no agents — reason:', data.error||'empty');
+    }
+  }catch(e){
+    console.warn('[Monthly] Monthly Overview fetch failed:', e.message);
+  }
+
+  // ── 2. Fallback: build from Weekly Attendance tabs (both teams) ──
+  if(!monthlyLoaded){
+    console.log('[Monthly] Falling back to weekly tabs to build monthly view...');
+    try{
+      const [bbRes, prRes] = await Promise.allSettled([
+        callBridge({action:'getWeeklyAttendance', team:'BB'}),
+        callBridge({action:'getWeeklyAttendance', team:'PR'})
+      ]);
+
+      [bbRes, prRes].forEach(res=>{
+        if(res.status!=='fulfilled' || !res.value.success) return;
+        (res.value.weeks||[]).forEach(week=>{
+          const cols = week.columns||[];
+          (week.agents||[]).forEach(agent=>{
+            // Convert column headers ("Mon 3", "Tue 4" etc.) back to day numbers
+            const daysObj={};
+            cols.forEach(col=>{
+              const hdr = String(col.header||'');
+              // Extract day number from headers like "Mon 3", "3", "Tue 10"
+              const m = hdr.match(/(\d{1,2})$/);
+              if(!m) return;
+              const dayNum = parseInt(m[1]);
+              const status = agent.days[col.header];
+              if(status && dayNum>=1 && dayNum<=31) daysObj[dayNum]=status;
+            });
+            mergeAgent(agent.name, res.value.team, daysObj);
+          });
+        });
+      });
+      console.log('[Monthly] Built from weekly tabs. Keys:', Object.keys(monthlyCache).length);
+    }catch(e){
+      console.warn('[Monthly] Weekly fallback also failed:', e.message);
+    }
+  }
+
+  // ── 3. Always layer in Firebase attendance for any gaps ──
+  try{
+    const fbSnap = await db.collection('attendance')
+      .where('date','>=',monthStart+'-01')
+      .where('date','<=',monthStart+'-31')
+      .get();
+    fbSnap.forEach(doc=>{
+      const d = doc.data();
+      if(!d.id || !d.date || !d.status) return;
+      const key = String(d.id);
+      if(!monthlyCache[key]) monthlyCache[key]={};
+      // Firebase fills gaps; don't overwrite sheet data
+      if(!monthlyCache[key][d.date]){
+        monthlyCache[key][d.date] = normalizeStatus(d.status);
+      }
+    });
+  }catch(e){ console.warn('[Monthly] Firebase layer failed:', e.message); }
+
+  renderMonthly(monthlyCache, monthStart, year, monthIdx);
 }
 
 function reRenderMonthly(){
@@ -3248,8 +3305,13 @@ function renderMonthly(attMap, monthStart, year, monthIdx){
   const teamFilter = document.getElementById('monthly-team-filter').value;
   const daysInMonth = new Date(parseInt(year), monthIdx+1, 0).getDate();
   const allAgents = Object.values(ROSTER)
-    .filter(a=>teamFilter==='all'||a.team===teamFilter)
+    .filter(a=>!a.inactive && (teamFilter==='all'||a.team===teamFilter))
     .sort((a,b)=>a.name.localeCompare(b.name));
+
+  if(allAgents.length===0){
+    document.getElementById('monthly-table-wrap').innerHTML='<div style="text-align:center;color:var(--muted);padding:30px;">No active agents found — make sure the roster is loaded.</div>';
+    return;
+  }
 
   // Build day headers
   const dayNames=['Su','Mo','Tu','We','Th','Fr','Sa'];
