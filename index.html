@@ -1172,7 +1172,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
               <div style="font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Full Name *</div>
               <input id="nr-name" type="text" placeholder="e.g. Priya Ramkhelawan"
                 style="width:100%;padding:9px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;"
-                onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='#2a3a5a'">
+                oninput="autoFillYtel()" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='#2a3a5a'">
             </div>
             <div>
               <div style="font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">User ID *</div>
@@ -1182,7 +1182,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
             </div>
             <div>
               <div style="font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Team *</div>
-              <select id="nr-team"
+              <select id="nr-team" onchange="autoFillYtel()"
                 style="width:100%;padding:9px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;outline:none;box-sizing:border-box;"
                 onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='#2a3a5a'">
                 <option value="BB">🏠 Berbice (BB)</option>
@@ -1190,8 +1190,8 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
               </select>
             </div>
             <div>
-              <div style="font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Ytel Name</div>
-              <input id="nr-ytel" type="text" placeholder="e.g. GUY_PriyaR or GUYP_PriyaR"
+              <div style="font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Ytel Name *</div>
+              <input id="nr-ytel" type="text" placeholder="BB = GUY_FirstLast · PR = GUYP_FirstLast"
                 style="width:100%;padding:9px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;"
                 onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='#2a3a5a'">
             </div>
@@ -2990,6 +2990,23 @@ async function loadRepCoach(id){
 }
 let selectedProfileId = null;
 
+function autoFillYtel(){
+  const nameVal = document.getElementById('nr-name').value.trim();
+  const team    = document.getElementById('nr-team').value;
+  const ytelEl  = document.getElementById('nr-ytel');
+  if(!nameVal) return;
+  // Build shortname: First + Last initial, e.g. "Priya Ramkhelawan" → "PriyaR"
+  const parts = nameVal.split(' ').filter(p=>p.length>0);
+  if(parts.length < 1) return;
+  const first = parts[0];
+  const lastInitial = parts.length > 1 ? parts[parts.length-1][0].toUpperCase() : '';
+  const prefix = team === 'PR' ? 'GUYP_' : 'GUY_';
+  // Only auto-fill if the field is empty or was previously auto-filled (starts with GUY)
+  if(!ytelEl.value || ytelEl.value.startsWith('GUY')){
+    ytelEl.value = prefix + first + lastInitial;
+  }
+}
+
 function toggleAddRepForm(){
   const form = document.getElementById('add-rep-form');
   const btn  = document.getElementById('add-rep-toggle-btn');
@@ -3022,6 +3039,7 @@ async function saveNewRep(){
   if(!name){ msgEl.style.color='var(--red)'; msgEl.textContent='⚠️ Full name is required.'; return; }
   if(!idVal){ msgEl.style.color='var(--red)'; msgEl.textContent='⚠️ User ID is required.'; return; }
   if(isNaN(idVal)||idVal===''){ msgEl.style.color='var(--red)'; msgEl.textContent='⚠️ User ID must be a number.'; return; }
+  if(!ytel){ msgEl.style.color='var(--red)'; msgEl.textContent='⚠️ Ytel Name is required (e.g. GUY_JohnD or GUYP_JohnD).'; return; }
 
   // Check for duplicate ID
   if(ROSTER[String(idVal)]){ msgEl.style.color='var(--red)'; msgEl.textContent='⚠️ A rep with ID '+idVal+' already exists: '+ROSTER[String(idVal)].name; return; }
@@ -3035,11 +3053,10 @@ async function saveNewRep(){
   // 1. Write to Google Sheet via bridge
   try{
     const r = await callBridge({
-      action: 'addAgent',
-      userId: idVal,
-      name,
-      team,
-      ytelName: ytel,
+      action:    'addAgent',
+      ytelName:  ytel,
+      agentName: name,
+      userId:    idVal,
       shift,
       lunch,
       status
