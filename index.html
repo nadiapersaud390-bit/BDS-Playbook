@@ -4341,24 +4341,24 @@ function handleStatsCSV(input){
   reader.onload=e=>{
     const text = e.target.result;
 
-    // ── Extract real report date from the CSV content ──
-    // The CSV contains a line like:
-    //   "AGENT STATUS DETAIL REPORTS 2026-03-21 07:31:57"
-    // OR a Time Range line like:
-    //   "Time Range - 2026-03-15 00:00:00  To 2026-03-22 23:59:59"
-    // We use the report timestamp date (first match) as the canonical date.
-    let reportDate = getTodayGY(); // fallback
+    // ── Extract real report date ──
+    // Priority:
+    //  1. Filename  e.g. Agent_Status_Details_Report_03_21_2026__3_.csv → 2026-03-21
+    //  2. CSV line  e.g. "AGENT STATUS DETAIL REPORTS 2026-03-21 07:31:57"
+    //  3. CSV Time Range end date
+    //  4. Today as last resort
+    let reportDate = getTodayGY();
 
-    // Try: "AGENT STATUS DETAIL REPORTS YYYY-MM-DD"
-    const m1 = text.match(/AGENT STATUS DETAIL REPORTS\s+(\d{4}-\d{2}-\d{2})/i);
-    if(m1){ reportDate = m1[1]; }
-    else {
-      // Try: filename contains a date e.g. "Agent_Status_Details_Report_03_21_2026"
-      const mf = file.name.match(/(\d{2})_(\d{2})_(\d{4})/);
-      if(mf){ reportDate = `${mf[3]}-${mf[1]}-${mf[2]}`; }
+    // 1 — Filename: matches MM_DD_YYYY anywhere in the name
+    const mf = file.name.match(/(\d{2})_(\d{2})_(\d{4})/);
+    if(mf){
+      reportDate = `${mf[3]}-${mf[1]}-${mf[2]}`;
+    } else {
+      // 2 — CSV content: "AGENT STATUS DETAIL REPORTS YYYY-MM-DD HH:MM:SS"
+      const m1 = text.match(/AGENT STATUS DETAIL REPORTS\s+(\d{4}-\d{2}-\d{2})/i);
+      if(m1){ reportDate = m1[1]; }
       else {
-        // Try: "Time Range - YYYY-MM-DD ... To YYYY-MM-DD"
-        // Use the END date of the range as the report date
+        // 3 — Time Range end date: "To YYYY-MM-DD"
         const m2 = text.match(/To\s+(\d{4}-\d{2}-\d{2})/i);
         if(m2){ reportDate = m2[1]; }
       }
