@@ -1902,6 +1902,7 @@ async function loadRoster() {
             else if (yn.startsWith('GUY')) team = 'BB';
           }
           ROSTER[String(a.userId).trim()] = {
+            userId: String(a.userId).trim(),
             name: a.name,
             ytelName: a.ytelName,
             shift: a.shift || '',
@@ -2588,9 +2589,9 @@ function loadAgentProfiles(){
 }
 
 function renderProfileList(){
-  const search    = (document.getElementById('profile-search')||{value:''}).value.toLowerCase();
+  const search     = (document.getElementById('profile-search')||{value:''}).value.toLowerCase();
   const teamFilter = (document.getElementById('profile-team-filter')||{value:'all'}).value;
-  const container = document.getElementById('profile-list');
+  const container  = document.getElementById('profile-list');
   if(!container) return;
 
   const agents = Object.values(ROSTER)
@@ -2604,9 +2605,10 @@ function renderProfileList(){
   }
 
   container.innerHTML = agents.map(a=>{
+    const uid = a.userId || Object.keys(ROSTER).find(k=>ROSTER[k]===a) || '';
     const teamColor = a.team==='BB'?'var(--accent)':'var(--purple)';
-    const isSelected = String(a.userId) === String(selectedProfileId);
-    return `<div onclick="selectProfile('${a.userId}')"
+    const isSelected = uid === selectedProfileId;
+    return `<div onclick="selectProfile('${uid}')"
       style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #0f1e35;cursor:pointer;background:${isSelected?'#0d1a30':'transparent'};transition:background 0.12s;"
       onmouseover="this.style.background='#0a1424'" onmouseout="this.style.background='${isSelected?'#0d1a30':'transparent'}'">
       <div style="display:flex;align-items:center;gap:10px;">
@@ -2616,45 +2618,45 @@ function renderProfileList(){
           <div style="font-size:0.65rem;color:var(--muted);">${a.shift||'No shift set'} ${a.lunch?'· '+a.lunch:''}</div>
         </div>
       </div>
-      <div style="font-size:0.65rem;color:var(--muted);">ID: ${a.userId}</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:0.65rem;color:var(--muted);">ID: ${uid}</span>
+        <button onclick="event.stopPropagation();openRepProfile('${uid}','${a.name.replace(/'/g,"\\'")}','${a.team}','${(a.shift||'').replace(/'/g,"\\'")}');"
+          style="padding:3px 10px;border-radius:6px;border:1px solid #2a3a5a;background:#0d1424;color:#60a5fa;font-size:0.6rem;font-family:'Barlow Condensed',sans-serif;font-weight:800;cursor:pointer;letter-spacing:1px;">
+          📊 FULL PROFILE
+        </button>
+      </div>
     </div>`;
   }).join('');
 }
 
-function filterProfileList(){
-  renderProfileList();
-  // Close edit panel if search changes
-  closeProfileEdit();
-}
-
 function selectProfile(userId){
   selectedProfileId = String(userId);
-
-  // Find agent — try string match first, then number
-  const agent = ROSTER[userId] || ROSTER[String(userId)] || Object.values(ROSTER).find(a=>String(a.userId)===String(userId));
-  if(!agent){ console.warn('Agent not found for userId:', userId); return; }
-
-  // Highlight selected row
   renderProfileList();
 
-  // Populate edit panel
+  const agent = ROSTER[userId] || ROSTER[String(userId)];
+  if(!agent){ console.warn('Agent not found:', userId); return; }
+
+  const uid = agent.userId || userId;
   document.getElementById('pe-name').textContent  = agent.name;
-  document.getElementById('pe-meta').textContent  = (agent.team==='BB'?'Berbice (BB)':'Providence (PR)') + ' · ID: ' + agent.userId;
-  document.getElementById('pe-shift').value  = agent.shift  || '';
-  document.getElementById('pe-lunch').value  = agent.lunch  || '';
-  document.getElementById('pe-status').value = agent.status || 'Agent';
+  document.getElementById('pe-meta').textContent  = (agent.team==='BB'?'Berbice (BB)':'Providence (PR)')+' · ID: '+uid;
+  document.getElementById('pe-shift').value       = agent.shift  || '';
+  document.getElementById('pe-lunch').value       = agent.lunch  || '';
+  document.getElementById('pe-status').value      = agent.status || 'Agent';
   document.getElementById('pe-save-status').textContent = '';
 
-  // Load break from Firebase
   document.getElementById('pe-break').value = agent.brk || '';
-  db.collection('roster').doc(String(userId)).get().then(snap=>{
-    if(snap.exists && snap.data().brk){
+  db.collection('roster').doc(String(uid)).get().then(snap=>{
+    if(snap.exists && snap.data().brk)
       document.getElementById('pe-break').value = snap.data().brk;
-    }
   }).catch(()=>{});
 
   document.getElementById('profile-edit-panel').style.display='';
   document.getElementById('profile-edit-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function filterProfileList(){
+  renderProfileList();
+  closeProfileEdit();
 }
 
 function closeProfileEdit(){
@@ -2666,84 +2668,89 @@ function closeProfileEdit(){
 async function saveProfileEdits(){
   if(!selectedProfileId) return;
   const agent = ROSTER[selectedProfileId];
-  if(!agent) return;
+  if(!agent){ document.getElementById('pe-save-status').textContent='❌ Agent not found'; return; }
+
+  const uid = agent.userId || selectedProfileId;
 
   const newShift  = document.getElementById('pe-shift').value.trim();
   const newLunch  = document.getElementById('pe-lunch').value.trim();
   const newBreak  = document.getElementById('pe-break').value.trim();
   const newStatus = document.getElementById('pe-status').value.trim();
   const statusEl  = document.getElementById('pe-save-status');
+  const saveBtn   = document.querySelector('#profile-edit-panel button[onclick="saveProfileEdits()"]');
 
-  statusEl.textContent = '💾 Saving...';
-  statusEl.style.color = 'var(--muted)';
+  // Show loading state on button
+  if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent='⏳ SAVING...'; saveBtn.style.opacity='0.7'; }
+  statusEl.textContent = 'Saving to Google Sheet...';
+  statusEl.style.color = '#64748b';
 
-  const errors = [];
+  const errors  = [];
   const updates = [];
 
-  // Save shift to Google Sheet
   if(newShift !== (agent.shift||'')){
     try{
-      const r = await callBridge({action:'updateRosterField', userId:selectedProfileId, field:'shift', value:newShift});
-      if(r.success){ ROSTER[selectedProfileId].shift = newShift; updates.push('shift'); }
-      else errors.push('shift: '+r.error);
-    }catch(e){ errors.push('shift error'); }
+      const r = await callBridge({action:'updateRosterField', userId:uid, field:'shift', value:newShift});
+      if(r && r.success){ ROSTER[selectedProfileId].shift=newShift; updates.push('Shift'); }
+      else errors.push('Shift: '+(r?.error||'failed'));
+    }catch(e){ errors.push('Shift error'); }
   }
 
-  // Save lunch to Google Sheet
   if(newLunch !== (agent.lunch||'')){
     try{
-      const r = await callBridge({action:'updateRosterField', userId:selectedProfileId, field:'lunch', value:newLunch});
-      if(r.success){ ROSTER[selectedProfileId].lunch = newLunch; updates.push('lunch'); }
-      else errors.push('lunch: '+r.error);
-    }catch(e){ errors.push('lunch error'); }
+      const r = await callBridge({action:'updateRosterField', userId:uid, field:'lunch', value:newLunch});
+      if(r && r.success){ ROSTER[selectedProfileId].lunch=newLunch; updates.push('Lunch'); }
+      else errors.push('Lunch: '+(r?.error||'failed'));
+    }catch(e){ errors.push('Lunch error'); }
   }
 
-  // Save status to Google Sheet
   if(newStatus !== (agent.status||'')){
     try{
-      const r = await callBridge({action:'updateRosterField', userId:selectedProfileId, field:'status', value:newStatus});
-      if(r.success){
+      const r = await callBridge({action:'updateRosterField', userId:uid, field:'status', value:newStatus});
+      if(r && r.success){
         ROSTER[selectedProfileId].status = newStatus;
-        // If marked Inactive — remove from ROSTER so they don't show
-        if(newStatus.toLowerCase()==='inactive'){
-          delete ROSTER[selectedProfileId];
-          closeProfileEdit();
-        }
-        updates.push('status');
-      } else errors.push('status: '+r.error);
-    }catch(e){ errors.push('status error'); }
+        if(newStatus.toLowerCase()==='inactive'){ delete ROSTER[selectedProfileId]; closeProfileEdit(); }
+        updates.push('Status');
+      } else errors.push('Status: '+(r?.error||'failed'));
+    }catch(e){ errors.push('Status error'); }
   }
 
-  // Save break to Firebase
   if(newBreak !== (agent.brk||'')){
     try{
-      await db.collection('roster').doc(selectedProfileId).set({brk:newBreak},{merge:true});
+      await db.collection('roster').doc(String(uid)).set({brk:newBreak},{merge:true});
       ROSTER[selectedProfileId].brk = newBreak;
-      updates.push('break');
-    }catch(e){ errors.push('break error'); }
+      updates.push('Break');
+    }catch(e){ errors.push('Break error'); }
   }
 
-  // Save shift+lunch to Firebase too so agent sees immediately
+  // Push shift+lunch to Firebase so agent sees on next login
   try{
-    const fbUpdate = {};
-    if(newShift) fbUpdate.shift = newShift;
-    if(newLunch) fbUpdate.lunch = newLunch;
-    if(Object.keys(fbUpdate).length){
-      await db.collection('roster').doc(selectedProfileId).set(fbUpdate,{merge:true});
-    }
+    const fbUp = {};
+    if(newShift) fbUp.shift = newShift;
+    if(newLunch) fbUp.lunch = newLunch;
+    if(Object.keys(fbUp).length) await db.collection('roster').doc(String(uid)).set(fbUp,{merge:true});
   }catch(e){}
 
+  // Restore button
+  if(saveBtn){
+    saveBtn.disabled=false;
+    saveBtn.style.opacity='1';
+    if(errors.length){ saveBtn.textContent='⚠️ RETRY SAVE'; }
+    else { saveBtn.innerHTML='✅ DONE — SAVED TO GOOGLE SHEET'; }
+    setTimeout(()=>{ if(saveBtn) saveBtn.innerHTML='💾 SAVE ALL CHANGES TO GOOGLE SHEET'; },3500);
+  }
+
   if(errors.length){
-    statusEl.textContent = '⚠ Some errors: '+errors.join(', ');
-    statusEl.style.color = 'var(--gold)';
+    statusEl.textContent = '⚠ Errors: '+errors.join(' · ');
+    statusEl.style.color = '#fbbf24';
   } else if(updates.length){
-    statusEl.textContent = '✅ Saved: '+updates.join(', ')+' — Google Sheet updated';
-    statusEl.style.color = 'var(--green)';
-    // Refresh list to show new values
+    statusEl.textContent = '✅ '+updates.join(', ')+' saved successfully';
+    statusEl.style.color = '#34d399';
     renderProfileList();
+    setTimeout(()=>{ statusEl.textContent=''; },4000);
   } else {
-    statusEl.textContent = 'No changes to save.';
-    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = 'No changes detected.';
+    statusEl.style.color = '#64748b';
+    setTimeout(()=>{ statusEl.textContent=''; },2000);
   }
 }
 
