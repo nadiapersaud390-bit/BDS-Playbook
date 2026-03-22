@@ -249,6 +249,36 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .rep-chip.lunch{border-color:rgba(52,211,153,0.3);color:var(--green);}
 .rep-chip.brk{border-color:rgba(251,191,36,0.3);color:var(--gold);}
 .rep-chip.ext{border-color:rgba(167,139,250,0.3);color:var(--purple);}
+
+/* ── STREAK COUNTER ── */
+.streak-chip{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 14px;border-radius:20px;
+  font-size:0.65rem;font-weight:800;letter-spacing:1px;
+  position:relative;overflow:hidden;cursor:default;
+}
+.streak-chip.on-fire{
+  background:linear-gradient(135deg,rgba(251,113,0,0.15),rgba(251,191,36,0.1));
+  border:1px solid rgba(251,113,0,0.5);
+  color:#fb923c;
+  box-shadow:0 0 12px rgba(251,113,0,0.25);
+  animation:streakPulse 2.5s ease-in-out infinite;
+}
+.streak-chip.building{
+  background:rgba(251,191,36,0.08);
+  border:1px solid rgba(251,191,36,0.3);
+  color:#fbbf24;
+}
+.streak-chip.zero{
+  background:rgba(100,116,139,0.08);
+  border:1px solid rgba(100,116,139,0.2);
+  color:#64748b;
+}
+.streak-num{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;line-height:1;}
+@keyframes streakPulse{
+  0%,100%{box-shadow:0 0 8px rgba(251,113,0,0.2);}
+  50%{box-shadow:0 0 18px rgba(251,113,0,0.5),0 0 30px rgba(251,191,36,0.2);}
+}
 .logout-btn{padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
 .logout-btn:hover{border-color:var(--red);color:var(--red);}
 .admin-badge{padding:4px 12px;border-radius:20px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);color:var(--gold);font-size:0.58rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;}
@@ -728,6 +758,10 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
           </div>
         </div>
         <div id="rp-last-coach" style="font-size:0.68rem;color:#64748b;margin-top:8px;"></div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #0f1e35;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:0.5rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#64748b;">🔥 PUNCTUALITY STREAK</span>
+          <span id="rp-streak-display" style="font-size:0.78rem;color:#64748b;">Loading...</span>
+        </div>
       </div>
 
       <!-- Mark today -->
@@ -2166,6 +2200,10 @@ function showDashboard(){
     if(u.brk)   details.innerHTML += `<div class="rep-chip brk">☕ Break: <b>${u.brk}</b></div>`;
     const teamName = u.team==='BB' ? 'Berbice' : u.team==='PR' ? 'Providence' : u.team;
     details.innerHTML += `<div class="rep-chip" style="border-color:rgba(167,139,250,0.3);color:var(--purple);">Team: <b>${teamName}</b></div>`;
+    // Streak chip placeholder — filled after async load
+    details.innerHTML += `<div id="streak-chip-wrap"></div>`;
+    // Load & update streak asynchronously
+    updateStreak(u.id, u.name);
   } else {
     document.getElementById('admin-badge-wrap').innerHTML = '<div class="admin-badge">⚡ ADMIN</div>';
     showAdminUI();
@@ -2173,6 +2211,182 @@ function showDashboard(){
 
   scheduleMidnightLogout();
   init();
+}
+
+// ══════════════════════════════════════════════
+//  STREAK COUNTER
+//  Stored in Firebase: streaks/{userId}
+//  { streak, lastDate, bestStreak }
+//  Rules:
+//    - Login on time (P) = streak + 1
+//    - Login late (L)    = streak resets to 0
+//    - Miss a day        = streak resets to 0
+//    - Already logged today = no change
+// ══════════════════════════════════════════════
+async function updateStreak(userId, name){
+  if(!userId) return;
+  const today  = getTodayGY();
+  const idStr  = String(userId);
+  const ref    = db.collection('streaks').doc(idStr);
+
+  try{
+    // Today's attendance status
+    const attSnap   = await db.collection('attendance').doc(idStr+'_'+today).get();
+    const attStatus = attSnap.exists ? normalizeStatus(attSnap.data().status) : 'P';
+    const isOnTime  = attStatus === 'P';
+    const isLate    = attStatus === 'L';
+
+    // Load existing streak doc
+    const snap = await ref.get();
+    let data   = snap.exists ? snap.data() : {};
+
+    // ── Pull current values ──
+    let daily       = data.daily       || 0;
+    let dailyBest   = data.dailyBest   || 0;
+    let dailyLast   = data.dailyLast   || '';
+    let weekly      = data.weekly      || 0;
+    let weeklyBest  = data.weeklyBest  || 0;
+    let weeklyLast  = data.weeklyLast  || '';
+    let monthly     = data.monthly     || 0;
+    let monthlyBest = data.monthlyBest || 0;
+    let monthlyLast = data.monthlyLast || '';
+
+    // Already updated today — just render with current data
+    if(dailyLast === today){
+      renderStreakChips({daily, dailyBest, weekly, weeklyBest, monthly, monthlyBest, attStatus});
+      return;
+    }
+
+    const yesterday   = getYesterdayGY();
+    const nowGY       = new Date(new Date().toLocaleString('en-US',{timeZone:'America/Guyana'}));
+    const weekStart   = getWeekStartGY(nowGY);   // Monday of current week  YYYY-MM-DD
+    const monthStart  = today.substring(0,7)+'-01'; // 1st of current month
+
+    // ── DAILY STREAK ──
+    // On time & consecutive → +1. Late or gap → 0
+    if(isLate){
+      daily = 0;
+    } else if(isOnTime){
+      daily = (dailyLast === yesterday) ? daily + 1 : 1;
+    }
+    if(daily > dailyBest) dailyBest = daily;
+    dailyLast = today;
+
+    // ── WEEKLY STREAK ──
+    // Counts on-time days this week (Mon–Sun). Resets to 0 every Monday.
+    // If weeklyLast is from a previous week → reset first
+    const weeklyLastInThisWeek = weeklyLast >= weekStart;
+    if(!weeklyLastInThisWeek){
+      weekly = 0; // new week starts fresh
+    }
+    if(isLate){
+      weekly = 0;
+    } else if(isOnTime){
+      // Only increment once per day
+      if(weeklyLast !== today){
+        weekly = weeklyLastInThisWeek ? weekly + 1 : 1;
+      }
+    }
+    if(weekly > weeklyBest) weeklyBest = weekly;
+    weeklyLast = today;
+
+    // ── MONTHLY STREAK ──
+    // Counts on-time days this month. Resets to 0 on the 1st of each month.
+    const monthlyLastInThisMonth = monthlyLast >= monthStart;
+    if(!monthlyLastInThisMonth){
+      monthly = 0; // new month starts fresh
+    }
+    if(isLate){
+      monthly = 0;
+    } else if(isOnTime){
+      if(monthlyLast !== today){
+        monthly = monthlyLastInThisMonth ? monthly + 1 : 1;
+      }
+    }
+    if(monthly > monthlyBest) monthlyBest = monthly;
+    monthlyLast = today;
+
+    // Save all to Firebase
+    await ref.set({
+      daily, dailyBest, dailyLast,
+      weekly, weeklyBest, weeklyLast,
+      monthly, monthlyBest, monthlyLast,
+      name, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+
+    renderStreakChips({daily, dailyBest, weekly, weeklyBest, monthly, monthlyBest, attStatus});
+
+  }catch(e){
+    console.warn('Streak update failed:', e);
+    renderStreakChips({daily:0, dailyBest:0, weekly:0, weeklyBest:0, monthly:0, monthlyBest:0, attStatus:'P'});
+  }
+}
+
+function getYesterdayGY(){
+  const now = new Date(new Date().toLocaleString('en-US',{timeZone:'America/Guyana'}));
+  now.setDate(now.getDate()-1);
+  return now.toLocaleDateString('en-CA',{timeZone:'America/Guyana'});
+}
+
+function getWeekStartGY(dateObj){
+  // Returns YYYY-MM-DD of the most recent Monday
+  const d   = new Date(dateObj);
+  const day = d.getDay(); // 0=Sun
+  const diff = day === 0 ? 6 : day - 1; // days since Monday
+  d.setDate(d.getDate() - diff);
+  return d.toLocaleDateString('en-CA',{timeZone:'America/Guyana'});
+}
+
+function renderStreakChips({daily, dailyBest, weekly, weeklyBest, monthly, monthlyBest, attStatus}){
+  const wrap = document.getElementById('streak-chip-wrap');
+  if(!wrap) return;
+
+  const isLate = attStatus === 'L';
+
+  function chipHtml(count, best, type, icon, resetLabel){
+    const isZero = count === 0;
+    let cls = isZero ? 'zero' : count >= 5 ? 'on-fire' : 'building';
+    const emoji = isZero ? '💤' : count >= 5 ? '🔥' : icon;
+    const bestTxt = best>0 ? `<span style="opacity:0.45;font-size:0.48rem;margin-left:3px;">BEST:${best}</span>` : '';
+    const resetTxt = isLate && type==='daily' ? `<span style="color:#f87171;font-size:0.48rem;margin-left:3px;">RESET</span>` : '';
+    return isZero
+      ? `<div class="streak-chip zero" title="Log in on time to build your ${type} streak">
+           <span style="font-size:0.6rem;">${emoji} ${type.toUpperCase()}</span>
+         </div>`
+      : `<div class="streak-chip ${cls}" title="${type} streak — best: ${best}">
+           ${emoji}
+           <span class="streak-num">${count}</span>
+           <span style="font-size:0.55rem;line-height:1.2;">${type.toUpperCase()}<br>${bestTxt}${resetTxt}</span>
+         </div>`;
+  }
+
+  wrap.innerHTML =
+    chipHtml(daily,   dailyBest,   'daily',   '⚡', 'RESET') +
+    chipHtml(weekly,  weeklyBest,  'weekly',  '📅', '') +
+    chipHtml(monthly, monthlyBest, 'monthly', '🏆', '');
+}
+
+// Update streak display in admin's agent profile view
+async function loadAgentStreakForProfile(idStr, name){
+  try{
+    const snap = await db.collection('streaks').doc(idStr).get();
+    const el   = document.getElementById('rp-streak-display');
+    if(!el) return;
+    if(snap.exists){
+      const d = snap.data();
+      const daily   = d.daily   ||0, dailyBest   = d.dailyBest   ||0;
+      const weekly  = d.weekly  ||0, weeklyBest  = d.weeklyBest  ||0;
+      const monthly = d.monthly ||0, monthlyBest = d.monthlyBest ||0;
+      el.innerHTML =
+        `<span style="color:#fb923c;">🔥 ${daily}d</span> <span style="opacity:0.4;font-size:0.6rem;">best ${dailyBest}</span>&nbsp;&nbsp;` +
+        `<span style="color:#fbbf24;">📅 ${weekly}w</span> <span style="opacity:0.4;font-size:0.6rem;">best ${weeklyBest}</span>&nbsp;&nbsp;` +
+        `<span style="color:#34d399;">🏆 ${monthly}m</span> <span style="opacity:0.4;font-size:0.6rem;">best ${monthlyBest}</span>`;
+      el.style.color = '#e2e8f0';
+    } else {
+      el.textContent = '💤 No streak data yet';
+      el.style.color = '#64748b';
+    }
+  }catch(e){ console.warn('Streak load failed',e); }
 }
 
 // ── MIDNIGHT AUTO-LOGOUT ──
@@ -4178,6 +4392,11 @@ async function apLoadOverview(id,name){
     document.getElementById('rp-monitor-count').textContent = '0';
     document.getElementById('rp-last-coach').textContent    = '';
   }
+
+  // ── Streak ──
+  try{
+    loadAgentStreakForProfile(idStr, name);
+  }catch(e){}
 }
 
 // ── ATTENDANCE ──
