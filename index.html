@@ -2264,27 +2264,37 @@ async function doLogin(){
 // ── MARK ATTENDANCE IN GOOGLE SHEET ──
 async function markAttendanceSheet(agent) {
   try {
-    // Check if already marked today
-    const checkData = await callBridge({action:'checkAttendance', name:agent.name, team:agent.team});
-    if(checkData.marked) return;
+    const today  = getTodayGY();
+    const docRef = db.collection('attendance').doc(agent.userId+'_'+today);
 
-    const status = getAttendanceStatus(agent.shift);
-    if(!status) return;
+    // Check Firebase first — if already logged there, no need to do anything
+    const fbSnap = await docRef.get();
+    if(fbSnap.exists){
+      // Already in Firebase — rep is already showing online, nothing to do
+      return;
+    }
 
-    // Write to sheet via JSONP
-    await callBridge({action:'markAttendance', name:agent.name, team:agent.team, status});
+    // Calculate status (Present / Late) based on shift time
+    const status = getAttendanceStatus(agent.shift) || 'P';
 
-    // Also save to Firebase for dashboard display
-    const today = getTodayGY();
-    await db.collection('attendance').doc(agent.userId+'_'+today).set({
-      id: agent.userId,
-      name: agent.name,
-      team: agent.team,
-      date: today,
+    // Always write to Firebase immediately so the admin sees them online NOW
+    await docRef.set({
+      id:        agent.userId,
+      name:      agent.name,
+      team:      agent.team,
+      date:      today,
       status,
-      shift: agent.shift,
+      shift:     agent.shift || '',
       loginTime: firebase.firestore.FieldValue.serverTimestamp()
     },{merge:true});
+
+    // Then try to mark the Google Sheet (non-blocking — sheet may already have them)
+    try{
+      const checkData = await callBridge({action:'checkAttendance', name:agent.name, team:agent.team});
+      if(!checkData.marked){
+        await callBridge({action:'markAttendance', name:agent.name, team:agent.team, status});
+      }
+    }catch(e){ console.warn('Sheet attendance mark failed (non-fatal):', e); }
 
   } catch(e) {
     console.error('Attendance mark failed:', e);
@@ -3528,9 +3538,30 @@ async function loadAdminOverview(){
   if(!rosterLoaded) await loadRoster();
 
   try{
+    // Primary source: attendance collection
     const snap = await db.collection('attendance').where('date','==',today).get();
     allAttRecords=[];
     snap.forEach(doc=>allAttRecords.push(doc.data()));
+
+    // Fallback: also check sessions collection — catches reps whose attendance
+    // write failed but session write succeeded (they ARE logged in)
+    try{
+      const sessSnap = await db.collection('sessions').where('date','==',today).get();
+      const attIds = new Set(allAttRecords.map(r=>String(r.id||'').trim()));
+      sessSnap.forEach(doc=>{
+        const d = doc.data();
+        const sid = String(d.id||'').trim();
+        if(sid && !attIds.has(sid)){
+          // Rep has a session but no attendance record — add them as Present
+          allAttRecords.push({
+            id: sid, name: d.name||'', team: d.team||'',
+            date: today, status: 'P', shift: ''
+          });
+          attIds.add(sid);
+        }
+      });
+    }catch(e){ /* non-fatal */ }
+
     const online = allAttRecords.filter(r=>r.status==='Present'||r.status==='P');
     const late   = allAttRecords.filter(r=>r.status==='Late'||r.status==='L');
     const allAgents = Object.values(ROSTER);
