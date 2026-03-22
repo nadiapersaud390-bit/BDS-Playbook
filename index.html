@@ -458,7 +458,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
   <button class="tab-btn t-dispo"        id="tab-dispo"       onclick="switchTab('dispo')">&#9989; DISPO</button>
   <button class="tab-btn t-lenders full" id="tab-lenders"     onclick="switchTab('lenders')">&#129309; LENDERS WE WORK WITH</button>
   <!-- ADMIN ONLY TABS -->
-  <button class="admin-tab-btn full admin-only" id="tab-admin" onclick="switchAdminTab('overview')">&#9889; ADMIN PANEL</button>
+  <button class="admin-tab-btn full admin-only" id="tab-admin" onclick="switchAdminTab('profiles')">&#9889; ADMIN PANEL</button>
 </div>
 </div>
 
@@ -621,19 +621,19 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
     <!-- ── CENTERED ADMIN SUB TABS ── -->
     <div style="background:#060d1a;border-bottom:2px solid #1a2a45;padding:14px 16px;">
       <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
-        <button class="adm-tab active" id="atab-overview"    onclick="switchAdminTab('overview',this)">⚡ Daily Overview</button>
+        <button class="adm-tab active" id="atab-profiles"    onclick="switchAdminTab('profiles',this)">👤 Agent Profiles</button>
+        <button class="adm-tab"        id="atab-overview"    onclick="switchAdminTab('overview',this)">⚡ Daily Overview</button>
         <button class="adm-tab"        id="atab-attendance"  onclick="switchAdminTab('attendance',this)">📅 Daily Attendance</button>
         <button class="adm-tab"        id="atab-weekly"      onclick="switchAdminTab('weekly',this)">📋 Weekly Attendance</button>
         <button class="adm-tab"        id="atab-monthly"     onclick="switchAdminTab('monthly',this)">📆 Monthly Attendance</button>
         <button class="adm-tab"        id="atab-stats"       onclick="switchAdminTab('stats',this)">📊 Agent Stats</button>
-        <button class="adm-tab"        id="atab-profiles"    onclick="switchAdminTab('profiles',this)">👤 Agent Profiles</button>
         <button class="adm-tab"        id="atab-coaching"    onclick="switchAdminTab('coaching',this)">📝 Coaching</button>
         <button class="adm-tab"        id="atab-monitoring"  onclick="switchAdminTab('monitoring',this)">🎧 Live Monitoring</button>
       </div>
     </div>
 
     <!-- ── DAILY OVERVIEW ── -->
-    <div id="admin-overview" class="admin-section">
+    <div id="admin-overview" class="admin-section" style="display:none;">
       <div class="admin-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
           <div class="admin-card-title" style="margin-bottom:0;">🎯 DAILY TRANSFER GOAL</div>
@@ -832,7 +832,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
       </div>
     </div>
     <!-- ── AGENT PROFILES ── -->
-    <div id="admin-profiles" class="admin-section" style="display:none;">
+    <div id="admin-profiles" class="admin-section">
       <div class="admin-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
           <div class="admin-card-title" style="margin-bottom:0;font-size:0.9rem;">👤 AGENT PROFILES</div>
@@ -2262,10 +2262,10 @@ function renderProfileList(){
 
   container.innerHTML = agents.map(a=>{
     const teamColor = a.team==='BB'?'var(--accent)':'var(--purple)';
-    const isSelected = a.userId === selectedProfileId;
+    const isSelected = String(a.userId) === String(selectedProfileId);
     return `<div onclick="selectProfile('${a.userId}')"
       style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #0f1e35;cursor:pointer;background:${isSelected?'#0d1a30':'transparent'};transition:background 0.12s;"
-      onmouseover="if('${a.userId}'!==selectedProfileId)this.style.background='#0a1424'" onmouseout="if('${a.userId}'!==selectedProfileId)this.style.background='transparent'">
+      onmouseover="this.style.background='#0a1424'" onmouseout="this.style.background='${isSelected?'#0d1a30':'transparent'}'">
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-size:0.65rem;font-weight:800;color:${teamColor};min-width:24px;">${a.team}</span>
         <div>
@@ -2285,9 +2285,11 @@ function filterProfileList(){
 }
 
 function selectProfile(userId){
-  selectedProfileId = userId;
-  const agent = ROSTER[userId];
-  if(!agent) return;
+  selectedProfileId = String(userId);
+
+  // Find agent — try string match first, then number
+  const agent = ROSTER[userId] || ROSTER[String(userId)] || Object.values(ROSTER).find(a=>String(a.userId)===String(userId));
+  if(!agent){ console.warn('Agent not found for userId:', userId); return; }
 
   // Highlight selected row
   renderProfileList();
@@ -2295,22 +2297,20 @@ function selectProfile(userId){
   // Populate edit panel
   document.getElementById('pe-name').textContent  = agent.name;
   document.getElementById('pe-meta').textContent  = (agent.team==='BB'?'Berbice (BB)':'Providence (PR)') + ' · ID: ' + agent.userId;
-  document.getElementById('pe-shift').value  = agent.shift || '';
-  document.getElementById('pe-lunch').value  = agent.lunch || '';
+  document.getElementById('pe-shift').value  = agent.shift  || '';
+  document.getElementById('pe-lunch').value  = agent.lunch  || '';
   document.getElementById('pe-status').value = agent.status || 'Agent';
   document.getElementById('pe-save-status').textContent = '';
 
   // Load break from Firebase
   document.getElementById('pe-break').value = agent.brk || '';
-  db.collection('roster').doc(userId).get().then(snap=>{
+  db.collection('roster').doc(String(userId)).get().then(snap=>{
     if(snap.exists && snap.data().brk){
       document.getElementById('pe-break').value = snap.data().brk;
     }
   }).catch(()=>{});
 
   document.getElementById('profile-edit-panel').style.display='';
-
-  // Scroll edit panel into view
   document.getElementById('profile-edit-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
@@ -2492,11 +2492,11 @@ function switchAdminTab(tab, btn){
     const b=document.getElementById('atab-'+t);
     if(b) b.classList.toggle('active',t===tab);
   });
+  if(tab==='profiles')    loadAgentProfiles();
   if(tab==='overview')    loadAdminOverview();
   if(tab==='attendance')  loadAdminAttendance();
   if(tab==='weekly')      loadWeeklyAttendance('BB');
   if(tab==='monthly')     loadMonthlyAttendance();
-  if(tab==='profiles')    loadAgentProfiles();
   if(tab==='coaching')    loadCoachingNotes();
   if(tab==='monitoring')  loadMonitoringNotes();
   if(tab==='stats'){
@@ -3115,56 +3115,69 @@ async function loadMonthlyAttendance(){
   const monthIdx   = parseInt(monthStart.split('-')[1])-1;
   const year       = monthStart.split('-')[0];
   document.getElementById('monthly-month-lbl').textContent = monthNames[monthIdx]+' '+year;
-  document.getElementById('monthly-table-wrap').innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;">Loading...</div>';
+  document.getElementById('monthly-table-wrap').innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;">Loading from Google Sheet...</div>';
 
-  // ── Fetch both in parallel ──
-  const [sheetResult, fbResult] = await Promise.allSettled([
-    callBridge({action:'getMonthlyAttendance'}),
-    db.collection('attendance')
-      .where('date','>=',monthStart+'-01')
-      .where('date','<=',monthStart+'-31').get()
+  // ── Google Sheet is the ONLY source for monthly — no Firebase merge ──
+  // Pull BB and PR weekly tabs in parallel and build monthly from them
+  const [bbResult, prResult] = await Promise.allSettled([
+    callBridge({action:'getWeeklyAttendance', team:'BB'}),
+    callBridge({action:'getWeeklyAttendance', team:'PR'})
   ]);
 
   monthlyCache = {};
 
-  // ── Firebase data ──
-  if(fbResult.status==='fulfilled'){
-    fbResult.value.forEach(doc=>{
-      const d=doc.data();
-      if(d.id){
-        if(!monthlyCache[String(d.id)]) monthlyCache[String(d.id)]={};
-        // Only store if not already set (sheet wins)
-        if(!monthlyCache[String(d.id)][d.date])
-          monthlyCache[String(d.id)][d.date] = normalizeStatus(d.status);
-      }
-    });
-  }
+  // Process weekly data into monthly cache keyed by agentName
+  const processWeeks = (result, team) => {
+    if(result.status !== 'fulfilled' || !result.value.success) return;
+    (result.value.weeks || []).forEach(week => {
+      (week.agents || []).forEach(agent => {
+        // Find roster agent for ID
+        const rAgent = Object.values(ROSTER).find(r => {
+          const rn = r.name.toLowerCase();
+          const an = agent.name.toLowerCase();
+          return rn === an || rn.includes(an.split(' ')[0]) && rn.includes(an.split(' ').slice(-1)[0]);
+        });
+        const key = rAgent ? String(rAgent.userId) : 'name:'+agent.name.toLowerCase();
+        if(!monthlyCache[key]) monthlyCache[key] = {};
 
-  // ── Sheet data — overwrites Firebase ──
-  if(sheetResult.status==='fulfilled' && sheetResult.value.success){
-    (sheetResult.value.agents||[]).forEach(agent=>{
-      const rAgent = Object.values(ROSTER).find(r=>
-        r.name.toLowerCase()===agent.name.toLowerCase() ||
-        r.name.toLowerCase().includes(agent.name.toLowerCase().split(' ')[0])
-      );
-      const key = rAgent ? String(rAgent.userId) : 'name:'+agent.name.toLowerCase();
-      if(!monthlyCache[key]) monthlyCache[key]={};
-      Object.entries(agent.days||{}).forEach(([day,status])=>{
-        const dateStr = monthStart+'-'+(parseInt(day)<10?'0':'')+parseInt(day);
-        const code = normalizeStatus(status);
-        if(code) monthlyCache[key][dateStr] = code; // sheet wins over Firebase
+        // Map each column header to a date
+        (week.columns || []).forEach(col => {
+          const status = normalizeStatus(agent.days[col.header] || '');
+          if(!status) return;
+          // Convert day abbreviation to date number using week label
+          // col.header = "Mon", "Tue" etc — find matching date from week dates
+          const dayMap = {mon:1,tue:2,wed:3,thu:4,fri:5,sat:6,sun:0};
+          const dayKey = col.header.toLowerCase().substring(0,3);
+          const targetDow = dayMap[dayKey];
+          if(targetDow === undefined) return;
+
+          // Find the date in this month that matches this DOW within the week range
+          // Parse week label e.g. "March 15 – 21"
+          const rangeMatch = week.label.match(/(\d{1,2})\s*[–-]\s*(\d{1,2})/);
+          if(!rangeMatch) return;
+          const startDay = parseInt(rangeMatch[1]);
+          const endDay   = parseInt(rangeMatch[2]);
+          for(let d = startDay; d <= endDay; d++){
+            const dow = new Date(parseInt(year), monthIdx, d).getDay();
+            if(dow === targetDow){
+              const dateStr = monthStart + '-' + (d < 10 ? '0' : '') + d;
+              monthlyCache[key][dateStr] = status;
+              break;
+            }
+          }
+        });
       });
     });
-  }
+  };
+
+  processWeeks(bbResult, 'BB');
+  processWeeks(prResult, 'PR');
 
   renderMonthly(monthlyCache, monthStart, year, monthIdx);
 }
 
 function reRenderMonthly(){
-  if(!Object.keys(monthlyCache).length){ loadMonthlyAttendance(); return; }
-  const today=getTodayGY(),monthStart=today.substring(0,7);
-  const monthIdx=parseInt(monthStart.split('-')[1])-1;
-  renderMonthly(monthlyCache,monthStart,monthStart.split('-')[0],monthIdx);
+  loadMonthlyAttendance();
 }
 
 // ── REPORT HISTORY ──
