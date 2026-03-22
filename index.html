@@ -533,17 +533,24 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 .ap-stat-val{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;line-height:1;}
 .ap-stat-lbl{font-size:0.48rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;margin-top:3px;}
 
-/* Mini calendar for attendance */
-.ap-mini-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:8px;}
-.ap-cal-hdr{font-size:0.45rem;font-weight:800;text-align:center;color:#64748b;padding:2px;}
-.ap-cal-cell{aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.48rem;font-weight:800;cursor:default;}
-.ap-cal-p{background:rgba(52,211,153,0.2);color:#34d399;}
-.ap-cal-l{background:rgba(251,191,36,0.2);color:#fbbf24;}
-.ap-cal-a{background:rgba(248,113,113,0.2);color:#f87171;}
-.ap-cal-s{background:rgba(96,165,250,0.15);color:#60a5fa;}
-.ap-cal-off{background:#0d1424;color:#2a3a55;}
-.ap-cal-future{background:transparent;color:#1a2540;}
-.ap-cal-today{outline:2px solid #60a5fa;outline-offset:1px;}
+/* Mini calendar for attendance — compact design */
+.ap-mini-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:8px;}
+.ap-cal-hdr{font-size:0.5rem;font-weight:800;text-align:center;color:#64748b;padding:3px 0;letter-spacing:0.5px;}
+.ap-cal-cell{
+  height:28px;border-radius:4px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-size:0.52rem;
+  font-weight:700;cursor:default;position:relative;
+}
+.ap-cal-daynum{font-size:0.48rem;font-weight:600;opacity:0.5;line-height:1;margin-bottom:1px;}
+.ap-cal-lbl{font-size:0.55rem;font-weight:800;line-height:1;}
+.ap-cal-p{background:rgba(52,211,153,0.18);color:#34d399;}
+.ap-cal-l{background:rgba(251,191,36,0.18);color:#fbbf24;}
+.ap-cal-a{background:rgba(248,113,113,0.18);color:#f87171;}
+.ap-cal-s{background:rgba(96,165,250,0.13);color:#60a5fa;}
+.ap-cal-off{background:#0a1020;color:#2a3a55;}
+.ap-cal-empty{background:transparent;}
+.ap-cal-future{background:transparent;color:#1e2d45;}
+.ap-cal-today{outline:1.5px solid #60a5fa;outline-offset:1px;}
 
 /* Week bar chart */
 .ap-week-bars{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
@@ -1859,7 +1866,7 @@ pitch_softpull:{phase:'SALES PITCH BOOSTING \u2014 SOFT PULL / NO WEBSITE / DATA
 };
 
 // ── APPS SCRIPT BRIDGE URL ──
-const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbyMCJAKGnB8jEDr239r0HVtUUTUlDOBjlWzakD-5BXkjVku5RQxJxfsmKCdO0x4ry_41Q/exec';
+const BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbz4K3j7R_KyV8T9q5-TsxH-uv9GJFJIFlU6MC9ayb6XyjFj10Ro5Lr2jtWQFstvWvnQCg/exec';
 
 // ── JSONP helper — bypasses CORS for Google Apps Script ──
 function callBridge(params) {
@@ -4150,8 +4157,10 @@ async function apLoadAttendance(id,name){
   const prevMonthIdx = monthIdx===0?11:monthIdx-1;
   const prevYear     = monthIdx===0?year-1:year;
   const prevStart    = prevYear+'-'+String(prevMonthIdx+1).padStart(2,'0');
+  const prevMonthPfx = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][prevMonthIdx];
   document.getElementById('ap-prev-month-lbl').textContent = monthNames[prevMonthIdx].toUpperCase()+' '+prevYear;
 
+  // Build prev attMap: Firebase docs first
   const prevAtt = {};
   const daysInPrev = new Date(prevYear, prevMonthIdx+1, 0).getDate();
   try{
@@ -4164,40 +4173,78 @@ async function apLoadAttendance(id,name){
     snaps2.forEach(snap=>{
       if(!snap.exists) return;
       const d=snap.data();
-      if(d.date) prevAtt[d.date] = normalizeStatus(d.status);
+      if(d.date) prevAtt[d.date]=normalizeStatus(d.status);
     });
   }catch(e){}
+
+  // Also pull from Google Sheet previous month Monthly Overview
+  try{
+    const prevMonthData = await callBridge({action:'getMonthlyAttendance', month: prevMonthPfx});
+    if(prevMonthData && prevMonthData.success && Array.isArray(prevMonthData.agents)){
+      const nl = name.toLowerCase().trim();
+      const agentRow = prevMonthData.agents.find(a=>(a.name||'').toLowerCase().trim()===nl
+        || (a.name||'').toLowerCase().includes(nl.split(' ')[0]));
+      if(agentRow){
+        Object.entries(agentRow.days||{}).forEach(([dayNum,status])=>{
+          const d = parseInt(dayNum);
+          if(d>=1&&d<=31){
+            const dateStr = prevStart+'-'+String(d).padStart(2,'0');
+            if(!prevAtt[dateStr]) prevAtt[dateStr]=normalizeStatus(status);
+          }
+        });
+      }
+    }
+  }catch(e){}
+
   renderAgentCalendar('ap-cal-prev', prevYear, prevMonthIdx, prevAtt, '');
 }
 
 function renderAgentCalendar(elId, year, monthIdx, attMap, todayStr){
   const el = document.getElementById(elId);
   if(!el) return;
-  const dayNames = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const dayNames    = ['Su','Mo','Tu','We','Th','Fr','Sa'];
   const daysInMonth = new Date(year, monthIdx+1, 0).getDate();
   const firstDow    = new Date(year, monthIdx, 1).getDay();
 
+  // Header row
   let html = dayNames.map(d=>`<div class="ap-cal-hdr">${d}</div>`).join('');
+
   // Empty cells before day 1
-  for(let i=0;i<firstDow;i++) html+='<div class="ap-cal-cell ap-cal-future"></div>';
+  for(let i=0;i<firstDow;i++) html+=`<div class="ap-cal-cell ap-cal-empty"></div>`;
 
   for(let d=1;d<=daysInMonth;d++){
-    const dateStr = year+'-'+(monthIdx+1<10?'0':'')+(monthIdx+1)+'-'+(d<10?'0':'')+d;
+    const dd      = String(d).padStart(2,'0');
+    const mm      = String(monthIdx+1).padStart(2,'0');
+    const dateStr = `${year}-${mm}-${dd}`;
     const isToday = dateStr===todayStr;
-    const isFuture= dateStr>todayStr;
-    const status  = attMap[dateStr]||'';
-    let cls='ap-cal-off', lbl='·';
+    const isFuture= todayStr && dateStr>todayStr;
+    const raw     = attMap[dateStr]||'';
+    const status  = normalizeStatus(raw)||raw;
 
-    if(isFuture){ cls='ap-cal-future'; lbl=d; }
-    else if(status==='P'){ cls='ap-cal-p'; lbl='P'; }
-    else if(status==='L'){ cls='ap-cal-l'; lbl='L'; }
-    else if(status==='A'){ cls='ap-cal-a'; lbl='A'; }
-    else if(status==='S'){ cls='ap-cal-s'; lbl='S'; }
-    else if(status==='PO'){ cls='ap-cal-a'; lbl='PO'; }
-    else if(status==='OFF'){ cls='ap-cal-off'; lbl='OFF'; }
-    else { cls='ap-cal-off'; lbl=d; }
+    let cls='ap-cal-off', lbl='';
 
-    html+=`<div class="ap-cal-cell ${cls}${isToday?' ap-cal-today':''}" title="${dateStr}: ${status||'No data'}">${lbl}</div>`;
+    if(isFuture){
+      cls='ap-cal-future'; lbl='';
+    } else if(status==='P'){
+      cls='ap-cal-p'; lbl='P';
+    } else if(status==='L'){
+      cls='ap-cal-l'; lbl='L';
+    } else if(status==='A'){
+      cls='ap-cal-a'; lbl='A';
+    } else if(status==='S'){
+      cls='ap-cal-s'; lbl='S';
+    } else if(status==='PO'){
+      cls='ap-cal-a'; lbl='PO';
+    } else if(status==='OFF'){
+      cls='ap-cal-off'; lbl='—';
+    } else {
+      cls='ap-cal-off'; lbl='';
+    }
+
+    html+=`<div class="ap-cal-cell ${cls}${isToday?' ap-cal-today':''}" title="${dateStr}${status?' · '+status:''}">
+      <span class="ap-cal-daynum">${d}</span>
+      ${lbl?`<span class="ap-cal-lbl">${lbl}</span>`:''}
+    </div>`;
   }
   el.innerHTML=html;
 }
