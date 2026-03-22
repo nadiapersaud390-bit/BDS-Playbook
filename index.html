@@ -4191,10 +4191,22 @@ function renderReportHistory(){
   // Always newest date first
   const sorted = [...reportHistory].sort((a,b)=>b.date.localeCompare(a.date));
   el.innerHTML='<div style="font-size:0.6rem;font-weight:800;letter-spacing:2px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">📂 Previous Reports — click to load</div>'
-    +sorted.map((r,i)=>{
+    +sorted.map((r)=>{
       const origIdx = reportHistory.indexOf(r);
-      const isToday=r.date===getTodayGY();
-      return `<button onclick="loadReportByIndex(${origIdx})" style="margin:0 4px 4px 0;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:1.5px solid ${isToday?'var(--green)':'var(--border)'};background:${isToday?'rgba(52,211,153,0.1)':'transparent'};color:${isToday?'var(--green)':'var(--muted)'};font-family:Barlow Condensed,sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">${isToday?'⚡ ':''} ${r.date} <span style="opacity:0.6;">(${r.agentCount||'?'} agents)</span></button>`;
+      const isActive = r.date === statsDataDate;
+      const isToday  = r.date === getTodayGY();
+      const baseBorder = isToday ? 'var(--green)' : 'var(--border)';
+      const baseBg     = isToday ? 'rgba(52,211,153,0.1)' : 'transparent';
+      const baseColor  = isToday ? 'var(--green)' : 'var(--muted)';
+      return `<button data-report-idx="${origIdx}" onclick="loadReportByIndex(${origIdx})"
+        style="margin:0 4px 4px 0;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;
+        border:1.5px solid ${isActive?'var(--gold)':baseBorder};
+        background:${isActive?'rgba(251,191,36,0.12)':baseBg};
+        color:${isActive?'var(--gold)':baseColor};
+        font-family:Barlow Condensed,sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;
+        box-shadow:${isActive?'0 0 8px rgba(251,191,36,0.3)':'none'};">
+        ${isToday?'⚡ ':isActive?'▶ ':''} ${r.date} <span style="opacity:0.6;">(${r.agentCount||'?'} agents)</span>
+      </button>`;
     }).join('');
 }
 let compareData     = [];   // second dataset for comparison
@@ -4252,10 +4264,8 @@ function loadReportByIndex(idx){
     statsDataDate = r.date; // track which date this data is for
     updateGoalBars();
     renderStatsTable();
-    document.querySelectorAll('#report-history button').forEach((b,i)=>{
-      b.style.borderColor=i===idx?'var(--gold)':'';
-      b.style.color=i===idx?'var(--gold)':'';
-    });
+    // Re-render history so active state updates correctly (uses statsDataDate)
+    renderReportHistory();
   }catch(e){ console.error('Load report:',e); }
 }
 
@@ -4436,38 +4446,70 @@ async function confirmCSVUpload(){
   document.getElementById('expiry-picker').style.display='none';
   document.getElementById('csv-date-lbl').textContent='📅 '+pendingCSVData.date;
   document.getElementById('csv-expiry-lbl').textContent='🗑 Expires: '+expiryDate.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  statsDataDate = pendingCSVData.date; // mark this data as today's
+  statsDataDate = pendingCSVData.date;
   pendingCSVData=null;
 
   updateGoalBars();
   renderStatsTable();
+
+  // Reload report history so the new upload appears in the buttons immediately
+  await loadReportHistory();
 }
 
 // ── CANONICAL TEAM RESOLVER ──
-// Priority: 1) Ytel ID in ROSTER  2) nameRaw prefix (GUYP=PR, else BB)  3) exact name match
+// Priority:
+//  1. ytelId  → ROSTER lookup (most reliable)
+//  2. nameRaw prefix  → GUYP=PR, GUY/GUYB=BB (direct CSV source)
+//  3. ytelName in ROSTER (agent.name exact match → use ytelName prefix)
+//  4. Fallback to saved team value
 function resolveAgentTeam(agent){
   const rosterAgents = Object.values(ROSTER);
 
-  // 1. Ytel ID match — most reliable
+  // 1. Ytel ID direct lookup
   if(agent.ytelId){
     const byId = rosterAgents.find(r=>String(r.userId).trim()===String(agent.ytelId).trim());
     if(byId) return byId.team;
   }
 
-  // 2. nameRaw prefix — directly from CSV, always correct
-  //    "GUYP ..." = PR,  "GUY ..." or "GUYB ..." = BB
+  // 2. nameRaw prefix from saved CSV row — always accurate
   if(agent.nameRaw){
     const yn = agent.nameRaw.toUpperCase().replace(/[\s-]/g,'');
     if(yn.startsWith('GUYP')) return 'PR';
     if(yn.startsWith('GUY'))  return 'BB';
   }
 
-  // 3. Exact name match only — no fuzzy to avoid cross-matching
+  // 3. Match name against ROSTER, then use that roster entry's ytelName prefix
+  //    This correctly handles old reports that have no nameRaw/ytelId saved
   const nameLow = (agent.name||'').toLowerCase().trim();
-  const byExact = rosterAgents.find(r=>r.name.toLowerCase()===nameLow);
-  if(byExact) return byExact.team;
+  const nameParts = nameLow.split(' ').filter(p=>p.length>1);
+  const firstName = nameParts[0]||'';
+  const lastName  = nameParts[nameParts.length-1]||'';
 
-  // 4. Fallback — keep existing or default BB
+  // Try exact name first
+  let rosterMatch = rosterAgents.find(r=>r.name.toLowerCase()===nameLow);
+
+  // Then try first+last both present (must match both, at least 3 chars each)
+  if(!rosterMatch && firstName.length>=2 && lastName.length>=2){
+    rosterMatch = rosterAgents.find(r=>{
+      const rn = r.name.toLowerCase();
+      const rParts = rn.split(' ').filter(p=>p.length>1);
+      const rFirst = rParts[0]||'';
+      const rLast  = rParts[rParts.length-1]||'';
+      return rFirst===firstName && rLast===lastName;
+    });
+  }
+
+  if(rosterMatch){
+    // Use the roster entry's ytelName to determine team — never wrong
+    if(rosterMatch.ytelName){
+      const yn = rosterMatch.ytelName.toUpperCase().replace(/[\s-]/g,'');
+      if(yn.startsWith('GUYP')) return 'PR';
+      if(yn.startsWith('GUY'))  return 'BB';
+    }
+    return rosterMatch.team || 'BB';
+  }
+
+  // 4. Keep saved value as last resort
   return agent.team || 'BB';
 }
 
