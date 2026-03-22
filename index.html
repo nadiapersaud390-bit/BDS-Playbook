@@ -370,8 +370,12 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
   .tab-span-3{grid-column:span 3 !important;}
   .dispo-grid{grid-template-columns:1fr;}
 }
+/* ══ GRID OVERRIDE — 3,3,2,1,1 layout ══ */
+.top-tabs{display:grid!important;grid-template-columns:repeat(6,1fr)!important;gap:8px!important;padding:12px 24px 16px!important;max-width:1100px!important;margin:0 auto!important;width:100%!important;}
+.tab-span-2{grid-column:span 2!important;}
+.tab-span-3{grid-column:span 3!important;}
+.tab-span-6{grid-column:1/-1!important;}
 </style>
-</head>
 <body>
 
 <!-- ── LOGIN SCREEN ── -->
@@ -2093,17 +2097,23 @@ async function markAttendanceSheet(agent) {
 
 // ── CALCULATE PRESENT OR LATE ──
 function getAttendanceStatus(shift) {
-  if(!shift) return 'P';
   try {
-    const match = shift.match(/(\d+):(\d+)\s*(am|pm)/i);
+    const nowGY  = new Date(new Date().toLocaleString('en-US',{timeZone:'America/Guyana'}));
+    const isSun  = nowGY.getDay() === 0;
+
+    // On Sunday everyone has the same 11:45am shift regardless of their roster shift
+    const shiftStr = isSun ? '11:45am' : (shift || '');
+    if(!shiftStr) return 'P';
+
+    const match = shiftStr.match(/(\d+):(\d+)\s*(am|pm)/i);
     if(!match) return 'P';
     let h = parseInt(match[1]), m = parseInt(match[2]);
     const ampm = match[3].toLowerCase();
     if(ampm==='pm' && h!==12) h+=12;
     if(ampm==='am' && h===12) h=0;
-    const nowGY = new Date(new Date().toLocaleString('en-US',{timeZone:'America/Guyana'}));
+
     const shiftStart = new Date(nowGY.getFullYear(),nowGY.getMonth(),nowGY.getDate(),h,m,0);
-    const diffMins = (nowGY - shiftStart) / 60000;
+    const diffMins   = (nowGY - shiftStart) / 60000;
     if(diffMins > 15) return 'L';
     return 'P';
   } catch(e){ return 'P'; }
