@@ -597,13 +597,9 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
       <!-- Coaching -->
       <div id="rp-coach" style="display:none;">
         <div class="rp-section">
-          <div class="rp-section-title">Add Coaching Note</div>
-          <textarea class="coach-input" id="coach-note-text" placeholder="Type your note here..."></textarea>
-          <button class="save-btn" onclick="saveCoachNote()">SAVE NOTE</button>
-        </div>
-        <div class="rp-section">
-          <div class="rp-section-title">Previous Notes</div>
-          <div id="coach-notes-list" style="font-size:0.78rem;color:var(--muted);">No notes yet.</div>
+          <div class="rp-section-title">📝 Coaching &amp; 🎧 Monitoring History</div>
+          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:10px;">Added from Admin Panel → Coaching or Live Monitoring tab</div>
+          <div id="coach-notes-list" style="font-size:0.78rem;color:var(--muted);">Loading...</div>
         </div>
       </div>
       <!-- Audit -->
@@ -631,6 +627,8 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
         <button class="adm-tab"        id="atab-monthly"     onclick="switchAdminTab('monthly',this)">📆 Monthly Attendance</button>
         <button class="adm-tab"        id="atab-stats"       onclick="switchAdminTab('stats',this)">📊 Agent Stats</button>
         <button class="adm-tab"        id="atab-profiles"    onclick="switchAdminTab('profiles',this)">👤 Agent Profiles</button>
+        <button class="adm-tab"        id="atab-coaching"    onclick="switchAdminTab('coaching',this)">📝 Coaching</button>
+        <button class="adm-tab"        id="atab-monitoring"  onclick="switchAdminTab('monitoring',this)">🎧 Live Monitoring</button>
       </div>
     </div>
 
@@ -912,9 +910,160 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
         </div>
       </div>
     </div>
-  </div>
+    <!-- ── COACHING ── -->
+    <div id="admin-coaching" class="admin-section" style="display:none;">
+      <div class="admin-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div class="admin-card-title" style="margin-bottom:0;font-size:0.9rem;">📝 COACHING NOTES</div>
+          <button onclick="openCoachingForm()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--accent);color:#000;font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:800;letter-spacing:1px;cursor:pointer;">＋ Add Note</button>
+        </div>
 
-  <!-- SCRIPT -->
+        <!-- Search / filter -->
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <input type="text" id="coach-search" placeholder="🔍 Search by rep name..." oninput="filterCoachingNotes()"
+            style="flex:1;min-width:140px;padding:8px 14px;background:#0d1424;border:1.5px solid #2a3a5a;border-radius:8px;color:#e2e8f0;font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;">
+          <select id="coach-team-filter" onchange="filterCoachingNotes()"
+            style="padding:8px 12px;background:#0d1424;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;outline:none;">
+            <option value="all">All Teams</option>
+            <option value="BB">🏠 Berbice</option>
+            <option value="PR">🌴 Providence</option>
+          </select>
+        </div>
+
+        <!-- Add form (hidden by default) -->
+        <div id="coaching-form" style="display:none;background:#060d1a;border:1px solid #1a2a45;border-radius:12px;padding:16px;margin-bottom:14px;">
+          <div style="font-size:0.65rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">NEW COACHING NOTE</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">REP NAME</div>
+              <input id="cn-rep" type="text" placeholder="Start typing name..." list="cn-rep-list"
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;">
+              <datalist id="cn-rep-list"></datalist>
+            </div>
+            <div>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">ADMIN NAME</div>
+              <input id="cn-admin" type="text" placeholder="Your name..."
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">📞 DIAL BEHAVIOR (Voicemails)</div>
+              <textarea id="cn-dial" placeholder="e.g. Consistently handles dispositions correctly..."
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:70px;box-sizing:border-box;"></textarea>
+            </div>
+            <div>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">🎙 VOICE, ENERGY &amp; TONE</div>
+              <textarea id="cn-voice" placeholder="e.g. Speaks clearly, warm and welcoming..."
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:70px;box-sizing:border-box;"></textarea>
+            </div>
+            <div>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">📋 SCRIPT &amp; ENGAGEMENT</div>
+              <textarea id="cn-script" placeholder="e.g. Opens every call with a strong greeting..."
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:70px;box-sizing:border-box;"></textarea>
+            </div>
+            <div>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">🛡 OBJECTION / REBUTTAL HANDLING</div>
+              <textarea id="cn-objection" placeholder="e.g. Able to handle objections without losing composure..."
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:70px;box-sizing:border-box;"></textarea>
+            </div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">⭐ COACHING POINTS (overall summary)</div>
+            <textarea id="cn-points" placeholder="Overall coaching summary and what to focus on..."
+              style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:60px;box-sizing:border-box;"></textarea>
+          </div>
+          <div id="cn-save-status" style="font-size:0.68rem;min-height:18px;margin-bottom:8px;"></div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="saveCoachingNote()" style="flex:1;padding:11px;border-radius:8px;border:none;background:var(--accent);color:#000;font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;font-weight:800;letter-spacing:1px;cursor:pointer;">💾 SAVE NOTE</button>
+            <button onclick="closeCoachingForm()" style="padding:11px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:800;cursor:pointer;">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Notes list -->
+        <div id="coaching-notes-feed">
+          <div style="text-align:center;color:var(--muted);padding:24px;font-size:0.82rem;">Loading coaching notes...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LIVE MONITORING ── -->
+    <div id="admin-monitoring" class="admin-section" style="display:none;">
+      <div class="admin-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div class="admin-card-title" style="margin-bottom:0;font-size:0.9rem;">🎧 LIVE MONITORING</div>
+          <button onclick="openMonitoringForm()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--purple);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:800;letter-spacing:1px;cursor:pointer;">＋ Add Session</button>
+        </div>
+
+        <!-- Search / filter -->
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <input type="text" id="monitor-search" placeholder="🔍 Search by rep name..." oninput="filterMonitoringNotes()"
+            style="flex:1;min-width:140px;padding:8px 14px;background:#0d1424;border:1.5px solid #2a3a5a;border-radius:8px;color:#e2e8f0;font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;">
+          <select id="monitor-team-filter" onchange="filterMonitoringNotes()"
+            style="padding:8px 12px;background:#0d1424;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;outline:none;">
+            <option value="all">All Teams</option>
+            <option value="BB">🏠 Berbice</option>
+            <option value="PR">🌴 Providence</option>
+          </select>
+        </div>
+
+        <!-- Add form -->
+        <div id="monitoring-form" style="display:none;background:#060d1a;border:1px solid #1a2a45;border-radius:12px;padding:16px;margin-bottom:14px;">
+          <div style="font-size:0.65rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--purple);margin-bottom:12px;">NEW MONITORING SESSION</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">REP NAME</div>
+              <input id="mn-rep" type="text" placeholder="Start typing name..." list="mn-rep-list"
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;">
+              <datalist id="mn-rep-list"></datalist>
+            </div>
+            <div>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">ADMIN NAME</div>
+              <input id="mn-admin" type="text" placeholder="Your name..."
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;box-sizing:border-box;">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">📞 DIAL BEHAVIOR (Voicemails)</div>
+              <textarea id="mn-dial" placeholder="Observations on call handling and dispositions..."
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:70px;box-sizing:border-box;"></textarea>
+            </div>
+            <div>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">🎙 VOICE, ENERGY &amp; TONE</div>
+              <textarea id="mn-voice" placeholder="Voice quality, energy level, tone on calls..."
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:70px;box-sizing:border-box;"></textarea>
+            </div>
+            <div>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">📋 SCRIPT &amp; ENGAGEMENT</div>
+              <textarea id="mn-script" placeholder="How well they followed the script..."
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:70px;box-sizing:border-box;"></textarea>
+            </div>
+            <div>
+              <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">🛡 OBJECTION / REBUTTAL HANDLING</div>
+              <textarea id="mn-objection" placeholder="How they handled objections live..."
+                style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:70px;box-sizing:border-box;"></textarea>
+            </div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <div style="font-size:0.6rem;color:var(--muted);font-weight:700;margin-bottom:4px;">⭐ COACHING POINTS (feedback from this session)</div>
+            <textarea id="mn-points" placeholder="Key takeaways and what the rep should focus on..."
+              style="width:100%;padding:8px 12px;background:#090f1e;border:1.5px solid #2a3a5a;border-radius:8px;color:var(--text);font-size:0.8rem;font-family:'Nunito',sans-serif;outline:none;resize:none;min-height:60px;box-sizing:border-box;"></textarea>
+          </div>
+          <div id="mn-save-status" style="font-size:0.68rem;min-height:18px;margin-bottom:8px;"></div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="saveMonitoringNote()" style="flex:1;padding:11px;border-radius:8px;border:none;background:var(--purple);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;font-weight:800;letter-spacing:1px;cursor:pointer;">💾 SAVE SESSION</button>
+            <button onclick="closeMonitoringForm()" style="padding:11px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:800;cursor:pointer;">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Sessions list -->
+        <div id="monitoring-notes-feed">
+          <div style="text-align:center;color:var(--muted);padding:24px;font-size:0.82rem;">Loading monitoring sessions...</div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="tab-page active" id="page-script">
     <div class="sub-tab-row">
       <div class="sub-tab-label">CALL FLOW</div>
@@ -1837,7 +1986,257 @@ function startClocks(){
   tick();setInterval(tick,1000);
 }
 
-// ── AGENT PROFILES TAB ──
+// ── COACHING & MONITORING ──
+let allCoachingNotes   = [];
+let allMonitoringNotes = [];
+
+// Populate rep name datalists
+function populateRepDatalist(id){
+  const dl = document.getElementById(id);
+  if(!dl) return;
+  dl.innerHTML = Object.values(ROSTER).sort((a,b)=>a.name.localeCompare(b.name))
+    .map(a=>`<option value="${a.name}">`).join('');
+}
+
+// ── COACHING ──
+function openCoachingForm(){
+  populateRepDatalist('cn-rep-list');
+  document.getElementById('coaching-form').style.display='';
+  document.getElementById('cn-rep').focus();
+  document.getElementById('cn-save-status').textContent='';
+}
+function closeCoachingForm(){
+  document.getElementById('coaching-form').style.display='none';
+  ['cn-rep','cn-admin','cn-dial','cn-voice','cn-script','cn-objection','cn-points']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+}
+
+async function saveCoachingNote(){
+  const repName  = document.getElementById('cn-rep').value.trim();
+  const adminName= document.getElementById('cn-admin').value.trim();
+  const dial     = document.getElementById('cn-dial').value.trim();
+  const voice    = document.getElementById('cn-voice').value.trim();
+  const script   = document.getElementById('cn-script').value.trim();
+  const objection= document.getElementById('cn-objection').value.trim();
+  const points   = document.getElementById('cn-points').value.trim();
+  const statusEl = document.getElementById('cn-save-status');
+
+  if(!repName||!adminName){ statusEl.textContent='⚠ Rep name and admin name are required.'; statusEl.style.color='var(--red)'; return; }
+  if(!dial&&!voice&&!script&&!objection&&!points){ statusEl.textContent='⚠ Fill in at least one field.'; statusEl.style.color='var(--red)'; return; }
+
+  statusEl.textContent='Saving...'; statusEl.style.color='var(--muted)';
+
+  // Find rep's team and userId
+  const rAgent = Object.values(ROSTER).find(r=>r.name.toLowerCase()===repName.toLowerCase());
+
+  try{
+    await db.collection('coaching_sessions').add({
+      type:       'coaching',
+      repName,
+      repId:      rAgent ? rAgent.userId : '',
+      repTeam:    rAgent ? rAgent.team : '',
+      adminName,
+      dial, voice, script, objection, points,
+      date:       getTodayGY(),
+      createdAt:  firebase.firestore.FieldValue.serverTimestamp()
+    });
+    statusEl.textContent='✅ Coaching note saved!'; statusEl.style.color='var(--green)';
+    setTimeout(()=>{ closeCoachingForm(); loadCoachingNotes(); }, 800);
+  }catch(e){
+    statusEl.textContent='❌ Error: '+e.message; statusEl.style.color='var(--red)';
+  }
+}
+
+async function loadCoachingNotes(){
+  try{
+    const snap = await db.collection('coaching_sessions')
+      .where('type','==','coaching')
+      .orderBy('createdAt','desc')
+      .limit(50)
+      .get();
+    allCoachingNotes=[];
+    snap.forEach(doc=>allCoachingNotes.push({id:doc.id,...doc.data()}));
+    renderCoachingNotes(allCoachingNotes);
+  }catch(e){ console.error('Load coaching:',e); }
+}
+
+function filterCoachingNotes(){
+  const q    = (document.getElementById('coach-search')||{value:''}).value.toLowerCase();
+  const team = (document.getElementById('coach-team-filter')||{value:'all'}).value;
+  const filtered = allCoachingNotes.filter(n=>
+    (!q || n.repName.toLowerCase().includes(q)) &&
+    (team==='all' || n.repTeam===team)
+  );
+  renderCoachingNotes(filtered);
+}
+
+function renderCoachingNotes(notes){
+  const feed = document.getElementById('coaching-notes-feed');
+  if(!feed) return;
+  if(!notes.length){ feed.innerHTML='<div style="text-align:center;color:var(--muted);padding:24px;">No coaching notes yet. Click + Add Note to create one.</div>'; return; }
+  feed.innerHTML = notes.map(n=>renderNoteCard(n,'coaching')).join('');
+}
+
+// ── MONITORING ──
+function openMonitoringForm(){
+  populateRepDatalist('mn-rep-list');
+  document.getElementById('monitoring-form').style.display='';
+  document.getElementById('mn-rep').focus();
+  document.getElementById('mn-save-status').textContent='';
+}
+function closeMonitoringForm(){
+  document.getElementById('monitoring-form').style.display='none';
+  ['mn-rep','mn-admin','mn-dial','mn-voice','mn-script','mn-objection','mn-points']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+}
+
+async function saveMonitoringNote(){
+  const repName  = document.getElementById('mn-rep').value.trim();
+  const adminName= document.getElementById('mn-admin').value.trim();
+  const dial     = document.getElementById('mn-dial').value.trim();
+  const voice    = document.getElementById('mn-voice').value.trim();
+  const script   = document.getElementById('mn-script').value.trim();
+  const objection= document.getElementById('mn-objection').value.trim();
+  const points   = document.getElementById('mn-points').value.trim();
+  const statusEl = document.getElementById('mn-save-status');
+
+  if(!repName||!adminName){ statusEl.textContent='⚠ Rep name and admin name are required.'; statusEl.style.color='var(--red)'; return; }
+  statusEl.textContent='Saving...'; statusEl.style.color='var(--muted)';
+
+  const rAgent = Object.values(ROSTER).find(r=>r.name.toLowerCase()===repName.toLowerCase());
+
+  try{
+    await db.collection('coaching_sessions').add({
+      type:       'monitoring',
+      repName,
+      repId:      rAgent ? rAgent.userId : '',
+      repTeam:    rAgent ? rAgent.team : '',
+      adminName,
+      dial, voice, script, objection, points,
+      date:       getTodayGY(),
+      createdAt:  firebase.firestore.FieldValue.serverTimestamp()
+    });
+    statusEl.textContent='✅ Monitoring session saved!'; statusEl.style.color='var(--green)';
+    setTimeout(()=>{ closeMonitoringForm(); loadMonitoringNotes(); }, 800);
+  }catch(e){
+    statusEl.textContent='❌ Error: '+e.message; statusEl.style.color='var(--red)';
+  }
+}
+
+async function loadMonitoringNotes(){
+  try{
+    const snap = await db.collection('coaching_sessions')
+      .where('type','==','monitoring')
+      .orderBy('createdAt','desc')
+      .limit(50)
+      .get();
+    allMonitoringNotes=[];
+    snap.forEach(doc=>allMonitoringNotes.push({id:doc.id,...doc.data()}));
+    renderMonitoringNotes(allMonitoringNotes);
+  }catch(e){ console.error('Load monitoring:',e); }
+}
+
+function filterMonitoringNotes(){
+  const q    = (document.getElementById('monitor-search')||{value:''}).value.toLowerCase();
+  const team = (document.getElementById('monitor-team-filter')||{value:'all'}).value;
+  const filtered = allMonitoringNotes.filter(n=>
+    (!q || n.repName.toLowerCase().includes(q)) &&
+    (team==='all' || n.repTeam===team)
+  );
+  renderMonitoringNotes(filtered);
+}
+
+function renderMonitoringNotes(notes){
+  const feed = document.getElementById('monitoring-notes-feed');
+  if(!feed) return;
+  if(!notes.length){ feed.innerHTML='<div style="text-align:center;color:var(--muted);padding:24px;">No monitoring sessions yet. Click + Add Session to create one.</div>'; return; }
+  feed.innerHTML = notes.map(n=>renderNoteCard(n,'monitoring')).join('');
+}
+
+// ── SHARED NOTE CARD RENDERER ──
+function renderNoteCard(n, type){
+  const isMonitor = type==='monitoring';
+  const accentColor = isMonitor ? 'var(--purple)' : 'var(--accent)';
+  const date = n.date || '—';
+  const time = n.createdAt ? new Date(n.createdAt.seconds*1000).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/Guyana'}) : '';
+  const team = n.repTeam==='BB'?'<span style="color:var(--accent);font-size:0.62rem;font-weight:800;">BB</span>':'<span style="color:var(--purple);font-size:0.62rem;font-weight:800;">PR</span>';
+
+  const fields = [
+    {icon:'📞', label:'Dial Behavior (Voicemails)', val:n.dial},
+    {icon:'🎙', label:'Voice, Energy & Tone',       val:n.voice},
+    {icon:'📋', label:'Script & Engagement',         val:n.script},
+    {icon:'🛡', label:'Objection / Rebuttal Handling', val:n.objection},
+    {icon:'⭐', label:'Coaching Points',              val:n.points},
+  ].filter(f=>f.val);
+
+  return `<div style="background:#070e1c;border:1px solid #1a2a45;border-left:3px solid ${accentColor};border-radius:10px;padding:14px;margin-bottom:10px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+      <div>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:var(--text);cursor:pointer;" onclick="openRepProfileByName('${n.repName}')">${n.repName}</span>
+        ${team}
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:0.65rem;color:${accentColor};font-weight:700;">${date} ${time}</div>
+        <div style="font-size:0.6rem;color:var(--muted);">Admin: <strong style="color:var(--text);">${n.adminName||'—'}</strong></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      ${fields.map(f=>`
+        <div style="background:#060b18;border:1px solid #111c30;border-radius:8px;padding:10px;">
+          <div style="font-size:0.55rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">${f.icon} ${f.label}</div>
+          <div style="font-size:0.78rem;color:#cbd5e1;line-height:1.6;">${f.val}</div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// Open rep profile from coaching/monitoring card
+function openRepProfileByName(name){
+  const agent = Object.values(ROSTER).find(r=>r.name.toLowerCase()===name.toLowerCase());
+  if(agent) openRepProfile(agent.userId, agent.name, agent.team, agent.shift);
+}
+
+// Load coaching & monitoring notes in rep profile coach tab
+async function loadRepCoach(id){
+  const list = document.getElementById('coach-notes-list');
+  if(!list) return;
+  list.innerHTML='<div style="color:var(--muted);font-size:0.78rem;">Loading...</div>';
+  const renderNotes = docs => {
+    if(!docs.length){ list.innerHTML='<div style="color:var(--muted);font-size:0.78rem;">No coaching or monitoring notes yet.</div>'; return; }
+    list.innerHTML = docs.map(d=>{
+      const isMonitor = d.type==='monitoring';
+      const color = isMonitor?'var(--purple)':'var(--accent)';
+      const label = isMonitor?'🎧 Live Monitoring':'📝 Coaching';
+      const date  = d.createdAt ? new Date(d.createdAt.seconds*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/Guyana'}) : d.date||'—';
+      const fields = [
+        ['Dial Behavior',d.dial],['Voice & Tone',d.voice],
+        ['Script',d.script],['Objection Handling',d.objection],['Coaching Points',d.points]
+      ].filter(f=>f[1]);
+      return `<div class="note-item" style="border-left:2px solid ${color};margin-bottom:10px;">
+        <div class="note-date" style="display:flex;justify-content:space-between;margin-bottom:5px;">
+          <span style="color:${color};font-weight:800;">${label}</span>
+          <span>${date} · Admin: <strong style="color:var(--text);">${d.adminName||'—'}</strong></span>
+        </div>
+        ${fields.map(f=>`<div style="margin-top:5px;"><span style="font-size:0.58rem;font-weight:800;color:var(--muted);text-transform:uppercase;">${f[0]}: </span><span style="color:#cbd5e1;">${f[1]}</span></div>`).join('')}
+      </div>`;
+    }).join('');
+  };
+  try{
+    const snap = await db.collection('coaching_sessions')
+      .where('repId','==',String(id))
+      .orderBy('createdAt','desc').limit(20).get();
+    const docs=[]; snap.forEach(doc=>docs.push(doc.data()));
+    renderNotes(docs);
+  }catch(e){
+    // Fallback without ordering (index may not exist yet)
+    try{
+      const snap2 = await db.collection('coaching_sessions').where('repId','==',String(id)).get();
+      const docs=[]; snap2.forEach(doc=>docs.push(doc.data()));
+      docs.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+      renderNotes(docs);
+    }catch(e2){ list.innerHTML='<div style="color:var(--muted);">Could not load notes.</div>'; }
+  }
+}
 let selectedProfileId = null;
 
 function loadAgentProfiles(){
@@ -2087,17 +2486,19 @@ function switchAdminTab(tab, btn){
   const adminBtn = document.getElementById('tab-admin');
   if(adminBtn) adminBtn.classList.add('active');
   // Show correct sub-section
-  ['overview','attendance','weekly','monthly','stats','profiles'].forEach(t=>{
+  ['overview','attendance','weekly','monthly','stats','profiles','coaching','monitoring'].forEach(t=>{
     const el=document.getElementById('admin-'+t);
     if(el) el.style.display = t===tab?'':'none';
     const b=document.getElementById('atab-'+t);
     if(b) b.classList.toggle('active',t===tab);
   });
-  if(tab==='overview')   loadAdminOverview();
-  if(tab==='attendance') loadAdminAttendance();
-  if(tab==='weekly')     loadWeeklyAttendance('BB');
-  if(tab==='monthly')    loadMonthlyAttendance();
-  if(tab==='profiles')   loadAgentProfiles();
+  if(tab==='overview')    loadAdminOverview();
+  if(tab==='attendance')  loadAdminAttendance();
+  if(tab==='weekly')      loadWeeklyAttendance('BB');
+  if(tab==='monthly')     loadMonthlyAttendance();
+  if(tab==='profiles')    loadAgentProfiles();
+  if(tab==='coaching')    loadCoachingNotes();
+  if(tab==='monitoring')  loadMonitoringNotes();
   if(tab==='stats'){
     // Always reload roster fresh — then re-render stats with correct teams
     rosterLoaded = false;
@@ -3270,36 +3671,6 @@ async function loadRepAtt(id){
     document.getElementById('rp-att-l').textContent=l;
     document.getElementById('rp-att-a').textContent=a;
   }catch(e){}
-}
-
-async function loadRepCoach(id){
-  try{
-    const snap=await db.collection('coaching').where('agentId','==',id).orderBy('createdAt','desc').limit(10).get();
-    const list=document.getElementById('coach-notes-list');
-    if(snap.empty){list.innerHTML='<div style="color:var(--muted);font-size:0.78rem;">No notes yet.</div>';return;}
-    list.innerHTML='';
-    snap.forEach(doc=>{
-      const d=doc.data();
-      const date=d.createdAt?new Date(d.createdAt.seconds*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
-      list.innerHTML+=`<div class="note-item"><div class="note-date">${date}</div>${d.note}</div>`;
-    });
-  }catch(e){document.getElementById('coach-notes-list').innerHTML='<div style="color:var(--muted);">Could not load notes.</div>';}
-}
-
-async function saveCoachNote(){
-  if(!currentRepProfile) return;
-  const note=document.getElementById('coach-note-text').value.trim();
-  if(!note){alert('Please type a note first.');return;}
-  try{
-    await db.collection('coaching').add({
-      agentId:currentRepProfile.id,
-      agentName:currentRepProfile.name,
-      note,
-      createdAt:firebase.firestore.FieldValue.serverTimestamp()
-    });
-    document.getElementById('coach-note-text').value='';
-    loadRepCoach(currentRepProfile.id);
-  }catch(e){alert('Could not save note.');}
 }
 
 async function loadRepAudit(id){
