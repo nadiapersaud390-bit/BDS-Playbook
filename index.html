@@ -252,10 +252,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 
 /* ── STREAK COUNTER ── */
 .streak-chip{
-  display:flex;align-items:center;gap:6px;
-  padding:5px 14px;border-radius:20px;
-  font-size:0.65rem;font-weight:800;letter-spacing:1px;
-  position:relative;overflow:hidden;cursor:default;
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 12px;border-radius:20px;
+  font-size:0.62rem;font-weight:800;letter-spacing:1px;
+  white-space:nowrap;cursor:default;flex-shrink:0;
 }
 .streak-chip.on-fire{
   background:linear-gradient(135deg,rgba(251,113,0,0.15),rgba(251,191,36,0.1));
@@ -2201,7 +2201,7 @@ function showDashboard(){
     const teamName = u.team==='BB' ? 'Berbice' : u.team==='PR' ? 'Providence' : u.team;
     details.innerHTML += `<div class="rep-chip" style="border-color:rgba(167,139,250,0.3);color:var(--purple);">Team: <b>${teamName}</b></div>`;
     // Streak chip placeholder — filled after async load
-    details.innerHTML += `<div id="streak-chip-wrap"></div>`;
+    details.innerHTML += `<div id="streak-chip-wrap" style="display:flex;gap:6px;align-items:center;"></div>`;
     // Load & update streak asynchronously
     updateStreak(u.id, u.name);
   } else {
@@ -2345,23 +2345,15 @@ function renderStreakChips({daily, dailyBest, weekly, weeklyBest, monthly, month
 
   function chipHtml(count, best, type, icon, resetLabel){
     const isZero = count === 0;
-    let cls = isZero ? 'zero' : count >= 5 ? 'on-fire' : 'building';
-    const emoji = isZero ? '💤' : count >= 5 ? '🔥' : icon;
-    const bestTxt = best>0 ? `<span style="opacity:0.45;font-size:0.48rem;margin-left:3px;">BEST:${best}</span>` : '';
-    const resetTxt = isLate && type==='daily' ? `<span style="color:#f87171;font-size:0.48rem;margin-left:3px;">RESET</span>` : '';
+    const cls    = isZero ? 'zero' : count >= 5 ? 'on-fire' : 'building';
+    const emoji  = isZero ? '💤' : count >= 5 ? '🔥' : icon;
+    const bestTxt = best > 0 ? ` <span style="opacity:0.45;font-size:0.5rem;">best:${best}</span>` : '';
     return isZero
-      ? `<div class="streak-chip zero" title="Log in on time to build your ${type} streak">
-           <span style="font-size:0.6rem;">${emoji} ${type.toUpperCase()}</span>
-         </div>`
-      : `<div class="streak-chip ${cls}" title="${type} streak — best: ${best}">
-           ${emoji}
-           <span class="streak-num">${count}</span>
-           <span style="font-size:0.55rem;line-height:1.2;">${type.toUpperCase()}<br>${bestTxt}${resetTxt}</span>
-         </div>`;
+      ? `<div class="streak-chip zero" title="Log in on time to build your ${type} streak">${emoji} <span>${type.toUpperCase()} 0${bestTxt}</span></div>`
+      : `<div class="streak-chip ${cls}" title="${type} streak · best: ${best}">${emoji} <span class="streak-num">${count}</span> <span>${type.toUpperCase()}${bestTxt}</span></div>`;
   }
 
   wrap.innerHTML =
-    chipHtml(daily,   dailyBest,   'daily',   '⚡', 'RESET') +
     chipHtml(weekly,  weeklyBest,  'weekly',  '📅', '') +
     chipHtml(monthly, monthlyBest, 'monthly', '🏆', '');
 }
