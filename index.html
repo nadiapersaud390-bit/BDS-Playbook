@@ -3433,6 +3433,8 @@ function switchAttTeam(team, btn){
 }
 let allAttRecords = [];
 
+let _todayReportListener = null; // holds the Firestore unsubscribe fn
+
 function showAdminUI(){
   document.body.classList.add('is-admin');
   // Force fresh roster load immediately so all admin views have correct data
@@ -3446,6 +3448,35 @@ function showAdminUI(){
       if(el) el.textContent = dailyGoal;
     }
   }).catch(()=>{});
+
+  // ── REAL-TIME LISTENER: today's stats report ──
+  // When any admin uploads a CSV, this fires on ALL open admin sessions
+  // so the Daily Overview goal bars update automatically without a page reload.
+  if(_todayReportListener) _todayReportListener(); // detach previous listener if any
+  const todayStr = getTodayGY();
+  _todayReportListener = db.collection('reports').doc(todayStr)
+    .onSnapshot(snap=>{
+      if(!snap.exists || !snap.data().statsJSON) return;
+      try{
+        const d = snap.data();
+        // Only apply if this is newer than what we have (avoid no-op re-renders)
+        if(d.statsJSON && d.date === todayStr){
+          statsData = JSON.parse(d.statsJSON);
+          statsData.forEach(agent=>{ agent.team = resolveAgentTeam(agent); });
+          statsDataDate = todayStr;
+          updateGoalBars();
+          // If the Daily Overview tab is currently open, refresh the overview too
+          const ovEl = document.getElementById('admin-overview');
+          if(ovEl && ovEl.style.display !== 'none') loadAdminOverview();
+          // If Agent Stats tab is open, refresh its table
+          const stEl = document.getElementById('admin-stats');
+          if(stEl && stEl.style.display !== 'none'){
+            renderStatsTable();
+            renderReportHistory();
+          }
+        }
+      }catch(e){ console.warn('Live report listener parse error:', e); }
+    }, e=>{ console.warn('Live report listener error:', e); });
 }
 
 // ── SWITCH ADMIN SUBTAB ──
@@ -3682,6 +3713,33 @@ async function loadAdminOverview(){
       : '<div style="font-size:0.72rem;color:var(--green);">Everyone is logged in! ✅</div>';
 
   }catch(e){ console.error('Overview error:',e); }
+
+  // ── AUTO-LOAD TODAY'S STATS REPORT ──
+  // If today's report is not already in memory, fetch it from Firebase automatically
+  // so the goal bars and transfer counts are always visible when this tab opens.
+  const todayStr = getTodayGY();
+  if(!(statsData.length && statsDataDate === todayStr)){
+    try{
+      const rSnap = await db.collection('reports').doc(todayStr).get();
+      if(rSnap.exists){
+        const rData = rSnap.data();
+        if(rData.statsJSON){
+          statsData = JSON.parse(rData.statsJSON);
+          statsData.forEach(agent=>{ agent.team = resolveAgentTeam(agent); });
+          statsDataDate = todayStr;
+          // Update goal label in case it changed
+          const goalSnap = await db.collection('config').doc('settings').get().catch(()=>null);
+          if(goalSnap && goalSnap.exists && goalSnap.data().goal) dailyGoal = goalSnap.data().goal;
+          const goalEl = document.getElementById('goal-val-display');
+          if(goalEl) goalEl.textContent = dailyGoal;
+          updateGoalBars();
+        }
+      }
+    }catch(e){ console.warn('Overview: could not auto-load today report', e); }
+  } else {
+    // Data already in memory for today — just refresh goal bars
+    updateGoalBars();
+  }
 }
 
 // ── LOAD DAILY ATTENDANCE ──
