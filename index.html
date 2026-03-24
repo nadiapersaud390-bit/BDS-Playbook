@@ -88,6 +88,46 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 }
 @keyframes titleshine{0%{background-position:0%}100%{background-position:300%}}
 
+/* ── EDITABLE COMPANY NAME ── */
+.hero-title-wrap{position:relative;display:inline-block;}
+.hero-title-edit-hint{
+  position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);
+  font-size:0.52rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(251,191,36,0.6);white-space:nowrap;pointer-events:none;
+  opacity:0;transition:opacity 0.2s;
+}
+.hero-title-wrap:hover .hero-title-edit-hint{opacity:1;}
+.hero-title.admin-editable{cursor:pointer;}
+.hero-title.admin-editable:hover{filter:drop-shadow(0 0 40px rgba(251,191,36,0.8)) drop-shadow(0 0 80px rgba(251,191,36,0.3));}
+/* Inline edit modal */
+#company-name-modal{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  z-index:10000;align-items:center;justify-content:center;
+}
+#company-name-modal.open{display:flex;}
+#company-name-modal-inner{
+  background:#0d1424;border:1px solid rgba(251,191,36,0.4);border-radius:16px;
+  padding:28px 28px 22px;width:100%;max-width:420px;
+  box-shadow:0 0 40px rgba(251,191,36,0.15);
+}
+#company-name-modal-title{
+  font-size:0.58rem;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:14px;
+}
+#company-name-input{
+  width:100%;padding:14px;background:#060b18;border:1.5px solid rgba(251,191,36,0.3);
+  border-radius:9px;color:var(--text);font-family:'Bebas Neue',sans-serif;
+  font-size:1.6rem;letter-spacing:4px;outline:none;text-align:center;
+  text-transform:uppercase;transition:border-color 0.15s;
+}
+#company-name-input:focus{border-color:var(--gold);}
+#company-name-hint{font-size:0.62rem;color:var(--muted);text-align:center;margin-top:8px;margin-bottom:16px;}
+#company-name-btns{display:flex;gap:8px;}
+#company-name-save{flex:1;padding:12px;border-radius:9px;border:none;background:var(--gold);color:#000;font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;font-weight:900;letter-spacing:1.5px;cursor:pointer;transition:all 0.15s;}
+#company-name-save:hover{filter:brightness(1.1);}
+#company-name-cancel{padding:12px 18px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;font-weight:800;letter-spacing:1px;cursor:pointer;transition:all 0.15s;}
+#company-name-cancel:hover{border-color:var(--red);color:var(--red);}
+
 /* ── CLOCKS ROW — 2 big cards like the screenshot ── */
 .clocks-row{
   display:flex;justify-content:center;gap:10px;
@@ -424,6 +464,19 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 </style>
 <body>
 
+<!-- ── COMPANY NAME EDIT MODAL (Admin only) ── -->
+<div id="company-name-modal">
+  <div id="company-name-modal-inner">
+    <div id="company-name-modal-title">✏️ RENAME COMPANY — Visible to all users</div>
+    <input id="company-name-input" maxlength="40" placeholder="COMPANY NAME" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')saveCompanyName();if(event.key==='Escape')closeCompanyNameModal();">
+    <div id="company-name-hint">This name appears at the top of the dashboard for every rep who logs in.</div>
+    <div id="company-name-btns">
+      <button id="company-name-cancel" onclick="closeCompanyNameModal()">CANCEL</button>
+      <button id="company-name-save" onclick="saveCompanyName()">💾 SAVE NAME</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── LOGIN SCREEN ── -->
 <div class="login-screen" id="login-screen">
   <div class="login-logo">BDS LOAN CR</div>
@@ -454,7 +507,10 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 </div>
 
 <div class="hero">
-  <div class="hero-title">BDS LOAN CR DASHBOARD</div>
+  <div class="hero-title-wrap">
+    <div class="hero-title" id="hero-company-name">BDS LOAN CR DASHBOARD</div>
+    <div class="hero-title-edit-hint" id="hero-edit-hint" style="display:none;">✏️ DOUBLE-CLICK TO RENAME</div>
+  </div>
   <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px;margin-top:-10px;">
     <div style="flex:1;max-width:200px;height:1px;background:linear-gradient(90deg,transparent,#7b61ff);"></div>
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;font-weight:800;letter-spacing:4px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Loan Credit Department</div>
@@ -2425,6 +2481,57 @@ function showDashboard(){
 
   scheduleMidnightLogout();
   init();
+  loadCompanyName(); // always load latest name on dashboard show
+}
+
+// ══════════════════════════════════════════════
+//  COMPANY NAME — admin editable, stored in Firestore
+// ══════════════════════════════════════════════
+async function loadCompanyName(){
+  try{
+    const snap = await db.collection('settings').doc('companyName').get();
+    if(snap.exists && snap.data().name){
+      document.getElementById('hero-company-name').textContent = snap.data().name;
+    }
+  }catch(e){ /* silently fall back to default */ }
+  // Show edit hint only for admin
+  if(currentUser && currentUser.isAdmin){
+    const el = document.getElementById('hero-company-name');
+    el.classList.add('admin-editable');
+    el.title = 'Double-click to rename';
+    el.ondblclick = openCompanyNameModal;
+    const hint = document.getElementById('hero-edit-hint');
+    if(hint) hint.style.display = '';
+  }
+}
+
+function openCompanyNameModal(){
+  if(!currentUser || !currentUser.isAdmin) return;
+  const current = document.getElementById('hero-company-name').textContent;
+  document.getElementById('company-name-input').value = current;
+  document.getElementById('company-name-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('company-name-input').select(), 50);
+}
+
+function closeCompanyNameModal(){
+  document.getElementById('company-name-modal').classList.remove('open');
+}
+
+async function saveCompanyName(){
+  const val = document.getElementById('company-name-input').value.trim().toUpperCase();
+  if(!val){ return; }
+  const btn = document.getElementById('company-name-save');
+  btn.textContent = '⏳ SAVING...';
+  btn.disabled = true;
+  try{
+    await db.collection('settings').doc('companyName').set({name: val, updatedBy:'admin', updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+    document.getElementById('hero-company-name').textContent = val;
+    closeCompanyNameModal();
+  }catch(e){
+    alert('Failed to save: ' + e.message);
+  }
+  btn.textContent = '💾 SAVE NAME';
+  btn.disabled = false;
 }
 
 // ══════════════════════════════════════════════
