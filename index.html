@@ -88,17 +88,17 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 }
 @keyframes titleshine{0%{background-position:0%}100%{background-position:300%}}
 
-/* ── EDITABLE COMPANY NAME ── */
-.hero-title-wrap{position:relative;display:inline-block;}
-.hero-title-edit-hint{
-  position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);
-  font-size:0.52rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-  color:rgba(251,191,36,0.6);white-space:nowrap;pointer-events:none;
+/* ── EDITABLE COMPANY NAME (Script Tab) ── */
+.company-name-admin-editable{cursor:pointer;position:relative;}
+.company-name-admin-editable::after{
+  content:'✏️ DOUBLE-CLICK TO RENAME';
+  display:block;font-family:'Barlow Condensed',sans-serif;
+  font-size:0.5rem;font-weight:800;letter-spacing:2.5px;
+  color:rgba(251,191,36,0.5);text-align:center;margin-top:4px;
   opacity:0;transition:opacity 0.2s;
 }
-.hero-title-wrap:hover .hero-title-edit-hint{opacity:1;}
-.hero-title.admin-editable{cursor:pointer;}
-.hero-title.admin-editable:hover{filter:drop-shadow(0 0 40px rgba(251,191,36,0.8)) drop-shadow(0 0 80px rgba(251,191,36,0.3));}
+.company-name-admin-editable:hover::after{opacity:1;}
+.company-name-admin-editable:hover{filter:drop-shadow(0 2px 14px rgba(255,255,255,0.2)) drop-shadow(0 0 20px rgba(251,191,36,0.5)) !important;}
 /* Inline edit modal */
 #company-name-modal{
   display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
@@ -507,10 +507,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 </div>
 
 <div class="hero">
-  <div class="hero-title-wrap">
-    <div class="hero-title" id="hero-company-name">BDS LOAN CR DASHBOARD</div>
-    <div class="hero-title-edit-hint" id="hero-edit-hint" style="display:none;">✏️ DOUBLE-CLICK TO RENAME</div>
-  </div>
+  <div class="hero-title" id="hero-company-name">BDS LOAN CR DASHBOARD</div>
   <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px;margin-top:-10px;">
     <div style="flex:1;max-width:200px;height:1px;background:linear-gradient(90deg,transparent,#7b61ff);"></div>
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;font-weight:800;letter-spacing:4px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Loan Credit Department</div>
@@ -2110,7 +2107,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 <script>
 const S={
 intro:{phase:'STEP 1 \u2014 INTRODUCTION',color:'var(--green)',next:'verify',content:`
-<div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(1.8rem,5vw,3rem);letter-spacing:5px;color:#ffffff;text-align:center;margin-bottom:16px;filter:drop-shadow(0 2px 14px rgba(255,255,255,0.2));">Company Name: Lending Resource Center</div>
+<div id="script-company-name-display" style="font-family:'Bebas Neue',sans-serif;font-size:clamp(1.8rem,5vw,3rem);letter-spacing:5px;color:#ffffff;text-align:center;margin-bottom:16px;filter:drop-shadow(0 2px 14px rgba(255,255,255,0.2));border-radius:10px;transition:filter 0.2s;">Company Name: Lending Resource Center</div>
 <div class="phase-tag">📞 Opening</div>
 <div class="sline">"Hi <span class='kw'>Maria</span>, how are you today?"</div>
 <div class="tip"><strong>⏸️ WAIT.</strong> Let them respond before moving forward.</div>
@@ -2486,29 +2483,39 @@ function showDashboard(){
 
 // ══════════════════════════════════════════════
 //  COMPANY NAME — admin editable, stored in Firestore
+//  Displayed in the Script tab (Step 1 - Introduction)
 // ══════════════════════════════════════════════
 async function loadCompanyName(){
   try{
     const snap = await db.collection('settings').doc('companyName').get();
     if(snap.exists && snap.data().name){
-      document.getElementById('hero-company-name').textContent = snap.data().name;
+      applyCompanyName(snap.data().name);
     }
   }catch(e){ /* silently fall back to default */ }
-  // Show edit hint only for admin
+  // Enable double-click edit only for admin
   if(currentUser && currentUser.isAdmin){
-    const el = document.getElementById('hero-company-name');
-    el.classList.add('admin-editable');
-    el.title = 'Double-click to rename';
-    el.ondblclick = openCompanyNameModal;
-    const hint = document.getElementById('hero-edit-hint');
-    if(hint) hint.style.display = '';
+    const el = document.getElementById('script-company-name-display');
+    if(el){
+      el.classList.add('company-name-admin-editable');
+      el.title = 'Double-click to rename';
+      el.ondblclick = openCompanyNameModal;
+    }
   }
+}
+
+function applyCompanyName(name){
+  // Update the script tab display
+  const el = document.getElementById('script-company-name-display');
+  if(el) el.textContent = 'Company Name: ' + name;
 }
 
 function openCompanyNameModal(){
   if(!currentUser || !currentUser.isAdmin) return;
-  const current = document.getElementById('hero-company-name').textContent;
-  document.getElementById('company-name-input').value = current;
+  // Extract just the name part (strip "Company Name: " prefix)
+  const el = document.getElementById('script-company-name-display');
+  const full = el ? el.textContent : '';
+  const current = full.replace(/^Company Name:\s*/i, '');
+  document.getElementById('company-name-input').value = current.toUpperCase();
   document.getElementById('company-name-modal').classList.add('open');
   setTimeout(()=>document.getElementById('company-name-input').select(), 50);
 }
@@ -2525,7 +2532,7 @@ async function saveCompanyName(){
   btn.disabled = true;
   try{
     await db.collection('settings').doc('companyName').set({name: val, updatedBy:'admin', updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
-    document.getElementById('hero-company-name').textContent = val;
+    applyCompanyName(val);
     closeCompanyNameModal();
   }catch(e){
     alert('Failed to save: ' + e.message);
