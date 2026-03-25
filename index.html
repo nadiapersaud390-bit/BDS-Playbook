@@ -1202,7 +1202,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
           <button onclick="loadTodayReport()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:800;cursor:pointer;white-space:nowrap;">← TODAY</button>
         </div>
         <input type="text" id="stats-search" placeholder="🔍 Search agent name..." oninput="filterStatsTable()" style="width:100%;padding:9px 14px;background:#0d1424;border:1.5px solid #2a3a5a;border-radius:8px;color:#e2e8f0;font-size:0.82rem;font-family:'Nunito',sans-serif;outline:none;margin-bottom:10px;">
-        <input type="file" id="stats-csv-upload" accept=".csv" style="display:none;" onchange="handleStatsCSV(this)">
+
         <div id="expiry-picker" style="display:none;background:#0d1424;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
           <div style="font-size:0.62rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">⏱ SET AUTO-DELETE DATE</div>
           <div style="margin-bottom:10px;">
@@ -2259,10 +2259,52 @@ async function loadRoster() {
         }
       });
       rosterLoaded = true;
-      console.log('Roster loaded:', Object.keys(ROSTER).length, 'agents');
+      console.log('Roster loaded from sheet:', Object.keys(ROSTER).length, 'agents');
     }
   } catch(e) {
     console.error('Roster load failed:', e);
+  }
+
+  // ── Merge Firebase roster — catches new reps added via Admin Panel
+  // before the Google Sheet has been updated ──
+  try {
+    const fbSnap = await db.collection('roster').get();
+    let mergeCount = 0;
+    fbSnap.forEach(doc => {
+      const a = doc.data();
+      const uid = String(a.userId || doc.id).trim();
+      if (!uid) return;
+      if (ROSTER[uid]) return; // already loaded from Sheet — Sheet wins
+      // Skip if explicitly inactive
+      const isInactive = INACTIVE_AGENTS.some(n => n.toLowerCase() === (a.name||'').toLowerCase())
+        || (a.status||'').toLowerCase() === 'inactive'
+        || a.inactive === true;
+      if (isInactive) return;
+      // Determine team from ytelName
+      let team = a.team || 'BB';
+      if (a.ytelName) {
+        const yn = a.ytelName.toUpperCase().replace(/[\s-]/g,'');
+        if (yn.startsWith('GUYP')) team = 'PR';
+        else if (yn.startsWith('GUY')) team = 'BB';
+      }
+      ROSTER[uid] = {
+        userId: uid,
+        name: a.name || '',
+        ytelName: a.ytelName || '',
+        shift: a.shift || '',
+        lunch: a.lunch || '',
+        brk: '',
+        team,
+        status: a.status || 'Agent'
+      };
+      mergeCount++;
+    });
+    if (mergeCount > 0) {
+      console.log('Roster merged', mergeCount, 'agent(s) from Firebase not yet in Sheet');
+      rosterLoaded = true;
+    }
+  } catch(e) {
+    console.warn('Firebase roster merge failed (non-fatal):', e);
   }
 }
 
@@ -4720,8 +4762,12 @@ function isAgentInactive(agent){
   if(agent.ytelId){
     const inRoster = ROSTER[String(agent.ytelId).trim()];
     if(inRoster && (inRoster.status||'').toLowerCase()==='inactive') return true;
-    // If ytelId exists but NOT in ROSTER at all = removed agent
-    if(!inRoster && Object.keys(ROSTER).length > 10) return true;
+    // If ytelId exists but NOT in ROSTER by ID — check if their name matches
+    // before treating them as removed (new agents may not have synced yet)
+    if(!inRoster && Object.keys(ROSTER).length > 10){
+      const nameAlsoMissing = !Object.values(ROSTER).find(r=>r.name.toLowerCase()===(agent.name||'').toLowerCase().trim());
+      if(nameAlsoMissing) return true;
+    }
   }
 
   // 5. Check by name in ROSTER — if found and inactive
@@ -6778,5 +6824,6 @@ function searchRebuttals(val){
   }
 }
 </script>
+<input type="file" id="stats-csv-upload" accept=".csv" style="display:none;" onchange="handleStatsCSV(this)">
 </body>
 </html>
