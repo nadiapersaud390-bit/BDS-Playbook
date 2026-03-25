@@ -2259,52 +2259,10 @@ async function loadRoster() {
         }
       });
       rosterLoaded = true;
-      console.log('Roster loaded from sheet:', Object.keys(ROSTER).length, 'agents');
+      console.log('Roster loaded:', Object.keys(ROSTER).length, 'agents');
     }
   } catch(e) {
     console.error('Roster load failed:', e);
-  }
-
-  // ── Merge Firebase roster — catches new reps added via Admin Panel
-  // before the Google Sheet has been updated ──
-  try {
-    const fbSnap = await db.collection('roster').get();
-    let mergeCount = 0;
-    fbSnap.forEach(doc => {
-      const a = doc.data();
-      const uid = String(a.userId || doc.id).trim();
-      if (!uid) return;
-      if (ROSTER[uid]) return; // already loaded from Sheet — Sheet wins
-      // Skip if explicitly inactive
-      const isInactive = INACTIVE_AGENTS.some(n => n.toLowerCase() === (a.name||'').toLowerCase())
-        || (a.status||'').toLowerCase() === 'inactive'
-        || a.inactive === true;
-      if (isInactive) return;
-      // Determine team from ytelName
-      let team = a.team || 'BB';
-      if (a.ytelName) {
-        const yn = a.ytelName.toUpperCase().replace(/[\s-]/g,'');
-        if (yn.startsWith('GUYP')) team = 'PR';
-        else if (yn.startsWith('GUY')) team = 'BB';
-      }
-      ROSTER[uid] = {
-        userId: uid,
-        name: a.name || '',
-        ytelName: a.ytelName || '',
-        shift: a.shift || '',
-        lunch: a.lunch || '',
-        brk: '',
-        team,
-        status: a.status || 'Agent'
-      };
-      mergeCount++;
-    });
-    if (mergeCount > 0) {
-      console.log('Roster merged', mergeCount, 'agent(s) from Firebase not yet in Sheet');
-      rosterLoaded = true;
-    }
-  } catch(e) {
-    console.warn('Firebase roster merge failed (non-fatal):', e);
   }
 }
 
@@ -4762,12 +4720,8 @@ function isAgentInactive(agent){
   if(agent.ytelId){
     const inRoster = ROSTER[String(agent.ytelId).trim()];
     if(inRoster && (inRoster.status||'').toLowerCase()==='inactive') return true;
-    // If ytelId exists but NOT in ROSTER by ID — check if their name matches
-    // before treating them as removed (new agents may not have synced yet)
-    if(!inRoster && Object.keys(ROSTER).length > 10){
-      const nameAlsoMissing = !Object.values(ROSTER).find(r=>r.name.toLowerCase()===(agent.name||'').toLowerCase().trim());
-      if(nameAlsoMissing) return true;
-    }
+    // If ytelId exists but NOT in ROSTER at all = removed agent
+    if(!inRoster && Object.keys(ROSTER).length > 10) return true;
   }
 
   // 5. Check by name in ROSTER — if found and inactive
