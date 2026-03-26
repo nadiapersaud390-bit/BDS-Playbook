@@ -3342,15 +3342,31 @@ async function saveNewRep(){
   msgEl.style.color='var(--green)';
   msgEl.textContent='✅ '+name+' (ID: '+idVal+') added successfully!'+note;
 
-  // Refresh the agent list
-  setTimeout(()=>{
+  // Refresh ALL views that display the roster so the new agent appears immediately
+  // in the correct alphabetical position across every tab
+  setTimeout(async ()=>{
     toggleAddRepForm();
-    loadAgentProfiles();
+
+    // Force a fresh roster pull from the Sheet — this picks up the alphabetical
+    // insert that addAgent just performed, ensuring ROSTER is perfectly in sync
+    rosterLoaded = false;
+    await loadRoster();
+
+    // Re-render every view that uses the roster
+    renderProfileList();      // Profiles tab agent list
+    renderAttTable();         // Attendance tab
+    if(typeof renderStatsTable === 'function') renderStatsTable(); // Agent Stats tab
+
+    // Refresh weekly attendance if it's currently open
+    if(weeklyTeam){ loadWeeklyAttendance(weeklyTeam); }
+
+    // Refresh monthly overview if open
+    if(typeof reRenderMonthly === 'function') reRenderMonthly();
   }, 1800);
 }
 
 function loadAgentProfiles(){
-  if(!rosterLoaded){ loadRoster().then(renderProfileList); return; }
+  if(!rosterLoaded){ loadRoster().then(()=>renderProfileList()); return; }
   renderProfileList();
 }
 
