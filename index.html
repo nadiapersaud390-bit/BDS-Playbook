@@ -1187,6 +1187,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
           <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
             <span id="csv-date-lbl"   style="font-size:0.68rem;color:var(--accent2);font-weight:700;"></span>
             <span id="csv-expiry-lbl" style="font-size:0.68rem;color:var(--red);font-weight:700;"></span>
+            <span id="csv-match-lbl"  style="font-size:0.68rem;color:var(--muted);font-weight:700;"></span>
             <button onclick="document.getElementById('stats-csv-upload').click()" style="padding:9px 18px;border-radius:9px;border:none;background:linear-gradient(90deg,var(--accent),var(--cyan));color:#000;font-family:'Barlow Condensed',sans-serif;font-size:0.88rem;font-weight:800;letter-spacing:1.5px;cursor:pointer;">⬆ UPLOAD CSV</button>
           </div>
         </div>
@@ -2243,8 +2244,12 @@ async function loadRoster() {
       data.agents.forEach(a => {
         if (a.userId) {
           // Skip inactive agents — either hardcoded or flagged by Apps Script
+          // NOTE: blank status is treated as active (Agent) — only skip when
+          // Apps Script explicitly sets inactive:true OR status is 'inactive'
+          const statusLow = (a.status||'').toLowerCase().trim();
           const isInactive = INACTIVE_AGENTS.some(n=>n.toLowerCase()===a.name.toLowerCase())
-            || a.inactive === true;
+            || a.inactive === true
+            || (statusLow === 'inactive');
           if(isInactive) return;
           // Determine team from ytelName prefix — GUYP = Providence (PR), GUYB = Berbice (BB)
           // Plain "GUY" (no suffix) may be either team — trust the sheet's team field when available
@@ -2295,9 +2300,10 @@ async function loadRoster() {
       const uid = String(a.userId || doc.id).trim();
       if (!uid) return;
       if (ROSTER[uid]) return; // already loaded from Sheet — Sheet wins
-      // Skip if explicitly inactive
+      // Skip if explicitly inactive — blank status treated as active (Agent)
+      const fbStatusLow = (a.status||'').toLowerCase().trim();
       const isInactive = INACTIVE_AGENTS.some(n => n.toLowerCase() === (a.name||'').toLowerCase())
-        || (a.status||'').toLowerCase() === 'inactive'
+        || fbStatusLow === 'inactive'
         || a.inactive === true;
       if (isInactive) return;
       // Determine team from ytelName prefix — GUYP = Providence (PR), GUYB = Berbice (BB)
@@ -2785,6 +2791,7 @@ function scheduleMidnightLogout(){
 // ── LOGOUT ──
 function doLogout(auto=false){
   clearTimeout(midnightTimer);
+  stopRosterPolling(); // stop background sync on logout
   sessionStorage.removeItem('bds_user_'+getTodayGY());
   currentUser = null;
   auth.signOut();
@@ -2831,6 +2838,178 @@ async function checkSession(){
   }
   document.getElementById('login-screen').classList.remove('hidden');
 }
+
+// ============================================================
+//  ROSTER AUTO-SYNC — polls Google Sheet every 2 minutes
+//  and silently re-renders all views if anything changed.
+// ============================================================
+let rosterPollHash    = '';   // fingerprint of last known roster
+let rosterPollTimer   = null;
+const ROSTER_POLL_MS  = 2 * 60 * 1000; // 2 minutes
+
+// Lightweight string hash (djb2) — no crypto needed
+function hashString(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h) ^ str.charCodeAt(i);
+    h = h >>> 0; // keep unsigned 32-bit
+  }
+  return h.toString(36);
+}
+
+function getRosterFingerprint() {
+  // Sort by userId so order changes don't trigger false positives
+  return hashString(JSON.stringify(
+    Object.values(ROSTER)
+      .sort((a,b) => String(a.userId).localeCompare(String(b.userId)))
+      .map(a => ({ id:a.userId, name:a.name, team:a.team, shift:a.shift, lunch:a.lunch, status:a.status }))
+  ));
+}
+
+function showRosterToast(msg) {
+  // Remove any existing toast first
+  const old = document.getElementById('roster-sync-toast');
+  if (old) old.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'roster-sync-toast';
+  toast.textContent = msg;
+  Object.assign(toast.style, {
+    position:       'fixed',
+    bottom:         '24px',
+    left:           '50%',
+    transform:      'translateX(-50%)',
+    background:     '#0d2a1a',
+    border:         '1px solid #34d399',
+    color:          '#34d399',
+    padding:        '10px 22px',
+    borderRadius:   '10px',
+    fontSize:       '0.78rem',
+    fontFamily:     "'Barlow Condensed', sans-serif",
+    fontWeight:     '800',
+    letterSpacing:  '1.5px',
+    textTransform:  'uppercase',
+    zIndex:         '99999',
+    boxShadow:      '0 4px 20px rgba(52,211,153,0.25)',
+    opacity:        '0',
+    transition:     'opacity 0.3s ease',
+    pointerEvents:  'none',
+    whiteSpace:     'nowrap'
+  });
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => { toast.style.opacity = '1'; });
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 400);
+  }, 4000);
+}
+
+async function pollRoster() {
+  try {
+    // Silent reload — don't touch rosterLoaded flag so UI stays usable
+    const data = await callBridge({ action: 'getRoster' });
+    if (!data || !data.success || !data.agents) return;
+
+    // Rebuild a temporary roster map from fresh data
+    const fresh = {};
+    data.agents.forEach(a => {
+      if (!a.userId) return;
+      const statusLow = (a.status || '').toLowerCase().trim();
+      if (statusLow === 'inactive') return;
+      if (INACTIVE_AGENTS.some(n => n.toLowerCase() === a.name.toLowerCase())) return;
+
+      let team = a.team || 'BB';
+      if (a.ytelName) {
+        const yn = a.ytelName.toUpperCase().replace(/[\s-]/g, '');
+        if (yn.startsWith('GUYP'))      team = 'PR';
+        else if (yn.startsWith('GUYB')) team = 'BB';
+      }
+      fresh[String(a.userId).trim()] = {
+        userId:   String(a.userId).trim(),
+        name:     a.name,
+        ytelName: a.ytelName,
+        shift:    a.shift  || '',
+        lunch:    a.lunch  || '',
+        brk:      '',
+        team,
+        status:   a.status || 'Agent'
+      };
+    });
+
+    // Compute fingerprint of new data
+    const newHash = hashString(JSON.stringify(
+      Object.values(fresh)
+        .sort((a,b) => String(a.userId).localeCompare(String(b.userId)))
+        .map(a => ({ id:a.userId, name:a.name, team:a.team, shift:a.shift, lunch:a.lunch, status:a.status }))
+    ));
+
+    if (newHash === rosterPollHash) return; // nothing changed — do nothing
+
+    // ── Something changed — figure out what and notify ──
+    const oldCount   = Object.keys(ROSTER).length;
+    const newCount   = Object.keys(fresh).length;
+    const diff       = newCount - oldCount;
+
+    // Check for field changes (shift, lunch, team, name) on existing agents
+    let fieldChanges = 0;
+    Object.values(fresh).forEach(a => {
+      const old = ROSTER[a.userId];
+      if (old && (old.shift !== a.shift || old.lunch !== a.lunch || old.team !== a.team || old.name !== a.name || old.status !== a.status)) {
+        fieldChanges++;
+      }
+    });
+
+    // Apply the fresh roster
+    // Preserve Firebase-only entries (not returned by Sheet) that are still valid
+    Object.keys(ROSTER).forEach(uid => {
+      if (!fresh[uid]) {
+        // Keep Firebase-only agents unless they're now in the Sheet as inactive
+        fresh[uid] = ROSTER[uid];
+      }
+    });
+    ROSTER        = fresh;
+    rosterLoaded  = true;
+    rosterPollHash = newHash;
+
+    // Build toast message
+    let toastMsg = '🔄 Roster synced';
+    if (diff > 0)          toastMsg = `✅ Roster updated — ${diff} agent${diff>1?'s':''} added`;
+    else if (diff < 0)     toastMsg = `🗑 Roster updated — ${Math.abs(diff)} agent${Math.abs(diff)>1?'s':''} removed`;
+    else if (fieldChanges) toastMsg = `✏️ Roster updated — ${fieldChanges} agent${fieldChanges>1?'s':''} changed`;
+    showRosterToast(toastMsg);
+
+    // Re-render all active views silently
+    if (typeof renderAttTable    === 'function') renderAttTable();
+    if (typeof renderProfileList === 'function') renderProfileList();
+    if (typeof renderStatsTable  === 'function' && statsData.length) renderStatsTable();
+    if (typeof reRenderMonthly   === 'function') reRenderMonthly();
+    // Reload weekly attendance only if that tab is currently visible
+    const wkEl = document.getElementById('admin-weekly');
+    if (wkEl && wkEl.style.display !== 'none' && typeof loadWeeklyAttendance === 'function') {
+      loadWeeklyAttendance(weeklyTeam || 'BB');
+    }
+
+    console.log('🔄 Roster auto-synced:', newCount, 'agents | diff:', diff, '| field changes:', fieldChanges);
+  } catch(e) {
+    // Silent fail — polling is non-critical, never show errors to user
+    console.warn('Roster poll failed (non-fatal):', e);
+  }
+}
+
+function startRosterPolling() {
+  // Take initial fingerprint from whatever loadRoster() already loaded
+  rosterPollHash = getRosterFingerprint();
+  // Clear any existing timer (safety measure against double-init)
+  if (rosterPollTimer) clearInterval(rosterPollTimer);
+  rosterPollTimer = setInterval(pollRoster, ROSTER_POLL_MS);
+  console.log('🕐 Roster polling started — every', ROSTER_POLL_MS / 60000, 'minutes');
+}
+
+function stopRosterPolling() {
+  if (rosterPollTimer) { clearInterval(rosterPollTimer); rosterPollTimer = null; }
+}
+
+// ── END ROSTER AUTO-SYNC ──
 
 window.addEventListener('load',()=>{ checkSession(); });
 
@@ -3633,7 +3812,10 @@ function showAdminUI(){
   document.body.classList.add('is-admin');
   // Force fresh roster load immediately so all admin views have correct data
   rosterLoaded = false;
-  loadRoster();
+  loadRoster().then(() => {
+    // Start auto-polling AFTER initial load so first fingerprint is accurate
+    startRosterPolling();
+  });
   // Load saved goal
   db.collection('config').doc('settings').get().then(snap=>{
     if(snap.exists && snap.data().goal){
@@ -4702,6 +4884,20 @@ async function confirmCSVUpload(){
   document.getElementById('expiry-picker').style.display='none';
   document.getElementById('csv-date-lbl').textContent='📅 '+pendingCSVData.date;
   document.getElementById('csv-expiry-lbl').textContent='🗑 Expires: '+expiryDate.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+  // Show matched vs total count — helps diagnose why CSV total ≠ marked count
+  const rosterIds = new Set(Object.keys(ROSTER));
+  const matched   = statsData.filter(a => a.ytelId && rosterIds.has(a.ytelId)).length;
+  const total     = statsData.length;
+  const unmatched = statsData.filter(a => !a.ytelId || !rosterIds.has(a.ytelId));
+  const matchLbl  = document.getElementById('csv-match-lbl');
+  if(matchLbl){
+    matchLbl.textContent = total + ' in CSV · ' + matched + ' matched roster';
+    matchLbl.style.color = matched < total ? 'var(--gold)' : 'var(--green)';
+  }
+  if(unmatched.length){
+    console.warn('⚠️ CSV agents NOT matched to roster (' + unmatched.length + '):', unmatched.map(a=>a.nameRaw+'(ID:'+a.ytelId+')').join(', '));
+  }
   statsDataDate = pendingCSVData.date;
   pendingCSVData=null;
 
