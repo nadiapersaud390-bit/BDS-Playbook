@@ -4711,16 +4711,18 @@ function resolveAgentTeam(agent){
     return null;
   };
 
-  // 1. ytelId → ROSTER lookup → use ytelName prefix
-  if(agent.ytelId){
-    const r = ROSTER[String(agent.ytelId).trim()];
-    if(r){ return teamFromYtel(r.ytelName) || r.team || 'BB'; }
-  }
-
-  // 2. nameRaw prefix from saved CSV
+  // 1. nameRaw prefix from saved CSV — HIGHEST PRIORITY
+  // GUYP = Providence (PR), GUYB = Berbice (BB)
+  // This is the most direct signal and must not be overridden by stale ROSTER data
   if(agent.nameRaw){
     const t = teamFromYtel(agent.nameRaw);
     if(t) return t;
+  }
+
+  // 2. ytelId → ROSTER lookup → use ytelName prefix
+  if(agent.ytelId){
+    const r = ROSTER[String(agent.ytelId).trim()];
+    if(r){ return teamFromYtel(r.ytelName) || r.team || 'BB'; }
   }
 
   // 3. Match name in ROSTER → use that entry's ytelName
@@ -4768,12 +4770,9 @@ function isAgentInactive(agent){
   if(agent.ytelId){
     const inRoster = ROSTER[String(agent.ytelId).trim()];
     if(inRoster && (inRoster.status||'').toLowerCase()==='inactive') return true;
-    // If ytelId exists but NOT in ROSTER by ID — check if their name matches
-    // before treating them as removed (new agents may not have synced yet)
-    if(!inRoster && Object.keys(ROSTER).length > 10){
-      const nameAlsoMissing = !Object.values(ROSTER).find(r=>r.name.toLowerCase()===(agent.name||'').toLowerCase().trim());
-      if(nameAlsoMissing) return true;
-    }
+    // NOTE: Do NOT mark agents as inactive just because their ID is missing from
+    // the current ROSTER — ID mismatches happen due to CSV format, new hires, or
+    // roster sync delays. Only explicitly inactive entries should be filtered.
   }
 
   // 5. Check by name in ROSTER — if found and inactive
@@ -4844,36 +4843,36 @@ function parseStatsCSV(text){
     const csvIdMatch = nameRaw.match(/-\s*(\d{4,})\s*$/);
     const csvYtelId  = csvIdMatch ? csvIdMatch[1].trim() : null;
 
-    // ── TEAM — 3 step priority ──
-    let team = 'BB';
-    const rosterAgents = Object.values(ROSTER);
-    const nameLow = name.toLowerCase().trim();
+    // ── TEAM — nameRaw prefix is ALWAYS first priority ──
+    // GUYP prefix = Providence (PR), GUYB prefix = Berbice (BB)
+    // The CSV prefix is embedded at call-centre level and is the ground truth.
+    // ROSTER lookups were previously first, causing BB/PR to swap when the
+    // roster was stale or not yet loaded. Prefix is now always authoritative.
+    const ynRaw = nameRaw.toUpperCase().replace(/[\s-]/g,'');
+    let team = ynRaw.startsWith('GUYP') ? 'PR' : 'BB';
 
-    // Step 1 — Match by Ytel ID (most reliable)
-    if(csvYtelId){
-      const byId = rosterAgents.find(r => String(r.userId).trim() === csvYtelId);
-      if(byId){ team = byId.team; }
-      else {
-        // Step 2 — Match by name
-        const byName = rosterAgents.find(r => {
-          const rn = r.name.toLowerCase();
-          const cF = nameLow.split(' ')[0], cL = nameLow.split(' ').slice(-1)[0];
-          const rF = rn.split(' ')[0],      rL = rn.split(' ').slice(-1)[0];
-          return rn === nameLow
-            || (rF === cF && cL.length > 2 && rL.length > 2
-               && (rL.startsWith(cL.substring(0,4)) || cL.startsWith(rL.substring(0,4))));
-        });
-        if(byName){ team = byName.team; }
+    // Only use ROSTER as a fallback for ambiguous prefix (plain GUY, no B or P)
+    if(!ynRaw.startsWith('GUYP') && !ynRaw.startsWith('GUYB')){
+      const rosterAgents = Object.values(ROSTER);
+      const nameLow = name.toLowerCase().trim();
+      if(csvYtelId){
+        const byId = rosterAgents.find(r => String(r.userId).trim() === csvYtelId);
+        if(byId){ team = byId.team; }
         else {
-          // Step 3 — CSV prefix: GUYP = PR, GUY / GUYB = BB
-          const yn = nameRaw.toUpperCase().replace(/[\s-]/g,'');
-          team = yn.startsWith('GUYP') ? 'PR' : 'BB';
+          const byName = rosterAgents.find(r => {
+            const rn = r.name.toLowerCase();
+            const cF = nameLow.split(' ')[0], cL = nameLow.split(' ').slice(-1)[0];
+            const rF = rn.split(' ')[0],      rL = rn.split(' ').slice(-1)[0];
+            return rn === nameLow
+              || (rF === cF && cL.length > 2 && rL.length > 2
+                 && (rL.startsWith(cL.substring(0,4)) || cL.startsWith(rL.substring(0,4))));
+          });
+          if(byName){ team = byName.team; }
         }
+      } else {
+        const byName = Object.values(ROSTER).find(r => r.name.toLowerCase() === nameLow);
+        if(byName){ team = byName.team; }
       }
-    } else {
-      // No ID — use prefix
-      const yn = nameRaw.toUpperCase().replace(/[\s-]/g,'');
-      team = yn.startsWith('GUYP') ? 'PR' : 'BB';
     }
 
     const n = s => parseInt((cols[s]||'0').replace(/[^0-9]/g,''))||0;
