@@ -4783,7 +4783,8 @@ function isAgentInactive(agent){
 }
 
 function parseStatsCSV(text){
-  const lines = text.trim().split('\n');
+  // Normalize line endings — Windows CSVs use \r\n, strip \r so splits are clean
+  const lines = text.trim().replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
   if(!lines.length) return;
 
   // Parse headers — strip BOM, quotes, spaces
@@ -4896,6 +4897,8 @@ function parseStatsCSV(text){
 
 // Proper CSV line parser — handles quoted fields with commas inside
 function parseCSVLine(line){
+  // Strip trailing \r in case of Windows \r\n line endings
+  line = line.replace(/\r$/,'');
   const result=[];
   let cur='', inQ=false;
   for(let i=0;i<line.length;i++){
