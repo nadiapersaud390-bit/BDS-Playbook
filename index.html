@@ -2239,12 +2239,14 @@ async function loadRoster() {
           const isInactive = INACTIVE_AGENTS.some(n=>n.toLowerCase()===a.name.toLowerCase())
             || a.inactive === true;
           if(isInactive) return;
-          // Double-check team from ytelName — GUYP = Providence (PR), GUY only = Berbice (BB)
+          // Determine team from ytelName prefix — GUYP = Providence (PR), GUYB = Berbice (BB)
+          // Plain "GUY" (no suffix) may be either team — trust the sheet's team field when available
           let team = a.team || 'BB';
           if (a.ytelName) {
             const yn = a.ytelName.toUpperCase().replace(/\s+/g,'').replace(/-/g,'');
             if (yn.startsWith('GUYP')) team = 'PR';
-            else if (yn.startsWith('GUY')) team = 'BB';
+            else if (yn.startsWith('GUYB')) team = 'BB';
+            // Plain GUY (no B/P) — keep sheet-provided team if available, else default BB
           }
           ROSTER[String(a.userId).trim()] = {
             userId: String(a.userId).trim(),
@@ -2280,12 +2282,14 @@ async function loadRoster() {
         || (a.status||'').toLowerCase() === 'inactive'
         || a.inactive === true;
       if (isInactive) return;
-      // Determine team from ytelName
+      // Determine team from ytelName prefix — GUYP = Providence (PR), GUYB = Berbice (BB)
+      // Plain "GUY" (no suffix) — trust sheet team field if available
       let team = a.team || 'BB';
       if (a.ytelName) {
         const yn = a.ytelName.toUpperCase().replace(/[\s-]/g,'');
         if (yn.startsWith('GUYP')) team = 'PR';
-        else if (yn.startsWith('GUY')) team = 'BB';
+        else if (yn.startsWith('GUYB')) team = 'BB';
+        // Plain GUY: keep sheet-provided a.team, fallback to BB
       }
       ROSTER[uid] = {
         userId: uid,
@@ -4698,10 +4702,12 @@ function resolveAgentTeam(agent){
   const rosterAgents = Object.values(ROSTER);
 
   // Helper: get team from a ytelName string
+  // GUYP = Providence (PR), GUYB = Berbice (BB)
+  // Plain GUY (no suffix) = ambiguous, return null so caller uses other signals
   const teamFromYtel = (yn)=>{
     const u = (yn||'').toUpperCase().replace(/[\s-]/g,'');
     if(u.startsWith('GUYP')) return 'PR';
-    if(u.startsWith('GUY'))  return 'BB';
+    if(u.startsWith('GUYB')) return 'BB';
     return null;
   };
 
