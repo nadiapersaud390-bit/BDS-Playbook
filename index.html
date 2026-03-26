@@ -3596,7 +3596,7 @@ let attTeamFilter = 'all'; // 'all', 'BB', 'PR'
 
 function switchAttTeam(team, btn){
   attTeamFilter = team;
-  document.querySelectorAll('[id^="att-bb"],[id^="att-pr"]').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#att-bb-btn,#att-bb-only,#att-pr-only').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   renderAttTable();
 }
@@ -3829,11 +3829,10 @@ async function loadAdminOverview(){
         const sid = String(d.id||'').trim();
         if(sid && !attIds.has(sid)){
           // Rep has a session but no attendance record
-          // Look up their shift, name and team from ROSTER
+          // FIX: resolve name and team from ROSTER — session doc may have blank/stale values
           const rosterAgent = ROSTER[sid] || Object.values(ROSTER).find(r=>r.name===d.name);
           const shift = rosterAgent ? (rosterAgent.shift||'') : '';
           const status = getAttendanceStatus(shift) || 'P';
-          // FIX: resolve name and team from ROSTER — session doc may have blank/stale values
           const trueName = (rosterAgent && rosterAgent.name) ? rosterAgent.name : (d.name||'');
           let trueTeam = d.team || '';
           if (rosterAgent) {
@@ -3877,7 +3876,7 @@ async function loadAdminOverview(){
     document.getElementById('glance-late').textContent   = late.length;
     document.getElementById('glance-absent').textContent = notLogged.length;
 
-    // FIX: Always derive true team AND true name from ROSTER by ID or name lookup.
+    // FIX: Always derive true name and team from ROSTER by ID or name lookup.
     // Attendance docs may have stale team or blank name — ROSTER is the source of truth.
     // GUYB = Berbice (BB), GUYP = Providence (PR)
     const getRosterAgent = (id, name) => {
@@ -4010,16 +4009,23 @@ function renderAttTable(){
     if(r.id)   attById[String(r.id).trim()] = r;
   });
 
-  // Build rows — one per agent from roster
-  let rows = allAgents.map(agent=>{
+  // Build rows — one per agent from roster (skip agents with no name)
+  let rows = allAgents.filter(agent => agent.name && agent.name.trim()).map(agent=>{
     // Try to find their attendance record by ID first, then by name
     const rec = attById[String(agent.userId||'').trim()]
              || attByName[agent.name.toLowerCase().trim()]
              || null;
+    // FIX: Re-derive team from ytelName so stale team field in roster doesn't matter
+    let trueTeam = agent.team || 'BB';
+    if (agent.ytelName) {
+      const yn = agent.ytelName.toUpperCase().replace(/[\s-]/g,'');
+      if (yn.startsWith('GUYP')) trueTeam = 'PR';
+      else if (yn.startsWith('GUYB')) trueTeam = 'BB';
+    }
     return {
       id:     agent.userId,
       name:   agent.name,
-      team:   agent.team,
+      team:   trueTeam,
       shift:  agent.shift,
       status: rec ? rec.status : 'none',
       loginTime: rec ? rec.loginTime : null,
@@ -5145,7 +5151,16 @@ async function apLoadOverview(id,name){
 
   // ── Today's calls/xfer ──
   ['rp-live-calls','rp-live-xfer','rp-live-conv'].forEach(i=>{ const el=document.getElementById(i); if(el) el.textContent='0'; });
-  const csvAgent = statsData.find(r=>r.name&&(r.name.toLowerCase()===name.toLowerCase()||name.toLowerCase().includes(r.name.toLowerCase())));
+  const _nl = name.toLowerCase().trim();
+  const _np = _nl.split(' ').filter(Boolean);
+  const _fn = _np[0]||'', _ln = _np[_np.length-1]||'';
+  const csvAgent = statsData.find(r=>{
+    if(!r.name) return false;
+    const rn = r.name.toLowerCase().trim();
+    if(rn===_nl) return true;
+    if(_fn && _ln && _fn!==_ln) return rn.includes(_fn) && rn.includes(_ln);
+    return rn.includes(_nl) || _nl.includes(rn);
+  });
   if(csvAgent){
     document.getElementById('rp-live-calls').textContent = csvAgent.calls||'0';
     document.getElementById('rp-live-xfer').textContent  = csvAgent.xfer||'0';
@@ -6031,7 +6046,10 @@ async function apLoadStatsHistory(name){
     return;
   }
 
-  const nameLower = name.toLowerCase();
+  const nameLower = name.toLowerCase().trim();
+  const nameParts = nameLower.split(' ').filter(Boolean);
+  const firstName = nameParts[0] || '';
+  const lastName  = nameParts[nameParts.length - 1] || '';
 
   // Pull this agent's data from every saved report
   const agentReports = [];
@@ -6039,8 +6057,16 @@ async function apLoadStatsHistory(name){
     try{
       const data = JSON.parse(report.statsJSON);
       const match = data.find(r=>{
-        const rn = r.name.toLowerCase();
-        return rn===nameLower || (rn.includes(nameLower.split(' ')[0]) && rn.includes(nameLower.split(' ').slice(-1)[0]));
+        if(!r.name) return false;
+        const rn = r.name.toLowerCase().trim();
+        // Exact match
+        if(rn === nameLower) return true;
+        // First + last name both present
+        if(firstName && lastName && firstName !== lastName){
+          return rn.includes(firstName) && rn.includes(lastName);
+        }
+        // Single name — partial match
+        return rn.includes(nameLower) || nameLower.includes(rn);
       });
       if(match) agentReports.push({date: report.date, ...match});
     }catch(e){}
