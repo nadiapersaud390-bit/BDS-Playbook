@@ -5064,6 +5064,16 @@ function parseStatsCSV(text){
     // Skip NH (No Hire / inactive) agents right at parse time
     if(/\bNH\b/i.test(nameRaw)) continue;
 
+    // Extract 4-digit Ytel ID from the end of the User Name field
+    // e.g. "GUY Angel Narine - 4413" → "4413"
+    const csvIdMatch = nameRaw.match(/-\s*(\d{4,})\s*$/);
+    const csvYtelId  = csvIdMatch ? csvIdMatch[1].trim() : null;
+
+    // ── ROSTER LOOKUP — ID-first matching ──
+    // ROSTER is guaranteed loaded at this point because parseStatsCSV
+    // is only called from confirmUpload which runs after loadRoster()
+    const rosterAgents = Object.values(ROSTER);
+
     // Clean name — remove prefix (handles GUYB, GUYP, GUYP4, GUY etc) and extension number
     const name = nameRaw
       .replace(/^GUYP\d*\s+/i,'')
@@ -5075,53 +5085,53 @@ function parseStatsCSV(text){
 
     if(!name) continue;
 
-    // Extract Ytel ID from CSV e.g. "GUY Iana Lewis - 4417"
-    const csvIdMatch = nameRaw.match(/-\s*(\d{4,})\s*$/);
-    const csvYtelId  = csvIdMatch ? csvIdMatch[1].trim() : null;
+    // ── ID-FIRST ROSTER MATCH ──
+    // Step 1: match by the 4-digit ID extracted above
+    let rosterMatch = null;
+    if(csvYtelId){
+      rosterMatch = ROSTER[csvYtelId] || rosterAgents.find(r => String(r.userId).trim() === csvYtelId) || null;
+    }
 
-    // ── TEAM RESOLUTION ──
-    // Priority: (1) GUYP/GUYB prefix in nameRaw → authoritative
-    //           (2) Plain GUY (no B/P) → look up in ROSTER by ID then name
-    //           (3) Still ambiguous → default BB (should be rare)
-    const ynRaw = nameRaw.toUpperCase().replace(/[\s-]/g,'');
-    // Handle typos like GUYP4 — strip trailing digits from prefix before comparing
-    const prefixClean = ynRaw.replace(/^(GUYP|GUYB)\d+/, '$1');
-    let team;
-    if(prefixClean.startsWith('GUYP'))      team = 'PR';
-    else if(prefixClean.startsWith('GUYB')) team = 'BB';
-    else {
-      // Plain GUY prefix — must look up in ROSTER (ID first, then name)
-      // ROSTER is guaranteed loaded at this point because parseStatsCSV
-      // is only called from confirmUpload which runs after loadRoster()
-      const rosterAgents = Object.values(ROSTER);
+    // Step 2: fallback — match by name if no ID match
+    if(!rosterMatch){
       const nameLow = name.toLowerCase().trim();
-      let resolved = null;
-      if(csvYtelId){
-        const byId = rosterAgents.find(r => String(r.userId).trim() === csvYtelId);
-        if(byId) resolved = byId.team;
+      rosterMatch = rosterAgents.find(r => r.name.toLowerCase() === nameLow) || null;
+      if(!rosterMatch){
+        const cParts = nameLow.split(' ');
+        const cF = cParts[0], cL = cParts[cParts.length-1];
+        rosterMatch = rosterAgents.find(r => {
+          const rn = r.name.toLowerCase().split(' ');
+          const rF = rn[0], rL = rn[rn.length-1];
+          return rF === cF && cL.length > 2 && rL.length > 2
+            && (rL.startsWith(cL.substring(0,4)) || cL.startsWith(rL.substring(0,4)));
+        }) || null;
       }
-      if(!resolved){
-        // Name match: exact first, then first+last fuzzy
-        const byExact = rosterAgents.find(r => r.name.toLowerCase() === nameLow);
-        if(byExact){
-          resolved = byExact.team;
-        } else {
-          const cParts = nameLow.split(' ');
-          const cF = cParts[0], cL = cParts[cParts.length-1];
-          const byFuzzy = rosterAgents.find(r => {
-            const rn = r.name.toLowerCase().split(' ');
-            const rF = rn[0], rL = rn[rn.length-1];
-            return rF === cF && cL.length > 2 && rL.length > 2
-              && (rL.startsWith(cL.substring(0,4)) || cL.startsWith(rL.substring(0,4)));
-          });
-          if(byFuzzy) resolved = byFuzzy.team;
-        }
+    }
+
+    // ── STATUS FILTER ──
+    // Only include agents/trainees — skip anyone not in the roster or with
+    // a status other than "Agent" or "Trainee"
+    if(rosterMatch){
+      const statusLow = (rosterMatch.status||'').toLowerCase().trim();
+      if(statusLow !== 'agent' && statusLow !== 'trainee'){
+        console.log('⏭ Skipping non-active agent:', nameRaw, '— Status:', rosterMatch.status);
+        continue;
       }
-      // Log unresolved plain-GUY agents so you can investigate
-      if(!resolved){
-        console.warn('⚠️ Team unresolved for plain-GUY agent — defaulting BB:', nameRaw, 'ID:', csvYtelId);
-      }
-      team = resolved || 'BB';
+    } else {
+      console.warn('⚠️ No roster match for CSV agent — skipping:', nameRaw, 'ID:', csvYtelId);
+      continue;
+    }
+
+    // ── TEAM RESOLUTION — always use roster Team column ──
+    // Providence = "PR", Berbice = "BB"
+    let team = rosterMatch.team || 'BB';
+    // Normalise common roster team spellings
+    const teamUp = team.toUpperCase().trim();
+    if(teamUp === 'PROVIDENCE' || teamUp === 'PR') team = 'PR';
+    else if(teamUp === 'BERBICE' || teamUp === 'BB') team = 'BB';
+    else {
+      console.warn('⚠️ Unknown team value in roster for:', nameRaw, '— Team:', rosterMatch.team, '— defaulting BB');
+      team = 'BB';
     }
 
     const n = s => parseInt((cols[s]||'0').replace(/[^0-9]/g,''))||0;
