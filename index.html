@@ -3622,7 +3622,9 @@ function showAdminUI(){
         // Only apply if this is newer than what we have (avoid no-op re-renders)
         if(d.statsJSON && d.date === todayStr){
           statsData = JSON.parse(d.statsJSON);
-          statsData.forEach(agent=>{ agent.team = resolveAgentTeam(agent); });
+          // Team was already resolved correctly at upload time — do NOT re-resolve here.
+          // Re-running resolveAgentTeam on reload causes BB/PR to swap when the ROSTER
+          // is stale or an agent isn't found, because it falls back to 'BB' for everyone.
           statsDataDate = todayStr;
           updateGoalBars();
           // If the Daily Overview tab is currently open, refresh the overview too
@@ -3885,7 +3887,7 @@ async function loadAdminOverview(){
         const rData = rSnap.data();
         if(rData.statsJSON){
           statsData = JSON.parse(rData.statsJSON);
-          statsData.forEach(agent=>{ agent.team = resolveAgentTeam(agent); });
+          // Team already correctly resolved at upload — do NOT re-resolve (causes BB/PR swap)
           statsDataDate = todayStr;
           // Update goal label in case it changed
           const goalSnap = await db.collection('config').doc('settings').get().catch(()=>null);
@@ -4474,8 +4476,8 @@ function loadReportByIndex(idx){
   try{
     statsData=JSON.parse(r.statsJSON);
 
-    // Re-apply correct teams from ytelId → nameRaw prefix → name match
-    statsData.forEach(agent=>{ agent.team = resolveAgentTeam(agent); });
+    // Team was already correctly resolved at upload time — do NOT re-resolve here.
+    // Re-running resolveAgentTeam causes BB/PR to swap for agents not found in ROSTER.
 
     document.getElementById('csv-date-lbl').textContent='📅 '+r.date;
     document.getElementById('csv-expiry-lbl').textContent=r.expiryDate?'🗑 Expires: '+r.expiryDate:'';
@@ -5722,15 +5724,16 @@ async function loadWeeklyPerformance(){
     return;
   }
 
-  // Parse all reports — re-resolve team and inactive status fresh from ROSTER
+  // Parse all reports — use stored team (correctly set at upload time)
   wpAllReports = [];
   reportHistory.forEach(r=>{
     try{
       const raw = JSON.parse(r.statsJSON);
-      // Re-resolve each agent's team and inactive flag right now
+      // Use stored team value — do NOT re-resolve (resolveAgentTeam defaults to BB for
+      // anyone not in ROSTER, causing PR agents to appear as BB)
       const agents = raw.map(a=>({
         ...a,
-        team: resolveAgentTeam(a),
+        team: a.team || 'BB',
         _inactive: isAgentInactive(a)
       }));
       wpAllReports.push({date: r.date, agents});
