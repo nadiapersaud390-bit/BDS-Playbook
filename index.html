@@ -5061,32 +5061,36 @@ function parseStatsCSV(text){
     const nameRaw = cols[iName]||'';
     // Skip total row, meta rows, empty rows
     if(!nameRaw || nameRaw.startsWith('TOTAL') || nameRaw.startsWith('AGENT STATUS') || nameRaw.startsWith('Time Range')) continue;
-    // Skip NH (No Hire / inactive) agents right at parse time
-    if(/\bNH\b/i.test(nameRaw)) continue;
 
     // Extract 4-digit Ytel ID from the end of the User Name field
     // e.g. "GUY Angel Narine - 4413" → "4413"
+    // Also works for NH-tagged names: "GUY Akeem Sullivan NH - 4446" → "4446"
     const csvIdMatch = nameRaw.match(/-\s*(\d{4,})\s*$/);
     const csvYtelId  = csvIdMatch ? csvIdMatch[1].trim() : null;
 
     // ── ROSTER LOOKUP — ID-first matching ──
     // ROSTER is guaranteed loaded at this point because parseStatsCSV
     // is only called from confirmUpload which runs after loadRoster()
+    // NOTE: NH in the Ytel name means "New Hire" (trainee) — NOT inactive.
+    // We do the roster lookup BEFORE any NH filtering so active trainees
+    // tagged NH in Ytel are never dropped incorrectly.
     const rosterAgents = Object.values(ROSTER);
 
-    // Clean name — remove prefix (handles GUYB, GUYP, GUYP4, GUY etc) and extension number
+    // Clean name — strip prefix (GUY/GUYB/GUYP/GUYP4), NH suffix, and extension number
     const name = nameRaw
       .replace(/^GUYP\d*\s+/i,'')
       .replace(/^GUYB\d*\s+/i,'')
       .replace(/^GUY\s+/i,'')
       .replace(/^GUY[PB]?\d*-/i,'')
+      .replace(/\s+NH\s*$/i,'')        // strip trailing NH suffix before the dash
+      .replace(/\s+NH\s+-/i,' -')      // strip NH between name and ID dash
       .replace(/\s*-\s*\d{4,}$/,'')
       .trim();
 
     if(!name) continue;
 
     // ── ID-FIRST ROSTER MATCH ──
-    // Step 1: match by the 4-digit ID extracted above
+    // Step 1: match by the 4-digit ID extracted above (most reliable)
     let rosterMatch = null;
     if(csvYtelId){
       rosterMatch = ROSTER[csvYtelId] || rosterAgents.find(r => String(r.userId).trim() === csvYtelId) || null;
@@ -5108,12 +5112,16 @@ function parseStatsCSV(text){
       }
     }
 
-    // ── NO STATUS FILTER HERE ──
-    // loadRoster() already excludes inactive agents (inactive:true or status='inactive')
-    // from the ROSTER map, so any agent found via rosterMatch is already confirmed active.
-    // Adding a second status check here causes false drops when the roster has
-    // blank status, mixed casing, or the Apps Script version doesn't set inactive.
-    // Unmatched agents (new hires, ID mismatches) are still included — we just log them.
+    // ── NH FILTER — applied AFTER roster lookup ──
+    // Only skip NH-tagged agents when they have NO active roster entry.
+    // If they ARE in the roster (e.g. as a Trainee), they should be shown.
+    // This prevents active New Hire / Trainee agents from being dropped.
+    const hasNH = /\bNH\b/i.test(nameRaw);
+    if(hasNH && !rosterMatch){
+      console.log('⏭ Skipping NH agent with no roster match:', nameRaw);
+      continue;
+    }
+
     if(!rosterMatch){
       console.warn('⚠️ No roster match for CSV agent — including with prefix fallback:', nameRaw, 'ID:', csvYtelId);
     }
