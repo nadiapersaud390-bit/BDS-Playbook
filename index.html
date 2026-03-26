@@ -3829,17 +3829,26 @@ async function loadAdminOverview(){
         const sid = String(d.id||'').trim();
         if(sid && !attIds.has(sid)){
           // Rep has a session but no attendance record
-          // Look up their shift from ROSTER to correctly determine Present vs Late
+          // Look up their shift, name and team from ROSTER
           const rosterAgent = ROSTER[sid] || Object.values(ROSTER).find(r=>r.name===d.name);
           const shift = rosterAgent ? (rosterAgent.shift||'') : '';
           const status = getAttendanceStatus(shift) || 'P';
+          // FIX: resolve name and team from ROSTER — session doc may have blank/stale values
+          const trueName = (rosterAgent && rosterAgent.name) ? rosterAgent.name : (d.name||'');
+          let trueTeam = d.team || '';
+          if (rosterAgent) {
+            const yn = (rosterAgent.ytelName||'').toUpperCase().replace(/[\s-]/g,'');
+            if (yn.startsWith('GUYP')) trueTeam = 'PR';
+            else if (yn.startsWith('GUYB')) trueTeam = 'BB';
+            else trueTeam = rosterAgent.team || trueTeam || 'BB';
+          }
           allAttRecords.push({
-            id: sid, name: d.name||'', team: d.team||'',
+            id: sid, name: trueName, team: trueTeam,
             date: today, status, shift
           });
           // Also backfill Firebase so next refresh doesn't need the fallback
           db.collection('attendance').doc(sid+'_'+today).set({
-            id: sid, name: d.name||'', team: d.team||'',
+            id: sid, name: trueName, team: trueTeam,
             date: today, status, shift,
             loginTime: firebase.firestore.FieldValue.serverTimestamp()
           },{merge:true}).catch(()=>{});
@@ -3868,33 +3877,57 @@ async function loadAdminOverview(){
     document.getElementById('glance-late').textContent   = late.length;
     document.getElementById('glance-absent').textContent = notLogged.length;
 
-    // FIX: Always derive true team from ROSTER ytelName prefix
-    // so the correct BB/PR team shows regardless of what's in the attendance doc
-    const getTrueTeam = (id, name, fallback) => {
+    // FIX: Always derive true team AND true name from ROSTER by ID or name lookup.
+    // Attendance docs may have stale team or blank name — ROSTER is the source of truth.
+    // GUYB = Berbice (BB), GUYP = Providence (PR)
+    const getRosterAgent = (id, name) => {
       const byId = id ? ROSTER[String(id).trim()] : null;
-      const agent = byId || Object.values(ROSTER).find(r => r.name.toLowerCase() === (name||'').toLowerCase());
+      return byId || Object.values(ROSTER).find(r => r.name.toLowerCase() === (name||'').toLowerCase()) || null;
+    };
+    const getTrueTeam = (id, name, fallback) => {
+      const agent = getRosterAgent(id, name);
       if (agent) {
         const yn = (agent.ytelName||'').toUpperCase().replace(/[\s-]/g,'');
-        if (yn.startsWith('GUYP')) return 'PR';  // Providence
-        if (yn.startsWith('GUYB')) return 'BB';  // Berbice
+        if (yn.startsWith('GUYP')) return 'PR';
+        if (yn.startsWith('GUYB')) return 'BB';
         return agent.team || fallback || 'BB';
       }
       return fallback || 'BB';
     };
+    const getTrueName = (id, name) => {
+      const agent = getRosterAgent(id, name);
+      return (agent && agent.name) ? agent.name : (name || '—');
+    };
 
     const og=document.getElementById('online-grid');
     og.innerHTML = online.length
-      ? online.map(r=>`<div class="status-chip online" onclick="openRepProfile('${r.id}','${r.name}','${getTrueTeam(r.id,r.name,r.team)}','${r.shift||''}')"><span class="pulse green"></span>${r.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
+      ? online.map(r=>{
+          const trueName = getTrueName(r.id, r.name);
+          const trueTeam = getTrueTeam(r.id, r.name, r.team);
+          const ra = getRosterAgent(r.id, r.name);
+          const trueShift = (ra && ra.shift) ? ra.shift : (r.shift||'');
+          return `<div class="status-chip online" onclick="openRepProfile('${r.id}','${trueName}','${trueTeam}','${trueShift}')"><span class="pulse green"></span>${trueName.split(' ').slice(0,2).join(' ')}</div>`;
+        }).join('')
       : '<div style="font-size:0.72rem;color:var(--muted);">No one online yet</div>';
 
     const lg=document.getElementById('late-grid');
     lg.innerHTML = late.length
-      ? late.map(r=>`<div class="status-chip late-chip" onclick="openRepProfile('${r.id}','${r.name}','${getTrueTeam(r.id,r.name,r.team)}','${r.shift||''}')"><span class="pulse amber"></span>${r.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
+      ? late.map(r=>{
+          const trueName = getTrueName(r.id, r.name);
+          const trueTeam = getTrueTeam(r.id, r.name, r.team);
+          const ra = getRosterAgent(r.id, r.name);
+          const trueShift = (ra && ra.shift) ? ra.shift : (r.shift||'');
+          return `<div class="status-chip late-chip" onclick="openRepProfile('${r.id}','${trueName}','${trueTeam}','${trueShift}')"><span class="pulse amber"></span>${trueName.split(' ').slice(0,2).join(' ')}</div>`;
+        }).join('')
       : '<div style="font-size:0.72rem;color:var(--muted);">None</div>';
 
     const ag2=document.getElementById('absent-grid');
     ag2.innerHTML = notLogged.length
-      ? notLogged.map(a=>`<div class="status-chip absent-chip" onclick="openRepProfile('${a.userId||''}','${a.name}','${getTrueTeam(a.userId,a.name,a.team)}','${a.shift||''}')"><span class="pulse red-p"></span>${a.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
+      ? notLogged.map(a=>{
+          const trueName = getTrueName(a.userId, a.name);
+          const trueTeam = getTrueTeam(a.userId, a.name, a.team);
+          return `<div class="status-chip absent-chip" onclick="openRepProfile('${a.userId||''}','${trueName}','${trueTeam}','${a.shift||''}')"><span class="pulse red-p"></span>${trueName.split(' ').slice(0,2).join(' ')}</div>`;
+        }).join('')
       : '<div style="font-size:0.72rem;color:var(--green);">Everyone is logged in! ✅</div>';
 
   }catch(e){ console.error('Overview error:',e); }
