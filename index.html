@@ -5108,17 +5108,13 @@ function parseStatsCSV(text){
       }
     }
 
-    // ── STATUS FILTER ──
-    // When we have a roster match, skip anyone explicitly not an Agent or Trainee.
-    // If there is NO roster match (new hire, ID mismatch, etc.) we still include
-    // the agent — silently dropping them would cause the missing-agent problem.
-    if(rosterMatch){
-      const statusLow = (rosterMatch.status||'').toLowerCase().trim();
-      if(statusLow !== '' && statusLow !== 'agent' && statusLow !== 'trainee'){
-        console.log('⏭ Skipping non-active agent:', nameRaw, '— Status:', rosterMatch.status);
-        continue;
-      }
-    } else {
+    // ── NO STATUS FILTER HERE ──
+    // loadRoster() already excludes inactive agents (inactive:true or status='inactive')
+    // from the ROSTER map, so any agent found via rosterMatch is already confirmed active.
+    // Adding a second status check here causes false drops when the roster has
+    // blank status, mixed casing, or the Apps Script version doesn't set inactive.
+    // Unmatched agents (new hires, ID mismatches) are still included — we just log them.
+    if(!rosterMatch){
       console.warn('⚠️ No roster match for CSV agent — including with prefix fallback:', nameRaw, 'ID:', csvYtelId);
     }
 
