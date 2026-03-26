@@ -2439,11 +2439,20 @@ async function markAttendanceSheet(agent) {
     // Calculate status (Present / Late) based on shift time
     const status = getAttendanceStatus(agent.shift) || 'P';
 
+    // FIX: Re-resolve team from ytelName prefix at login time
+    // GUYB = Berbice (BB), GUYP = Providence (PR)
+    let resolvedTeam = agent.team || 'BB';
+    if (agent.ytelName) {
+      const yn = agent.ytelName.toUpperCase().replace(/[\s-]/g,'');
+      if (yn.startsWith('GUYP')) resolvedTeam = 'PR';
+      else if (yn.startsWith('GUYB')) resolvedTeam = 'BB';
+    }
+
     // Always write to Firebase immediately so the admin sees them online NOW
     await docRef.set({
       id:        agent.userId,
       name:      agent.name,
-      team:      agent.team,
+      team:      resolvedTeam,
       date:      today,
       status,
       shift:     agent.shift || '',
@@ -2452,9 +2461,9 @@ async function markAttendanceSheet(agent) {
 
     // Then try to mark the Google Sheet (non-blocking — sheet may already have them)
     try{
-      const checkData = await callBridge({action:'checkAttendance', name:agent.name, team:agent.team});
+      const checkData = await callBridge({action:'checkAttendance', name:agent.name, team:resolvedTeam});
       if(!checkData.marked){
-        await callBridge({action:'markAttendance', name:agent.name, team:agent.team, status});
+        await callBridge({action:'markAttendance', name:agent.name, team:resolvedTeam, status});
       }
     }catch(e){ console.warn('Sheet attendance mark failed (non-fatal):', e); }
 
@@ -3859,19 +3868,33 @@ async function loadAdminOverview(){
     document.getElementById('glance-late').textContent   = late.length;
     document.getElementById('glance-absent').textContent = notLogged.length;
 
+    // FIX: Always derive true team from ROSTER ytelName prefix
+    // so the correct BB/PR team shows regardless of what's in the attendance doc
+    const getTrueTeam = (id, name, fallback) => {
+      const byId = id ? ROSTER[String(id).trim()] : null;
+      const agent = byId || Object.values(ROSTER).find(r => r.name.toLowerCase() === (name||'').toLowerCase());
+      if (agent) {
+        const yn = (agent.ytelName||'').toUpperCase().replace(/[\s-]/g,'');
+        if (yn.startsWith('GUYP')) return 'PR';  // Providence
+        if (yn.startsWith('GUYB')) return 'BB';  // Berbice
+        return agent.team || fallback || 'BB';
+      }
+      return fallback || 'BB';
+    };
+
     const og=document.getElementById('online-grid');
     og.innerHTML = online.length
-      ? online.map(r=>`<div class="status-chip online" onclick="openRepProfile('${r.id}','${r.name}','${r.team||''}','${r.shift||''}')"><span class="pulse green"></span>${r.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
+      ? online.map(r=>`<div class="status-chip online" onclick="openRepProfile('${r.id}','${r.name}','${getTrueTeam(r.id,r.name,r.team)}','${r.shift||''}')"><span class="pulse green"></span>${r.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
       : '<div style="font-size:0.72rem;color:var(--muted);">No one online yet</div>';
 
     const lg=document.getElementById('late-grid');
     lg.innerHTML = late.length
-      ? late.map(r=>`<div class="status-chip late-chip" onclick="openRepProfile('${r.id}','${r.name}','${r.team||''}','${r.shift||''}')"><span class="pulse amber"></span>${r.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
+      ? late.map(r=>`<div class="status-chip late-chip" onclick="openRepProfile('${r.id}','${r.name}','${getTrueTeam(r.id,r.name,r.team)}','${r.shift||''}')"><span class="pulse amber"></span>${r.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
       : '<div style="font-size:0.72rem;color:var(--muted);">None</div>';
 
     const ag2=document.getElementById('absent-grid');
     ag2.innerHTML = notLogged.length
-      ? notLogged.map(a=>`<div class="status-chip absent-chip" onclick="openRepProfile('${a.userId||''}','${a.name}','${a.team||''}','${a.shift||''}')"><span class="pulse red-p"></span>${a.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
+      ? notLogged.map(a=>`<div class="status-chip absent-chip" onclick="openRepProfile('${a.userId||''}','${a.name}','${getTrueTeam(a.userId,a.name,a.team)}','${a.shift||''}')"><span class="pulse red-p"></span>${a.name.split(' ').slice(0,2).join(' ')}</div>`).join('')
       : '<div style="font-size:0.72rem;color:var(--green);">Everyone is logged in! ✅</div>';
 
   }catch(e){ console.error('Overview error:',e); }
