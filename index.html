@@ -5109,29 +5109,39 @@ function parseStatsCSV(text){
     }
 
     // ── STATUS FILTER ──
-    // Only include agents/trainees — skip anyone not in the roster or with
-    // a status other than "Agent" or "Trainee"
+    // When we have a roster match, skip anyone explicitly not an Agent or Trainee.
+    // If there is NO roster match (new hire, ID mismatch, etc.) we still include
+    // the agent — silently dropping them would cause the missing-agent problem.
     if(rosterMatch){
       const statusLow = (rosterMatch.status||'').toLowerCase().trim();
-      if(statusLow !== 'agent' && statusLow !== 'trainee'){
+      if(statusLow !== '' && statusLow !== 'agent' && statusLow !== 'trainee'){
         console.log('⏭ Skipping non-active agent:', nameRaw, '— Status:', rosterMatch.status);
         continue;
       }
     } else {
-      console.warn('⚠️ No roster match for CSV agent — skipping:', nameRaw, 'ID:', csvYtelId);
-      continue;
+      console.warn('⚠️ No roster match for CSV agent — including with prefix fallback:', nameRaw, 'ID:', csvYtelId);
     }
 
-    // ── TEAM RESOLUTION — always use roster Team column ──
-    // Providence = "PR", Berbice = "BB"
-    let team = rosterMatch.team || 'BB';
-    // Normalise common roster team spellings
-    const teamUp = team.toUpperCase().trim();
-    if(teamUp === 'PROVIDENCE' || teamUp === 'PR') team = 'PR';
-    else if(teamUp === 'BERBICE' || teamUp === 'BB') team = 'BB';
-    else {
-      console.warn('⚠️ Unknown team value in roster for:', nameRaw, '— Team:', rosterMatch.team, '— defaulting BB');
-      team = 'BB';
+    // ── TEAM RESOLUTION ──
+    // Priority: (1) roster Team column when matched → most reliable
+    //           (2) GUYP/GUYB prefix in nameRaw → prefix-based fallback
+    //           (3) Default BB
+    let team;
+    if(rosterMatch && rosterMatch.team){
+      const teamUp = rosterMatch.team.toUpperCase().trim();
+      if(teamUp === 'PROVIDENCE' || teamUp === 'PR') team = 'PR';
+      else if(teamUp === 'BERBICE' || teamUp === 'BB') team = 'BB';
+      else team = rosterMatch.team; // keep as-is if custom value
+    } else {
+      // Prefix fallback — handles GUYP = Providence, GUYB = Berbice, plain GUY = BB
+      const ynRaw = nameRaw.toUpperCase().replace(/[\s-]/g,'');
+      const prefixClean = ynRaw.replace(/^(GUYP|GUYB)\d+/, '$1');
+      if(prefixClean.startsWith('GUYP'))      team = 'PR';
+      else if(prefixClean.startsWith('GUYB')) team = 'BB';
+      else {
+        console.warn('⚠️ Team unresolved — defaulting BB:', nameRaw, 'ID:', csvYtelId);
+        team = 'BB';
+      }
     }
 
     const n = s => parseInt((cols[s]||'0').replace(/[^0-9]/g,''))||0;
