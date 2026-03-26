@@ -4780,7 +4780,8 @@ function isAgentInactive(agent){
   if(agent.nameRaw && / NH$/i.test(agent.nameRaw.split('-')[0].trim())) return true;
 
   // 2. Known NH agent names — these people are confirmed inactive
-  const knownNH = ['angelica alert','angelina campbell','esha singh','keisha graig','kleon williams'];
+  // Only list agents confirmed permanently inactive/terminated — do NOT put active trainees here
+  const knownNH = ['angelica alert','esha singh','keisha graig'];
   if(knownNH.some(n=>nameLow===n)) return true;
 
   // 3. Hardcoded INACTIVE_AGENTS list
@@ -4851,10 +4852,12 @@ function parseStatsCSV(text){
     // Skip NH (No Hire / inactive) agents right at parse time
     if(/\bNH\b/i.test(nameRaw)) continue;
 
-    // Clean name — remove prefix and extension number
+    // Clean name — remove prefix (handles GUYB, GUYP, GUYP4, GUY etc) and extension number
     const name = nameRaw
-      .replace(/^GUY[PB]?\s+/i,'')
-      .replace(/^GUY[PB]?-/i,'')
+      .replace(/^GUYP\d*\s+/i,'')
+      .replace(/^GUYB\d*\s+/i,'')
+      .replace(/^GUY\s+/i,'')
+      .replace(/^GUY[PB]?\d*-/i,'')
       .replace(/\s*-\s*\d{4,}$/,'')
       .trim();
 
@@ -4864,36 +4867,49 @@ function parseStatsCSV(text){
     const csvIdMatch = nameRaw.match(/-\s*(\d{4,})\s*$/);
     const csvYtelId  = csvIdMatch ? csvIdMatch[1].trim() : null;
 
-    // ── TEAM — nameRaw prefix is ALWAYS first priority ──
-    // GUYP prefix = Providence (PR), GUYB prefix = Berbice (BB)
-    // The CSV prefix is embedded at call-centre level and is the ground truth.
-    // ROSTER lookups were previously first, causing BB/PR to swap when the
-    // roster was stale or not yet loaded. Prefix is now always authoritative.
+    // ── TEAM RESOLUTION ──
+    // Priority: (1) GUYP/GUYB prefix in nameRaw → authoritative
+    //           (2) Plain GUY (no B/P) → look up in ROSTER by ID then name
+    //           (3) Still ambiguous → default BB (should be rare)
     const ynRaw = nameRaw.toUpperCase().replace(/[\s-]/g,'');
-    let team = ynRaw.startsWith('GUYP') ? 'PR' : 'BB';
-
-    // Only use ROSTER as a fallback for ambiguous prefix (plain GUY, no B or P)
-    if(!ynRaw.startsWith('GUYP') && !ynRaw.startsWith('GUYB')){
+    // Handle typos like GUYP4 — strip trailing digits from prefix before comparing
+    const prefixClean = ynRaw.replace(/^(GUYP|GUYB)\d+/, '$1');
+    let team;
+    if(prefixClean.startsWith('GUYP'))      team = 'PR';
+    else if(prefixClean.startsWith('GUYB')) team = 'BB';
+    else {
+      // Plain GUY prefix — must look up in ROSTER (ID first, then name)
+      // ROSTER is guaranteed loaded at this point because parseStatsCSV
+      // is only called from confirmUpload which runs after loadRoster()
       const rosterAgents = Object.values(ROSTER);
       const nameLow = name.toLowerCase().trim();
+      let resolved = null;
       if(csvYtelId){
         const byId = rosterAgents.find(r => String(r.userId).trim() === csvYtelId);
-        if(byId){ team = byId.team; }
-        else {
-          const byName = rosterAgents.find(r => {
-            const rn = r.name.toLowerCase();
-            const cF = nameLow.split(' ')[0], cL = nameLow.split(' ').slice(-1)[0];
-            const rF = rn.split(' ')[0],      rL = rn.split(' ').slice(-1)[0];
-            return rn === nameLow
-              || (rF === cF && cL.length > 2 && rL.length > 2
-                 && (rL.startsWith(cL.substring(0,4)) || cL.startsWith(rL.substring(0,4))));
-          });
-          if(byName){ team = byName.team; }
-        }
-      } else {
-        const byName = Object.values(ROSTER).find(r => r.name.toLowerCase() === nameLow);
-        if(byName){ team = byName.team; }
+        if(byId) resolved = byId.team;
       }
+      if(!resolved){
+        // Name match: exact first, then first+last fuzzy
+        const byExact = rosterAgents.find(r => r.name.toLowerCase() === nameLow);
+        if(byExact){
+          resolved = byExact.team;
+        } else {
+          const cParts = nameLow.split(' ');
+          const cF = cParts[0], cL = cParts[cParts.length-1];
+          const byFuzzy = rosterAgents.find(r => {
+            const rn = r.name.toLowerCase().split(' ');
+            const rF = rn[0], rL = rn[rn.length-1];
+            return rF === cF && cL.length > 2 && rL.length > 2
+              && (rL.startsWith(cL.substring(0,4)) || cL.startsWith(rL.substring(0,4)));
+          });
+          if(byFuzzy) resolved = byFuzzy.team;
+        }
+      }
+      // Log unresolved plain-GUY agents so you can investigate
+      if(!resolved){
+        console.warn('⚠️ Team unresolved for plain-GUY agent — defaulting BB:', nameRaw, 'ID:', csvYtelId);
+      }
+      team = resolved || 'BB';
     }
 
     const n = s => parseInt((cols[s]||'0').replace(/[^0-9]/g,''))||0;
