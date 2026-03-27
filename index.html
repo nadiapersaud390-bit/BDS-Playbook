@@ -571,7 +571,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
   <button class="tab-btn t-asep   tab-span-2"         id="tab-asep"       onclick="switchTab('asep')">&#9881;&#65039; A.S.E.P</button>
   <button class="tab-btn t-sunday tab-span-3 sunday-glow" id="tab-sunday" onclick="switchTab('sunday')">&#128197; SUNDAY PROTOCOL</button>
   <button class="tab-btn t-dispo  tab-span-3"         id="tab-dispo"      onclick="switchTab('dispo')">&#9989; DISPO</button>
-  <button class="tab-btn t-lenders tab-span-6"        id="tab-lenders"    onclick="switchTab('lenders')">&#129309; LENDERS WE WORK WITH</button>
+  <button class="tab-btn t-lenders tab-span-6"        id="tab-lenders"    onclick="switchTab('lenders')">&#129309; LENDERS &amp; BENEFITS OF A PERSONAL LOAN</button>
   <button class="admin-tab-btn tab-span-6 admin-only" id="tab-admin"      onclick="switchAdminTab('profiles')">&#9889; ADMIN PANEL</button>
 </div>
 </div>
@@ -2007,101 +2007,136 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
   <div class="tab-page" id="page-lenders">
     <div style="padding:10px 12px;overflow-y:auto;flex:1;">
 
-      <div style="text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:800;color:var(--text);letter-spacing:3px;padding:8px 0 6px;border-bottom:2px solid #2a3a5a;margin-bottom:0;">Private Lenders</div>
+      <div style="text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:900;color:var(--text);letter-spacing:4px;padding:10px 0 8px;border-bottom:2px solid #2a3a5a;margin-bottom:10px;text-transform:uppercase;">Benefits of a Personal Loan</div>
 
       <table style="width:100%;border-collapse:collapse;border:1.5px solid #2a3a5a;">
+        <thead>
+          <tr>
+            <th style="border:1.5px solid #2a3a5a;padding:8px;text-align:center;width:45%;font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:800;letter-spacing:2px;color:var(--accent);background:rgba(96,165,250,0.08);text-transform:uppercase;">Lenders We Work With</th>
+            <th style="border:1.5px solid #2a3a5a;padding:8px;text-align:center;width:55%;font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:800;letter-spacing:2px;color:var(--accent);background:rgba(96,165,250,0.08);text-transform:uppercase;">Benefits of a Personal Loan</th>
+          </tr>
+        </thead>
         <tbody>
-
           <tr>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;width:50%;vertical-align:middle;">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.35rem;font-weight:700;color:var(--text);letter-spacing:1px;">✦ LightStream</div>
+            <!-- LEFT COLUMN: Lenders Grid -->
+            <td style="border:1.5px solid #2a3a5a;padding:8px;vertical-align:top;">
+              <table style="width:100%;border-collapse:collapse;">
+                <tbody>
+                  <tr>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;width:50%;vertical-align:middle;">
+                      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:700;color:var(--text);letter-spacing:1px;">&#10022; LightStream</div>
+                    </td>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;width:50%;vertical-align:middle;">
+                      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:var(--text);letter-spacing:3px;">a x o s</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:900;color:var(--text);letter-spacing:2px;">SoFi &#9107;&#9107;</div>
+                    </td>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:900;color:var(--text);letter-spacing:1px;">&#9650; Upstart</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:700;color:var(--text);letter-spacing:2px;">LendingClub</div>
+                    </td>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;color:var(--text);letter-spacing:1px;">&#10022; PROSPER</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:900;color:var(--text);letter-spacing:1px;">&#10005; Best Egg</div>
+                    </td>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:900;color:var(--text);letter-spacing:6px;">AVANT</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;color:var(--text);">&#119958; upgrade</div>
+                    </td>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:700;color:var(--text);font-style:italic;">Reprise <span style="font-size:0.7rem;font-weight:400;">Financial</span></div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;color:var(--text);letter-spacing:3px;">SPLASH</div>
+                    </td>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;color:var(--text);letter-spacing:1px;">UNIVERSAL &#9785; CREDIT</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Nunito',sans-serif;font-size:1.05rem;font-weight:700;color:var(--text);">&#9786; Happy Money.</div>
+                    </td>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;color:var(--text);line-height:1.3;">OneMain<br><span style="font-weight:400;font-size:0.9rem;">Financial</span></div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:900;color:var(--text);letter-spacing:2px;line-height:1.2;">MARINER<br>FINANCE</div>
+                    </td>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:700;color:var(--text);">&#8857; NetCredit</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:900;color:#64748b;letter-spacing:4px;font-style:italic;">RISE</div>
+                    </td>
+                    <td style="border:1px solid #1e2d4a;padding:10px 6px;text-align:center;vertical-align:middle;">
+                      <div style="font-family:'Nunito',sans-serif;font-size:1.15rem;color:var(--text);"><span style="font-weight:800;">Opp</span><span style="font-weight:400;">Loans</span></div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </td>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;width:50%;vertical-align:middle;">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.7rem;font-weight:900;color:var(--text);letter-spacing:2px;">SoFi <span style="font-size:1rem;letter-spacing:0px;">⠿⠿</span></div>
+
+            <!-- RIGHT COLUMN: Benefits List -->
+            <td style="border:1.5px solid #2a3a5a;padding:14px 16px;vertical-align:top;">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:900;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:10px;text-align:center;">Benefits of a Personal Loan</div>
+              <ul style="list-style:disc;padding-left:18px;margin:0;display:flex;flex-direction:column;gap:7px;">
+                <li style="font-size:0.85rem;line-height:1.5;color:var(--text);">Promotional interest rate starting at <strong style="color:var(--gold);">5.8%</strong></li>
+                <li style="font-size:0.85rem;line-height:1.5;color:var(--text);">Fixed rates once contracted <span style="color:var(--muted);">(Not variable)</span></li>
+                <li style="font-size:0.85rem;line-height:1.5;color:var(--text);">No hidden fees <span style="color:var(--muted);">(Free consultation and Signing)</span></li>
+                <li style="font-size:0.85rem;line-height:1.5;color:var(--text);">Soft credit check via Transunion <span style="color:var(--muted);">(No impact on clients score)</span></li>
+                <li style="font-size:0.85rem;line-height:1.5;color:var(--text);">2 step process <strong style="color:var(--green);">(5&ndash;15 Min)</strong> with quick approvals</li>
+                <li style="font-size:0.85rem;line-height:1.5;color:var(--text);">Next Day deposit <span style="color:var(--muted);">(Up to 74 hrs)</span></li>
+                <li style="font-size:0.85rem;line-height:1.5;color:var(--text);">Amounts from <strong style="color:var(--green);">$1K up to $100K</strong> <span style="color:var(--muted);">(ranges vary based on marketing campaigns)</span></li>
+                <li style="font-size:0.85rem;line-height:1.5;color:var(--text);">No restrictions on the purpose of the loan <span style="color:var(--muted);">(Home improvement, Personal purchases, Vacations, Emergency expenses, Pay Debt)</span></li>
+                <li style="font-size:0.85rem;line-height:1.5;color:var(--text);">No commitment to sign today &mdash; Final Decision is up to the client. <strong style="color:var(--accent2);">Access to offers for 30 Days.</strong></li>
+                <li style="font-size:0.85rem;line-height:1.5;color:var(--text);">No need of collateral <span style="color:var(--muted);">(Mortgage, Cars, Savings accounts)</span></li>
+                <li style="font-size:0.85rem;line-height:1.5;color:var(--text);">Review Financial options with over <strong style="color:var(--gold);">25 reliable lenders</strong></li>
+              </ul>
             </td>
           </tr>
-
-          <tr>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.35rem;font-weight:700;color:var(--text);letter-spacing:2px;">⠿ LendingClub</div>
-            </td>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;color:var(--text);">𝗎 upgrade</div>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:900;color:var(--text);letter-spacing:8px;">AVANT</div>
-            </td>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:800;color:var(--text);letter-spacing:1px;">✦ Prosper</div>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:900;color:var(--text);letter-spacing:1px;">▲ Upstart</div>
-            </td>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;font-weight:900;color:var(--text);letter-spacing:2px;line-height:1.25;">MARINER<br>FINANCE</div>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:800;color:var(--text);letter-spacing:3px;">⠿ SPLASH</div>
-            </td>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Nunito',sans-serif;font-size:1.4rem;font-weight:700;color:var(--text);font-style:italic;">Reprise</div>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Nunito',sans-serif;font-size:1.15rem;font-weight:700;color:var(--text);">☺ Happy Money.</div>
-            </td>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:900;color:#64748b;letter-spacing:4px;font-style:italic;">RISE</div>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.25rem;font-weight:900;color:var(--text);letter-spacing:1px;">UC <span style="font-size:0.75rem;font-weight:600;color:var(--muted);letter-spacing:0;">firstpendt<br>ciones</span></div>
-            </td>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:800;color:var(--text);line-height:1.3;">OneMain<br><span style="font-weight:400;font-size:1rem;">Financial</span></div>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:900;color:var(--text);letter-spacing:1px;">✕ Best Egg</div>
-            </td>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:400;color:#64748b;letter-spacing:3px;">a k o s</div>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:700;color:var(--text);">⊙ NetCredit</div>
-            </td>
-            <td style="border:1.5px solid #2a3a5a;padding:16px 8px;text-align:center;vertical-align:middle;">
-              <div style="font-family:'Nunito',sans-serif;font-size:1.3rem;color:var(--text);"><span style="font-weight:800;">Opp</span><span style="font-weight:400;">Loans</span></div>
-            </td>
-          </tr>
-
         </tbody>
       </table>
 
-      <div style="margin-top:10px;background:rgba(96,165,250,0.07);border:1px dashed rgba(96,165,250,0.3);border-radius:8px;padding:10px 14px;font-size:0.8rem;color:var(--muted);line-height:1.6;">
-        <strong style="color:var(--accent);">💡 USE WHEN ASKED:</strong> "We are private lenders — we work with several lending institutions such as <span style="color:var(--text);font-weight:600;">SoFi, One Main, LightStream</span>, just to mention a few. The difference between a bank and us is that we have <span style="color:var(--gold);font-weight:700;">lower interest rates</span>."
+      <!-- DO NOT WORK WARNING -->
+      <div style="margin-top:10px;background:rgba(248,113,113,0.08);border:1.5px solid rgba(248,113,113,0.5);border-radius:8px;padding:12px 16px;">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:900;letter-spacing:2px;color:var(--red);text-align:center;margin-bottom:6px;text-transform:uppercase;">&#128683; DO NOT WORK THE FOLLOWING LEADS:</div>
+        <div style="font-size:0.82rem;line-height:1.7;color:var(--text);text-align:center;">
+          <strong style="color:var(--gold);">Ineligible States:</strong> <span style="color:#cbd5e1;">Wisconsin, Oregon, Minnesota</span>
+        </div>
+        <div style="font-size:0.82rem;line-height:1.7;color:var(--text);text-align:center;">
+          <strong style="color:var(--gold);">Ineligible Clients:</strong> <span style="color:#94a3b8;">Under age, no SSN or ITIN, under bankruptcy within the last 2 years (must be discharged), Unworkable files, unsecured debt below $10K, no source of income</span>
+        </div>
+      </div>
+
+      <div style="margin-top:8px;background:rgba(96,165,250,0.07);border:1px dashed rgba(96,165,250,0.3);border-radius:8px;padding:10px 14px;font-size:0.8rem;color:var(--muted);line-height:1.6;">
+        <strong style="color:var(--accent);">&#128161; USE WHEN ASKED:</strong> &quot;We are private lenders &mdash; we work with several lending institutions such as <span style="color:var(--text);font-weight:600;">SoFi, One Main, LightStream</span>, just to mention a few. The difference between a bank and us is that we have <span style="color:var(--gold);font-weight:700;">lower interest rates</span>.&quot;
       </div>
 
     </div>
   </div>
+
 
 </div>
 
