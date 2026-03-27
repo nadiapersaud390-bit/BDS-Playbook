@@ -5055,8 +5055,17 @@ function parseStatsCSV(text){
   const lines = text.trim().replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
   if(!lines.length) return;
 
+  // ── AUTO-DETECT DELIMITER (comma vs semicolon) ──
+  // Some computers (LibreOffice, non-English locales) export CSVs with semicolons.
+  // Count occurrences in the header line to decide which delimiter to use.
+  const firstLine = lines[0];
+  const commaCount = (firstLine.match(/,/g)||[]).length;
+  const semiCount  = (firstLine.match(/;/g)||[]).length;
+  const DELIM = semiCount > commaCount ? ';' : ',';
+  if(DELIM === ';') console.log('⚠️ CSV uses semicolon delimiter — adjusting parser');
+
   // Parse headers — strip BOM, quotes, spaces
-  const headers = lines[0].split(',').map(h=>h.replace(/^\uFEFF/,'').replace(/^"|"$/g,'').trim());
+  const headers = firstLine.split(DELIM).map(h=>h.replace(/^\uFEFF/,'').replace(/^"|"$/g,'').trim());
 
   // Build column index map by header name
   const col = {};
@@ -5090,7 +5099,7 @@ function parseStatsCSV(text){
     if(!raw.trim()) continue;
 
     // Parse CSV line properly handling quoted fields
-    const cols = parseCSVLine(raw);
+    const cols = parseCSVLine(raw, DELIM);
     if(!cols.length) continue;
 
     const nameRaw = cols[iName]||'';
@@ -5199,19 +5208,21 @@ function parseStatsCSV(text){
     statsData.push({name, nameRaw, ytelId: csvYtelId||'', team, calls, ci, xfer, dnc, ni, hangup, spnsh, crpull, callbk, conv});
   }
 
-  console.log('CSV parsed:', statsData.length, 'agents');
+  console.log('CSV parsed:', statsData.length, 'agents | delimiter:', DELIM === ',' ? 'comma' : 'semicolon');
 }
 
-// Proper CSV line parser — handles quoted fields with commas inside
-function parseCSVLine(line){
+// Proper CSV line parser — handles quoted fields with commas or semicolons inside
+// Pass the delimiter character detected from the header line (default: comma)
+function parseCSVLine(line, delim){
   // Strip trailing \r in case of Windows \r\n line endings
   line = line.replace(/\r$/,'');
+  delim = delim || ',';
   const result=[];
   let cur='', inQ=false;
   for(let i=0;i<line.length;i++){
     const c=line[i];
     if(c==='"'){ inQ=!inQ; }
-    else if(c===','&&!inQ){ result.push(cur.trim()); cur=''; }
+    else if(c===delim&&!inQ){ result.push(cur.trim()); cur=''; }
     else cur+=c;
   }
   result.push(cur.trim());
