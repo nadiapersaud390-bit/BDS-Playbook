@@ -2264,6 +2264,16 @@ const INACTIVE_AGENTS = [
 let ROSTER = {};
 let rosterLoaded = false;
 
+// Normalize any team/branch string to canonical 'PR' (Providence) or 'BB' (Berbice)
+// Handles values like: GUYP, GUYB, PR, BB, Providence, Berbice, and combos
+function normalizeTeam(val) {
+  if (!val) return 'BB';
+  const v = val.toUpperCase().replace(/[\s\-_]/g, '');
+  if (v.startsWith('GUYP') || v.includes('GUYP') || v === 'PR' || v.includes('PROVIDENCE')) return 'PR';
+  if (v.startsWith('GUYB') || v.includes('GUYB') || v === 'BB' || v.includes('BERBICE')) return 'BB';
+  return val; // unknown value — pass through unchanged
+}
+
 async function loadRoster() {
   try {
     const data = await callBridge({action: 'getRoster'});
@@ -2303,14 +2313,15 @@ async function loadRoster() {
           if(isInactive) return;
           // Determine team from ytelName prefix — GUYP = Providence (PR), GUYB = Berbice (BB)
           // ytelName is the authoritative source; sheet team field is a fallback only
+          // normalizeTeam() converts GUYP/Providence/PR → 'PR', GUYB/Berbice/BB → 'BB'
           let team = 'BB'; // safe default
           if (a.ytelName) {
             const yn = a.ytelName.toUpperCase().replace(/[\s\-_]/g,'');
             if (yn.startsWith('GUYP') || yn.includes('GUYP')) team = 'PR';
             else if (yn.startsWith('GUYB') || yn.includes('GUYB')) team = 'BB';
-            else if (a.team) team = a.team; // ytelName has no prefix clue — trust sheet field
+            else if (a.team) team = normalizeTeam(a.team); // ytelName has no prefix clue — normalize sheet field
           } else if (a.team) {
-            team = a.team; // no ytelName at all — use sheet field directly
+            team = normalizeTeam(a.team); // no ytelName at all — normalize sheet field
           }
           const uid = String(a.userId).trim();
           // If we already have this agent in ROSTER (e.g. just added via Firebase),
@@ -2382,15 +2393,15 @@ async function loadRoster() {
         || a.inactive === true;
       if (isInactive) return;
       // Determine team from ytelName prefix — GUYP = Providence (PR), GUYB = Berbice (BB)
-      // ytelName is authoritative; a.team is fallback only
+      // ytelName is authoritative; a.team is fallback only (always normalized via normalizeTeam)
       let team = 'BB';
       if (a.ytelName) {
         const yn = a.ytelName.toUpperCase().replace(/[\s\-_]/g,'');
         if (yn.startsWith('GUYP') || yn.includes('GUYP')) team = 'PR';
         else if (yn.startsWith('GUYB') || yn.includes('GUYB')) team = 'BB';
-        else if (a.team) team = a.team;
+        else if (a.team) team = normalizeTeam(a.team);
       } else if (a.team) {
-        team = a.team;
+        team = normalizeTeam(a.team);
       }
       ROSTER[uid] = {
         userId: uid,
@@ -3010,9 +3021,9 @@ async function pollRoster() {
         const yn = a.ytelName.toUpperCase().replace(/[\s\-_]/g, '');
         if (yn.startsWith('GUYP') || yn.includes('GUYP')) team = 'PR';
         else if (yn.startsWith('GUYB') || yn.includes('GUYB')) team = 'BB';
-        else if (a.team) team = a.team;
+        else if (a.team) team = normalizeTeam(a.team);
       } else if (a.team) {
-        team = a.team;
+        team = normalizeTeam(a.team);
       }
       fresh[String(a.userId).trim()] = {
         userId:   String(a.userId).trim(),
