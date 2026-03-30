@@ -2372,19 +2372,33 @@ async function loadRoster() {
       // If Sheet already loaded this agent, check if Firebase has a better team determination
       // (Sheet may have saved without ytelName, causing wrong BB default)
       if (ROSTER[uid]) {
-        // Only override team if Firebase ytelName gives a clear signal and Sheet entry looks wrong
-        if (a.ytelName) {
+        // Firebase may only UPGRADE a BB assignment to PR — it must NEVER downgrade PR→BB.
+        // The Google Sheet's ytelName (GUYP prefix) is the authoritative team source.
+        if (ROSTER[uid].team !== 'PR' && a.ytelName) {
           const yn = a.ytelName.toUpperCase().replace(/[\s\-_]/g,'');
-          const fbTeam = (yn.startsWith('GUYP') || yn.includes('GUYP')) ? 'PR'
-                       : (yn.startsWith('GUYB') || yn.includes('GUYB')) ? 'BB'
-                       : null;
-          if (fbTeam && ROSTER[uid].team !== fbTeam) {
-            console.log(`🔥 Firebase correcting team for ${a.name}: ${ROSTER[uid].team} → ${fbTeam} (ytelName: ${a.ytelName})`);
-            ROSTER[uid].team = fbTeam;
+          const fbTeam = (yn.startsWith('GUYP') || yn.includes('GUYP')) ? 'PR' : null;
+          if (fbTeam) {
+            console.log(`🔥 Firebase upgrading team for ${a.name}: BB → PR (ytelName: ${a.ytelName})`);
+            ROSTER[uid].team = 'PR';
             if (!ROSTER[uid].ytelName) ROSTER[uid].ytelName = a.ytelName;
           }
         }
         return; // already in roster — Sheet data wins for everything else
+      }
+      // ── Dedup by name: if Sheet already has an agent with this name, don't add a
+      // second Firebase entry with a different userId (would cause them to appear in both branches).
+      const sameNameEntry = Object.values(ROSTER).find(r => r.name && a.name &&
+        r.name.toLowerCase().trim() === (a.name||'').toLowerCase().trim());
+      if (sameNameEntry) {
+        // Merge: keep Sheet userId but apply Firebase upgrade only (BB→PR)
+        if (sameNameEntry.team !== 'PR' && a.ytelName) {
+          const yn = a.ytelName.toUpperCase().replace(/[\s\-_]/g,'');
+          if (yn.startsWith('GUYP') || yn.includes('GUYP')) {
+            console.log(`🔥 Firebase upgrading team for ${a.name} (name-match): BB → PR`);
+            sameNameEntry.team = 'PR';
+          }
+        }
+        return; // don't create a second ROSTER entry for the same person
       }
       // Skip if explicitly inactive — blank status treated as active (Agent)
       const fbStatusLow = (a.status||'').toLowerCase().trim();
@@ -3062,8 +3076,16 @@ async function pollRoster() {
 
     // Apply the fresh roster
     // Preserve Firebase-only entries (not returned by Sheet) that are still valid
+    // but skip entries that are duplicates of a Sheet agent (same name, different userId)
+    const freshNames = new Set(Object.values(fresh).map(a => (a.name||'').toLowerCase().trim()));
     Object.keys(ROSTER).forEach(uid => {
       if (!fresh[uid]) {
+        const entryName = (ROSTER[uid].name||'').toLowerCase().trim();
+        if (freshNames.has(entryName)) {
+          // Same person is already in fresh from the Sheet — don't add the stale Firebase duplicate
+          console.log('pollRoster: skipping Firebase duplicate for', ROSTER[uid].name);
+          return;
+        }
         // Keep Firebase-only agents unless they're now in the Sheet as inactive
         fresh[uid] = ROSTER[uid];
       }
@@ -4163,6 +4185,18 @@ async function loadAdminOverview(){
         }
       });
     }catch(e){ /* non-fatal */ }
+
+    // ── Reconcile team field in attendance records against current ROSTER ──
+    // Firestore records may have been written with the wrong team before a roster fix.
+    // Always trust ROSTER (built from the authoritative Google Sheet) over stored Firestore data.
+    allAttRecords.forEach(r => {
+      const rosterAgent = ROSTER[String(r.id||'').trim()]
+                       || Object.values(ROSTER).find(a => a.name && r.name &&
+                            a.name.toLowerCase().trim() === (r.name||'').toLowerCase().trim());
+      if (rosterAgent && rosterAgent.team && r.team !== rosterAgent.team) {
+        r.team = rosterAgent.team;
+      }
+    });
 
     const online = allAttRecords.filter(r=>r.status==='Present'||r.status==='P');
     const late   = allAttRecords.filter(r=>r.status==='Late'||r.status==='L');
