@@ -2287,13 +2287,15 @@ async function loadRoster() {
             || (statusLow === 'inactive');
           if(isInactive) return;
           // Determine team from ytelName prefix — GUYP = Providence (PR), GUYB = Berbice (BB)
-          // Plain "GUY" (no suffix) may be either team — trust the sheet's team field when available
-          let team = a.team || 'BB';
+          // ytelName is the authoritative source; sheet team field is a fallback only
+          let team = 'BB'; // safe default
           if (a.ytelName) {
-            const yn = a.ytelName.toUpperCase().replace(/\s+/g,'').replace(/-/g,'');
-            if (yn.startsWith('GUYP')) team = 'PR';
-            else if (yn.startsWith('GUYB')) team = 'BB';
-            // Plain GUY (no B/P) — keep sheet-provided team if available, else default BB
+            const yn = a.ytelName.toUpperCase().replace(/[\s\-_]/g,'');
+            if (yn.startsWith('GUYP') || yn.includes('GUYP')) team = 'PR';
+            else if (yn.startsWith('GUYB') || yn.includes('GUYB')) team = 'BB';
+            else if (a.team) team = a.team; // ytelName has no prefix clue — trust sheet field
+          } else if (a.team) {
+            team = a.team; // no ytelName at all — use sheet field directly
           }
           ROSTER[String(a.userId).trim()] = {
             userId: String(a.userId).trim(),
@@ -2334,7 +2336,24 @@ async function loadRoster() {
       }
       const uid = String(a.userId || doc.id).trim();
       if (!uid) return;
-      if (ROSTER[uid]) return; // already loaded from Sheet — Sheet wins
+
+      // If Sheet already loaded this agent, check if Firebase has a better team determination
+      // (Sheet may have saved without ytelName, causing wrong BB default)
+      if (ROSTER[uid]) {
+        // Only override team if Firebase ytelName gives a clear signal and Sheet entry looks wrong
+        if (a.ytelName) {
+          const yn = a.ytelName.toUpperCase().replace(/[\s\-_]/g,'');
+          const fbTeam = (yn.startsWith('GUYP') || yn.includes('GUYP')) ? 'PR'
+                       : (yn.startsWith('GUYB') || yn.includes('GUYB')) ? 'BB'
+                       : null;
+          if (fbTeam && ROSTER[uid].team !== fbTeam) {
+            console.log(`🔥 Firebase correcting team for ${a.name}: ${ROSTER[uid].team} → ${fbTeam} (ytelName: ${a.ytelName})`);
+            ROSTER[uid].team = fbTeam;
+            if (!ROSTER[uid].ytelName) ROSTER[uid].ytelName = a.ytelName;
+          }
+        }
+        return; // already in roster — Sheet data wins for everything else
+      }
       // Skip if explicitly inactive — blank status treated as active (Agent)
       const fbStatusLow = (a.status||'').toLowerCase().trim();
       const isInactive = INACTIVE_AGENTS.some(n => n.toLowerCase() === (a.name||'').toLowerCase())
@@ -2342,13 +2361,15 @@ async function loadRoster() {
         || a.inactive === true;
       if (isInactive) return;
       // Determine team from ytelName prefix — GUYP = Providence (PR), GUYB = Berbice (BB)
-      // Plain "GUY" (no suffix) — trust sheet team field if available
-      let team = a.team || 'BB';
+      // ytelName is authoritative; a.team is fallback only
+      let team = 'BB';
       if (a.ytelName) {
-        const yn = a.ytelName.toUpperCase().replace(/[\s-]/g,'');
-        if (yn.startsWith('GUYP')) team = 'PR';
-        else if (yn.startsWith('GUYB')) team = 'BB';
-        // Plain GUY: keep sheet-provided a.team, fallback to BB
+        const yn = a.ytelName.toUpperCase().replace(/[\s\-_]/g,'');
+        if (yn.startsWith('GUYP') || yn.includes('GUYP')) team = 'PR';
+        else if (yn.startsWith('GUYB') || yn.includes('GUYB')) team = 'BB';
+        else if (a.team) team = a.team;
+      } else if (a.team) {
+        team = a.team;
       }
       ROSTER[uid] = {
         userId: uid,
@@ -2953,11 +2974,14 @@ async function pollRoster() {
       if (statusLow === 'inactive') return;
       if (INACTIVE_AGENTS.some(n => n.toLowerCase() === a.name.toLowerCase())) return;
 
-      let team = a.team || 'BB';
+      let team = 'BB';
       if (a.ytelName) {
-        const yn = a.ytelName.toUpperCase().replace(/[\s-]/g, '');
-        if (yn.startsWith('GUYP'))      team = 'PR';
-        else if (yn.startsWith('GUYB')) team = 'BB';
+        const yn = a.ytelName.toUpperCase().replace(/[\s\-_]/g, '');
+        if (yn.startsWith('GUYP') || yn.includes('GUYP')) team = 'PR';
+        else if (yn.startsWith('GUYB') || yn.includes('GUYB')) team = 'BB';
+        else if (a.team) team = a.team;
+      } else if (a.team) {
+        team = a.team;
       }
       fresh[String(a.userId).trim()] = {
         userId:   String(a.userId).trim(),
@@ -3018,6 +3042,9 @@ async function pollRoster() {
     if (typeof renderProfileList === 'function') renderProfileList();
     if (typeof renderStatsTable  === 'function' && statsData.length) renderStatsTable();
     if (typeof reRenderMonthly   === 'function') reRenderMonthly();
+    // Reload overview board if it is currently visible
+    const ovEl2 = document.getElementById('admin-overview');
+    if (ovEl2 && ovEl2.style.display !== 'none' && typeof loadAdminOverview === 'function') loadAdminOverview();
     // Reload weekly attendance only if that tab is currently visible
     const wkEl = document.getElementById('admin-weekly');
     if (wkEl && wkEl.style.display !== 'none' && typeof loadWeeklyAttendance === 'function') {
@@ -3570,6 +3597,10 @@ async function saveNewRep(){
     renderProfileList();      // Profiles tab agent list
     renderAttTable();         // Attendance tab
     if(typeof renderStatsTable === 'function') renderStatsTable(); // Agent Stats tab
+
+    // Refresh the live overview board (online/absent chips + glance counts)
+    const ovEl = document.getElementById('admin-overview');
+    if(ovEl && ovEl.style.display !== 'none') loadAdminOverview();
 
     // Refresh weekly attendance if it's currently open
     if(weeklyTeam){ loadWeeklyAttendance(weeklyTeam); }
