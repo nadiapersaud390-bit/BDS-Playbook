@@ -2272,11 +2272,26 @@ async function loadRoster() {
       if (data.agents.length > 0) {
         console.log('🔍 RAW AGENT FROM APPS SCRIPT:', JSON.stringify(data.agents[0]));
         console.log('🔍 ALL FIELD NAMES:', Object.keys(data.agents[0]).join(', '));
+        // Log the ytelName specifically so we can see what key it's stored under
+        const firstA = data.agents[0];
+        const ytelKey = Object.keys(firstA).find(k => k.toLowerCase().replace(/[\s_]/g,'') === 'ytelname');
+        console.log('🔍 ytelName key in sheet:', ytelKey, '→', ytelKey ? firstA[ytelKey] : 'NOT FOUND');
       } else {
         console.warn('⚠️ Apps Script returned 0 agents — sheet may be offline or misconfigured');
       }
       ROSTER = {};
-      data.agents.forEach(a => {
+      data.agents.forEach(rawA => {
+        // Normalize field names — Apps Script may return different casing
+        const a = {
+          userId:   rawA.userId   || rawA.userid   || rawA.UserId   || rawA.user_id   || '',
+          name:     rawA.name     || rawA.Name      || rawA.agentName || rawA.agentname || '',
+          ytelName: rawA.ytelName || rawA.ytelname  || rawA.YtelName  || rawA['Ytel Name'] || rawA['ytel name'] || rawA['ytel_name'] || '',
+          team:     rawA.team     || rawA.Team      || '',
+          shift:    rawA.shift    || rawA.Shift     || '',
+          lunch:    rawA.lunch    || rawA.Lunch     || '',
+          status:   rawA.status   || rawA.Status    || '',
+          inactive: rawA.inactive || false,
+        };
         if (a.userId) {
           // Skip inactive agents — either hardcoded or flagged by Apps Script
           // NOTE: blank status is treated as active (Agent) — only skip when
@@ -2297,10 +2312,16 @@ async function loadRoster() {
           } else if (a.team) {
             team = a.team; // no ytelName at all — use sheet field directly
           }
-          ROSTER[String(a.userId).trim()] = {
-            userId: String(a.userId).trim(),
+          const uid = String(a.userId).trim();
+          // If we already have this agent in ROSTER (e.g. just added via Firebase),
+          // and the Sheet came back without a ytelName prefix, trust the existing team
+          const existingTeam = ROSTER[uid] ? ROSTER[uid].team : null;
+          if (!a.ytelName && existingTeam) team = existingTeam;
+
+          ROSTER[uid] = {
+            userId: uid,
             name: a.name,
-            ytelName: a.ytelName,
+            ytelName: a.ytelName || (ROSTER[uid] ? ROSTER[uid].ytelName : ''),
             shift: a.shift || '',
             lunch: a.lunch || '',
             brk: '',
@@ -2968,7 +2989,17 @@ async function pollRoster() {
 
     // Rebuild a temporary roster map from fresh data
     const fresh = {};
-    data.agents.forEach(a => {
+    data.agents.forEach(rawA => {
+      const a = {
+        userId:   rawA.userId   || rawA.userid   || rawA.UserId   || rawA.user_id   || '',
+        name:     rawA.name     || rawA.Name      || rawA.agentName || rawA.agentname || '',
+        ytelName: rawA.ytelName || rawA.ytelname  || rawA.YtelName  || rawA['Ytel Name'] || rawA['ytel name'] || rawA['ytel_name'] || '',
+        team:     rawA.team     || rawA.Team      || '',
+        shift:    rawA.shift    || rawA.Shift     || '',
+        lunch:    rawA.lunch    || rawA.Lunch     || '',
+        status:   rawA.status   || rawA.Status    || '',
+        inactive: rawA.inactive || false,
+      };
       if (!a.userId) return;
       const statusLow = (a.status || '').toLowerCase().trim();
       if (statusLow === 'inactive') return;
@@ -3547,6 +3578,7 @@ async function saveNewRep(){
       ytelName:  ytel,
       agentName: name,
       userId:    idVal,
+      team,
       shift,
       lunch,
       status
