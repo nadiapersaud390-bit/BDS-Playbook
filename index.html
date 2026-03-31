@@ -939,9 +939,23 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
             </div>
             <div id="rp-break-status" class="ap-field-status"></div>
           </div>
+
+          <div style="background:#060b18;border:1px solid #1a2540;border-radius:10px;padding:14px;">
+            <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#a78bfa;margin-bottom:8px;">Team Assignment</div>
+            <div class="ap-input-row">
+              <select id="rp-team-input" class="ap-input"
+                onfocus="this.style.borderColor='#a78bfa'" onblur="this.style.borderColor='#2a3a5a'">
+                <option value="">— Select team —</option>
+                <option value="BB">🏠 Berbice (BB)</option>
+                <option value="PR">🌴 Providence (PR)</option>
+              </select>
+              <button class="ap-save-btn" onclick="saveRosterField('team')" style="background:#160e2c;color:#a78bfa;">💾 Save</button>
+            </div>
+            <div id="rp-team-status" class="ap-field-status"></div>
+          </div>
         </div>
         <div style="font-size:0.6rem;color:#64748b;margin-top:12px;text-align:center;">
-          Shift &amp; Lunch → Google Sheet · Break → Firebase · Agent sees changes on next login
+          Shift &amp; Lunch &amp; Team → Google Sheet · Break → Firebase · Agent sees changes on next login
         </div>
       </div>
     </div>
@@ -5342,14 +5356,33 @@ function parseStatsCSV(text){
       else if(teamUp === 'BERBICE' || teamUp === 'BB') team = 'BB';
       else team = rosterMatch.team; // keep as-is if custom value
     } else {
-      // Prefix fallback — handles GUYP = Providence, GUYB = Berbice, plain GUY = BB
+      // Prefix fallback — handles GUYP = Providence, GUYB = Berbice
+      // Plain GUY (no P/B suffix) is ambiguous — do NOT default to BB.
+      // For plain GUY names, try to match by ID or name in ROSTER one more time
+      // to get the saved team, then fall back to BB only as a last resort.
       const ynRaw = nameRaw.toUpperCase().replace(/[\s-]/g,'');
       const prefixClean = ynRaw.replace(/^(GUYP|GUYB)\d+/, '$1');
       if(prefixClean.startsWith('GUYP'))      team = 'PR';
       else if(prefixClean.startsWith('GUYB')) team = 'BB';
       else {
-        console.warn('⚠️ Team unresolved — defaulting BB:', nameRaw, 'ID:', csvYtelId);
-        team = 'BB';
+        // Plain GUY prefix — look up saved team from Firebase roster by ID or name
+        let savedTeam = null;
+        if(csvYtelId) {
+          const fbEntry = ROSTER[csvYtelId] || Object.values(ROSTER).find(r=>String(r.userId).trim()===csvYtelId);
+          if(fbEntry && fbEntry.team) savedTeam = fbEntry.team;
+        }
+        if(!savedTeam) {
+          const nameLow = name.toLowerCase().trim();
+          const fbEntry = Object.values(ROSTER).find(r=>r.name.toLowerCase()===nameLow);
+          if(fbEntry && fbEntry.team) savedTeam = fbEntry.team;
+        }
+        if(savedTeam === 'PR' || savedTeam === 'BB') {
+          team = savedTeam;
+          console.log(`ℹ️ Plain GUY prefix — team from Firebase roster: ${team} for`, nameRaw);
+        } else {
+          console.warn('⚠️ Team unresolved — defaulting BB:', nameRaw, 'ID:', csvYtelId);
+          team = 'BB';
+        }
       }
     }
 
@@ -5933,7 +5966,9 @@ function apLoadSchedule(){
   }
   if(l) l.value=r.lunch||'';
   if(b) b.value=r.brk||'';
-  ['rp-shift-status','rp-lunch-status','rp-break-status'].forEach(id=>{
+  const t=document.getElementById('rp-team-input');
+  if(t) t.value=r.team||'';
+  ['rp-shift-status','rp-lunch-status','rp-break-status','rp-team-status'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.textContent='';
   });
 }
@@ -5965,9 +6000,28 @@ async function saveRosterField(field){
   }
   if(statusEl){ statusEl.textContent='Saving...'; statusEl.style.color='#64748b'; }
 
-  // Break → Firebase only
-  if(field==='break'){
+  // Team → Firebase + Google Sheet
+  if(field==='team'){
+    if(!r.id||r.id===''){ if(statusEl){ statusEl.textContent='❌ Agent ID missing'; statusEl.style.color='#f87171'; } return; }
+    if(value!=='BB'&&value!=='PR'){ if(statusEl){ statusEl.textContent='⚠ Please select a team.'; statusEl.style.color='#f87171'; } return; }
     try{
+      await db.collection('roster').doc(r.id).set({team:value},{merge:true});
+      await callBridge({action:'updateRosterField', userId:r.id, field:'team', value}).catch(()=>{});
+      currentRepProfile.team=value;
+      if(ROSTER[r.id]) ROSTER[r.id].team=value;
+      if(currentUser && String(currentUser.id)===String(r.id)){ currentUser.team=value; }
+      const metaEl=document.getElementById('pe-meta');
+      if(metaEl) metaEl.textContent=(value==='BB'?'Berbice (BB)':'Providence (PR)')+' · ID: '+r.id;
+      if(statusEl){ statusEl.textContent='✅ Team saved — re-upload CSV to apply'; statusEl.style.color='#34d399'; }
+      setTimeout(()=>{ if(statusEl) statusEl.textContent=''; },5000);
+    }catch(e){
+      if(statusEl){ statusEl.textContent='❌ '+e.message; statusEl.style.color='#f87171'; }
+    }
+    return;
+  }
+
+  // Break → Firebase only
+  if(field==='break'){    try{
       if(!r.id||r.id===''){ throw new Error('Agent ID not found'); }
       await db.collection('roster').doc(r.id).set({brk:value},{merge:true});
       currentRepProfile.brk = value;
