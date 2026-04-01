@@ -5192,14 +5192,13 @@ function resolveAgentTeam(agent){
 }
 
 // ── CHECK IF AN AGENT IS INACTIVE ──
-// Used to filter out NH agents and inactive roster entries from weekly performance
+// Used to filter out inactive roster entries from the stats table and weekly performance
 function isAgentInactive(agent){
   const nameLow = (agent.name||'').toLowerCase().trim();
 
-  // 1. NH tag in nameRaw (new reports have this)
-  if(agent.nameRaw && agent.nameRaw.toUpperCase().includes(' NH ')) return true;
-  if(agent.nameRaw && agent.nameRaw.toUpperCase().includes(' NH-')) return true;
-  if(agent.nameRaw && / NH$/i.test(agent.nameRaw.split('-')[0].trim())) return true;
+  // 1. NH tag means "New Hire" — NOT inactive. Do NOT filter based on NH alone.
+  //    NH agents are shown unless they are explicitly inactive in the roster.
+  //    (Old behaviour of skipping all NH agents has been removed.)
 
   // 2. Known NH agent names — these people are confirmed inactive
   // Only list agents confirmed permanently inactive/terminated — do NOT put active trainees here
@@ -5331,15 +5330,8 @@ function parseStatsCSV(text){
       }
     }
 
-    // ── NH FILTER — applied AFTER roster lookup ──
-    // Only skip NH-tagged agents when they have NO active roster entry.
-    // If they ARE in the roster (e.g. as a Trainee), they should be shown.
-    // This prevents active New Hire / Trainee agents from being dropped.
-    const hasNH = /\bNH\b/i.test(nameRaw);
-    if(hasNH && !rosterMatch){
-      console.log('⏭ Skipping NH agent with no roster match:', nameRaw);
-      continue;
-    }
+    // ── NH means "New Hire" — always include NH agents regardless of roster match ──
+    // NH agents appear in the CSV because they are active; never skip them.
 
     if(!rosterMatch){
       console.warn('⚠️ No roster match for CSV agent — including with prefix fallback:', nameRaw, 'ID:', csvYtelId);
@@ -6334,7 +6326,7 @@ function renderWeeklyPerformance(){
   const agentMap = {};
   weekReports.forEach(report=>{
     report.agents.forEach(a=>{
-      // Skip inactive/NH agents (pre-computed at load time)
+      // Skip inactive agents (pre-computed at load time via isAgentInactive)
       if(a._inactive) return;
       // Team already resolved at load time
       const resolvedTeam = a.team;
