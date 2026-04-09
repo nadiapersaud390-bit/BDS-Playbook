@@ -3176,6 +3176,8 @@ async function pollRoster() {
     // Reload overview board if it is currently visible
     const ovEl2 = document.getElementById('admin-overview');
     if (ovEl2 && ovEl2.style.display !== 'none' && typeof loadAdminOverview === 'function') loadAdminOverview();
+    // Refresh team breakdown popup if open
+    if(typeof refreshBreakdownIfOpen === 'function') refreshBreakdownIfOpen();
     // Reload weekly attendance only if that tab is currently visible
     const wkEl = document.getElementById('admin-weekly');
     if (wkEl && wkEl.style.display !== 'none' && typeof loadWeeklyAttendance === 'function') {
@@ -3733,6 +3735,8 @@ async function saveNewRep(){
     // Refresh the live overview board (online/absent chips + glance counts)
     const ovEl = document.getElementById('admin-overview');
     if(ovEl && ovEl.style.display !== 'none') loadAdminOverview();
+    // Refresh team breakdown popup if open
+    refreshBreakdownIfOpen();
 
     // Refresh weekly attendance if it's currently open
     if(weeklyTeam){ loadWeeklyAttendance(weeklyTeam); }
@@ -4044,6 +4048,8 @@ function showAdminUI(){
           // If the Daily Overview tab is currently open, refresh the overview too
           const ovEl = document.getElementById('admin-overview');
           if(ovEl && ovEl.style.display !== 'none') loadAdminOverview();
+          // Refresh team breakdown popup if open
+          refreshBreakdownIfOpen();
           // If Agent Stats tab is open, refresh its table
           const stEl = document.getElementById('admin-stats');
           if(stEl && stEl.style.display !== 'none'){
@@ -4161,12 +4167,10 @@ function updateGoalBars(){
   if(prPctEl) prPctEl.textContent = hasToday ? prXfer+' transfers' : 'No data yet';
 }
 
-function openTeamBreakdown(team){
-  if(!statsData.length){
-    alert('No CSV data loaded yet. Upload the daily CSV first in Agent Stats tab.');
-    return;
-  }
-  const overlay = document.getElementById('team-breakdown-overlay');
+// Tracks which team's breakdown popup is currently open (null = closed)
+let openBreakdownTeam = null;
+
+function renderTeamBreakdown(team){
   const title   = document.getElementById('tbm-title');
   const sub     = document.getElementById('tbm-subtitle');
   const totalEl = document.getElementById('tbm-total');
@@ -4185,7 +4189,7 @@ function openTeamBreakdown(team){
   // Filter and sort by transfers desc
   const agents = statsData.filter(r=>r.team===team).sort((a,b)=>b.xfer-a.xfer);
   const teamTotal = agents.reduce((s,r)=>s+r.xfer,0);
-  sub.textContent   = agents.length + ' agents · ' + getTodayGY();
+  sub.textContent     = agents.length + ' agents · ' + getTodayGY();
   totalEl.textContent = teamTotal + ' transfers';
 
   if(!agents.length){
@@ -4202,12 +4206,28 @@ function openTeamBreakdown(team){
       </tr>`;
     }).join('');
   }
+}
 
-  overlay.style.display = 'flex';
+function openTeamBreakdown(team){
+  if(!statsData.length){
+    alert('No CSV data loaded yet. Upload the daily CSV first in Agent Stats tab.');
+    return;
+  }
+  openBreakdownTeam = team;
+  renderTeamBreakdown(team);
+  document.getElementById('team-breakdown-overlay').style.display = 'flex';
 }
 
 function closeTeamBreakdown(){
+  openBreakdownTeam = null;
   document.getElementById('team-breakdown-overlay').style.display='none';
+}
+
+// Call this whenever statsData changes — refreshes the popup if it's open
+function refreshBreakdownIfOpen(){
+  if(openBreakdownTeam && document.getElementById('team-breakdown-overlay').style.display !== 'none'){
+    renderTeamBreakdown(openBreakdownTeam);
+  }
 }
 
 
@@ -5132,6 +5152,8 @@ async function confirmCSVUpload(){
   if(ovEl && ovEl.style.display !== 'none'){
     loadAdminOverview();
   }
+  // Refresh team breakdown popup if open
+  refreshBreakdownIfOpen();
 }
 
 // ── CANONICAL TEAM RESOLVER ──
