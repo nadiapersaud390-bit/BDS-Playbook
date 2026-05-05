@@ -3177,6 +3177,42 @@ function showDashboard(){
     details.innerHTML += `<div id="streak-chip-wrap" style="display:flex;gap:6px;align-items:center;"></div>`;
     // Load & update streak asynchronously
     updateStreak(u.id, u.name);
+
+    // ── REAL-TIME STATS LISTENER (agent) ──
+    // When admin uploads a CSV it writes to reports/{today}.
+    // This listener fires for all logged-in agents automatically,
+    // populates statsData, and refreshes the leaderboard + open profile popup.
+    if(_agentStatsListener) _agentStatsListener(); // detach any previous listener
+    const _agentToday = getTodayGY();
+    _agentStatsListener = db.collection('reports').doc(_agentToday)
+      .onSnapshot(snap => {
+        if(!snap.exists || !snap.data().statsJSON) return;
+        try {
+          statsData     = JSON.parse(snap.data().statsJSON);
+          statsDataDate = _agentToday;
+          // Refresh leaderboard if it's currently visible
+          const lbPage = document.getElementById('page-leaderboard');
+          if(lbPage && lbPage.classList.contains('active') && typeof renderLeaderboard === 'function'){
+            renderLeaderboard();
+          }
+          // Refresh open rep-profile popup live xfer/calls if it belongs to this agent
+          const rpPanel = document.getElementById('rep-profile-panel');
+          if(rpPanel && rpPanel.style.display !== 'none'){
+            const agentRow = statsData.find(r => r.name && (
+              r.name.toLowerCase() === (currentUser.name||'').toLowerCase() ||
+              (currentUser.name||'').toLowerCase().includes(r.name.toLowerCase())
+            ));
+            if(agentRow){
+              const xferEl  = document.getElementById('rp-live-xfer');
+              const callsEl = document.getElementById('rp-live-calls');
+              const convEl  = document.getElementById('rp-live-conv');
+              if(xferEl)  xferEl.textContent  = agentRow.xfer  || '0';
+              if(callsEl) callsEl.textContent = agentRow.calls || '0';
+              if(convEl)  convEl.textContent  = (agentRow.conv || '0') + '%';
+            }
+          }
+        } catch(e){ console.warn('Agent stats listener parse error:', e); }
+      }, e => { console.warn('Agent stats listener error:', e); });
   } else {
     document.getElementById('admin-badge-wrap').innerHTML = '<div class="admin-badge">⚡ ADMIN</div>';
     showAdminUI();
@@ -4476,6 +4512,7 @@ function switchAttTeam(team, btn){
 let allAttRecords = [];
 
 let _todayReportListener = null; // holds the Firestore unsubscribe fn
+let _agentStatsListener  = null; // real-time stats listener for agents
 
 function showAdminUI(){
   document.body.classList.add('is-admin');
