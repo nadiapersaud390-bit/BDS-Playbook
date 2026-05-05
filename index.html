@@ -195,6 +195,179 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .tab-btn.t-dbs.active{background:#0a1a10;border-color:#4ade80;color:#4ade80;box-shadow:0 0 14px rgba(74,222,128,0.25);}
 #tab-lenders.active,.tab-btn.t-lenders.active{background:#0a1224;border-color:#3b82f6;color:#60a5fa;box-shadow:0 0 14px rgba(59,130,246,0.25);}
 .tab-btn.t-lenders{background:#0d1a2e;border-color:#3b82f6;color:#60a5fa;}
+.tab-btn.t-leaderboard.active{background:#1a0f00;border-color:#fbbf24;color:#fbbf24;box-shadow:0 0 14px rgba(251,191,36,0.3);}
+.tab-btn.t-leaderboard{background:#0d1a2e;border-color:rgba(251,191,36,0.4);color:var(--gold);}
+.tab-btn.t-leads.active{background:#0a1a10;border-color:#34d399;color:#34d399;box-shadow:0 0 14px rgba(52,211,153,0.25);}
+.tab-btn.t-leads{background:#0d1a2e;border-color:rgba(52,211,153,0.3);color:var(--green);}
+
+/* ══ LEAD TRACKER STYLES ══ */
+#page-leads{flex-direction:column;}
+.lt-header{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;
+  padding:14px 18px 10px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.lt-title{
+  font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:4px;
+  background:linear-gradient(90deg,#34d399,#60a5fa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.lt-week-selector{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.lt-week-pill{
+  padding:6px 14px;border-radius:20px;
+  border:1.5px solid var(--border);background:var(--surface);
+  color:var(--muted);font-family:'Barlow Condensed',sans-serif;
+  font-size:0.78rem;font-weight:800;letter-spacing:1px;
+  cursor:pointer;transition:all 0.15s;white-space:nowrap;
+}
+.lt-week-pill:hover{border-color:#3a4a6a;color:var(--text);}
+.lt-week-pill.active{
+  background:rgba(52,211,153,0.12);border-color:var(--green);color:var(--green);
+}
+.lt-week-pill.del-week{
+  border-color:rgba(248,113,113,0.3);color:var(--red);background:rgba(248,113,113,0.05);
+}
+.lt-week-pill.del-week:hover{border-color:var(--red);background:rgba(248,113,113,0.12);}
+.lt-new-week-btn{
+  padding:7px 16px;border-radius:9px;border:none;
+  background:linear-gradient(90deg,#34d399,#60a5fa);
+  color:#000;font-family:'Barlow Condensed',sans-serif;
+  font-size:0.85rem;font-weight:900;letter-spacing:1.5px;
+  cursor:pointer;transition:filter 0.15s;white-space:nowrap;
+}
+.lt-new-week-btn:hover{filter:brightness(1.1);}
+.lt-week-label{
+  font-size:0.6rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);padding:0 4px;
+}
+.lt-table-wrap{flex:1;overflow:auto;padding:10px 14px 14px;}
+.lt-table{
+  width:100%;border-collapse:collapse;font-size:0.78rem;
+  min-width:1000px;
+}
+.lt-table thead tr{background:#060d1a;position:sticky;top:0;z-index:5;}
+.lt-table th{
+  padding:9px 10px;text-align:left;
+  font-family:'Barlow Condensed',sans-serif;font-size:0.6rem;
+  font-weight:800;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);border-bottom:2px solid #1a2a45;
+  white-space:nowrap;
+}
+.lt-table td{
+  padding:7px 8px;border-bottom:1px solid #0f1e35;
+  color:var(--text);vertical-align:middle;
+}
+.lt-table tbody tr:nth-child(odd) td{background:#070e1c;}
+.lt-table tbody tr:nth-child(even) td{background:#060b18;}
+.lt-table tbody tr:hover td{background:#0d1a2e;}
+.lt-cell-input{
+  width:100%;padding:5px 7px;
+  background:#060b18;border:1px solid #1a2a45;border-radius:6px;
+  color:var(--text);font-family:'Nunito',sans-serif;font-size:0.78rem;
+  outline:none;transition:border-color 0.15s;
+  min-width:80px;
+}
+.lt-cell-input:focus{border-color:var(--green);}
+.lt-cell-select{
+  width:100%;padding:5px 7px;
+  background:#060b18;border:1px solid #1a2a45;border-radius:6px;
+  color:var(--text);font-family:'Nunito',sans-serif;font-size:0.78rem;
+  outline:none;cursor:pointer;
+}
+.lt-cell-select:focus{border-color:var(--green);}
+.lt-cell-textarea{
+  width:100%;padding:5px 7px;
+  background:#060b18;border:1px solid #1a2a45;border-radius:6px;
+  color:var(--text);font-family:'Nunito',sans-serif;font-size:0.78rem;
+  outline:none;resize:vertical;min-height:40px;min-width:140px;
+  transition:border-color 0.15s;
+}
+.lt-cell-textarea:focus{border-color:var(--green);}
+.lt-status-pill{
+  display:inline-block;padding:2px 9px;border-radius:8px;
+  font-size:0.62rem;font-weight:800;letter-spacing:1px;white-space:nowrap;
+}
+.lt-status-open{background:rgba(52,211,153,0.15);color:var(--green);border:1px solid rgba(52,211,153,0.4);}
+.lt-status-pending{background:rgba(251,191,36,0.15);color:var(--gold);border:1px solid rgba(251,191,36,0.4);}
+.lt-status-closed{background:rgba(248,113,113,0.15);color:var(--red);border:1px solid rgba(248,113,113,0.4);}
+.lt-status-callback{background:rgba(167,139,250,0.15);color:var(--purple);border:1px solid rgba(167,139,250,0.4);}
+.lt-status-transferred{background:rgba(96,165,250,0.15);color:var(--accent);border:1px solid rgba(96,165,250,0.4);}
+.lt-del-btn{
+  padding:4px 8px;border-radius:6px;border:1px solid rgba(248,113,113,0.3);
+  background:rgba(248,113,113,0.05);color:var(--red);
+  font-size:0.68rem;font-weight:800;cursor:pointer;transition:all 0.15s;
+  font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;white-space:nowrap;
+}
+.lt-del-btn:hover{background:rgba(248,113,113,0.15);border-color:var(--red);}
+.lt-add-row-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:9px 16px;border-radius:9px;border:1.5px dashed rgba(52,211,153,0.4);
+  background:rgba(52,211,153,0.04);color:var(--green);
+  font-family:'Barlow Condensed',sans-serif;font-size:0.82rem;font-weight:800;letter-spacing:1.5px;
+  cursor:pointer;transition:all 0.15s;margin-top:10px;width:fit-content;
+}
+.lt-add-row-btn:hover{border-color:var(--green);background:rgba(52,211,153,0.08);}
+.lt-saving-indicator{
+  font-size:0.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--green);opacity:0;transition:opacity 0.3s;
+  display:flex;align-items:center;gap:4px;
+}
+.lt-saving-indicator.show{opacity:1;}
+.lt-empty-state{
+  text-align:center;padding:40px 20px;color:var(--muted);
+}
+.lt-no-week{
+  text-align:center;padding:50px 20px;
+}
+.lt-week-stats{
+  display:flex;gap:10px;flex-wrap:wrap;
+  padding:8px 18px 4px;
+  flex-shrink:0;
+}
+.lt-stat-chip{
+  display:flex;align-items:center;gap:6px;
+  padding:4px 12px;border-radius:20px;
+  font-size:0.62rem;font-weight:800;letter-spacing:1px;
+  background:var(--card);border:1px solid var(--border);
+  color:var(--muted);
+}
+
+/* ── LEADERBOARD STYLES ── */
+.lb-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:12px 16px;display:flex;align-items:center;gap:14px;
+  transition:all 0.15s;cursor:default;
+}
+.lb-card.lb-me{
+  border-color:rgba(251,191,36,0.5);
+  background:rgba(251,191,36,0.05);
+  box-shadow:0 0 14px rgba(251,191,36,0.1);
+}
+.lb-rank{
+  font-family:'Bebas Neue',sans-serif;font-size:1.6rem;
+  color:var(--muted);min-width:36px;text-align:center;line-height:1;
+}
+.lb-rank.gold{color:#fbbf24;filter:drop-shadow(0 0 6px rgba(251,191,36,0.5));}
+.lb-rank.silver{color:#94a3b8;}
+.lb-rank.bronze{color:#fb923c;}
+.lb-name{flex:1;font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;letter-spacing:1px;color:var(--text);}
+.lb-name .lb-status{font-size:0.52rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-top:1px;}
+.lb-team-badge{padding:2px 8px;border-radius:5px;font-size:0.55rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;}
+.lb-team-bb{background:rgba(96,165,250,0.15);color:var(--accent);border:1px solid rgba(96,165,250,0.3);}
+.lb-team-pr{background:rgba(167,139,250,0.15);color:var(--purple);border:1px solid rgba(167,139,250,0.3);}
+.lb-xfer{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;line-height:1;text-align:right;}
+.lb-xfer .lb-xfer-lbl{font-family:'Barlow Condensed',sans-serif;font-size:0.52rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;}
+.lb-bar-wrap{width:80px;height:6px;background:#0d1424;border-radius:20px;overflow:hidden;}
+.lb-bar-fill{height:100%;border-radius:20px;transition:width 0.6s ease;}
+/* Podium */
+.lb-podium-slot{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.lb-podium-block{border-radius:8px 8px 0 0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:#fff;min-width:90px;}
+.lb-podium-name{font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;text-align:center;color:var(--text);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lb-podium-val{font-family:'Bebas Neue',sans-serif;font-size:1rem;}
 
 
 .sub-tab-row{display:flex;flex-wrap:wrap;gap:5px;padding:9px 14px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;}
@@ -461,6 +634,116 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 .tab-span-2{grid-column:span 2!important;}
 .tab-span-3{grid-column:span 3!important;}
 .tab-span-6{grid-column:1/-1!important;}
+
+/* ══ DAILY TARGET BOARD ══ */
+#goal-popup-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.82);
+  z-index:10001;display:flex;align-items:center;justify-content:center;
+  padding:20px;
+}
+#goal-popup-overlay.hidden{display:none;}
+#goal-popup-box{
+  background:#0d1424;border:1px solid #1e3a5a;border-radius:18px;
+  width:100%;max-width:380px;padding:28px 24px 22px;
+  box-shadow:0 0 60px rgba(96,165,250,0.15);
+  animation:goalPopIn 0.3s ease;
+}
+@keyframes goalPopIn{from{transform:scale(0.92);opacity:0;}to{transform:scale(1);opacity:1;}}
+#goal-popup-box .gp-title{
+  font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:3px;
+  text-align:center;margin-bottom:4px;
+  background:linear-gradient(90deg,#60a5fa,#34d399);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+#goal-popup-box .gp-sub{
+  font-size:0.65rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);text-align:center;margin-bottom:22px;
+}
+.gp-field-lbl{font-size:0.58rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;display:block;}
+.gp-input{
+  width:100%;padding:13px 14px;background:#060b18;
+  border:1.5px solid #2a3a5a;border-radius:9px;
+  color:var(--text);font-family:'Barlow Condensed',sans-serif;
+  font-size:1.3rem;font-weight:700;letter-spacing:2px;
+  outline:none;margin-bottom:14px;text-align:center;
+  transition:border-color 0.15s;
+}
+.gp-input:focus{border-color:var(--accent2);}
+#gp-save-btn{
+  width:100%;padding:14px;border-radius:10px;border:none;
+  background:linear-gradient(90deg,#3b82f6,#34d399);
+  color:#000;font-family:'Barlow Condensed',sans-serif;
+  font-size:1rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;
+  cursor:pointer;margin-top:2px;transition:filter 0.15s;
+}
+#gp-save-btn:hover{filter:brightness(1.1);}
+#gp-skip-btn{
+  display:block;width:100%;text-align:center;margin-top:10px;
+  font-size:0.65rem;color:var(--muted);cursor:pointer;
+  font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  background:none;border:none;
+}
+#gp-skip-btn:hover{color:var(--text);}
+#gp-err{font-size:0.72rem;color:var(--red);text-align:center;min-height:16px;margin-top:-8px;margin-bottom:6px;font-weight:700;}
+
+/* ── AGENT TARGET WIDGET (in rep-bar area) ── */
+#agent-target-widget{
+  background:#0a1020;border:1px solid #1e2d4a;border-radius:11px;
+  padding:9px 14px;display:none;gap:14px;align-items:center;flex-wrap:wrap;
+  margin:0 18px 10px;
+}
+#agent-target-widget.show{display:flex;}
+body.is-admin #agent-target-widget{display:none !important;}
+.atw-goal-block{display:flex;flex-direction:column;align-items:center;min-width:52px;}
+.atw-goal-val{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;line-height:1;}
+.atw-goal-lbl{font-size:0.48rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:1px;}
+.atw-progress{flex:1;min-width:140px;}
+.atw-bar-wrap{height:10px;background:#060b18;border-radius:20px;overflow:visible;position:relative;margin-bottom:4px;}
+.atw-bar-fill{height:100%;border-radius:20px;transition:width 0.5s ease;}
+.atw-marker{position:absolute;top:-3px;height:16px;width:2px;background:rgba(255,255,255,0.25);border-radius:2px;}
+.atw-status{font-size:0.68rem;color:var(--text);font-weight:700;}
+.atw-status.on-track{color:var(--green);}
+.atw-status.below{color:var(--gold);}
+.atw-edit-btn{
+  padding:5px 12px;border-radius:7px;border:1px solid #2a3a5a;
+  background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;
+  font-size:0.68rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+  cursor:pointer;transition:all 0.15s;white-space:nowrap;
+}
+.atw-edit-btn:hover{border-color:var(--accent);color:var(--accent);}
+.atw-hit-btn{
+  padding:5px 10px;border-radius:7px;border:1px solid rgba(52,211,153,0.3);
+  background:rgba(52,211,153,0.07);color:var(--green);
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:0.68rem;font-weight:800;letter-spacing:1px;
+  cursor:pointer;transition:all 0.15s;white-space:nowrap;
+}
+.atw-hit-btn.hit{background:rgba(52,211,153,0.2);border-color:var(--green);}
+.atw-hit-btn.hit-high{border-color:rgba(96,165,250,0.3);background:rgba(96,165,250,0.1);color:var(--accent);}
+.atw-hit-btn.hit-high.hit{background:rgba(96,165,250,0.2);border-color:var(--accent);}
+
+/* ── ADMIN TARGET BOARD TABLE ── */
+.tb-board-table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+.tb-board-table th{
+  padding:9px 12px;background:#060d1a;border-bottom:2px solid #1a2a45;
+  font-family:'Barlow Condensed',sans-serif;font-size:0.6rem;font-weight:800;
+  letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-align:left;white-space:nowrap;
+}
+.tb-board-table td{padding:10px 12px;border-bottom:1px solid #0f1e35;color:var(--text);}
+.tb-board-table tbody tr:nth-child(odd)  td{background:#070e1c;}
+.tb-board-table tbody tr:nth-child(even) td{background:#060b18;}
+.tb-board-table tbody tr:hover td{background:#0d1a30;}
+.tb-mini-bar{height:7px;background:#0d1424;border-radius:20px;overflow:hidden;min-width:60px;margin-top:4px;}
+.tb-mini-fill{height:100%;border-radius:20px;}
+.tb-pill{display:inline-block;padding:2px 9px;border-radius:10px;font-size:0.68rem;font-weight:800;}
+.tb-pill-hit{background:rgba(52,211,153,0.18);color:var(--green);border:1px solid rgba(52,211,153,0.4);}
+.tb-pill-both{background:rgba(96,165,250,0.18);color:var(--accent);border:1px solid rgba(96,165,250,0.4);}
+.tb-pill-miss{background:rgba(251,191,36,0.12);color:var(--gold);border:1px solid rgba(251,191,36,0.3);}
+.tb-pill-none{background:rgba(100,116,139,0.12);color:var(--muted);border:1px solid #2a3a5a;}
+.tb-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:14px;}
+.tb-sum-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;}
+.tb-sum-val{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;line-height:1;}
+.tb-sum-lbl{font-size:0.5rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:2px;}
 </style>
 <body>
 
@@ -474,6 +757,21 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
       <button id="company-name-cancel" onclick="closeCompanyNameModal()">CANCEL</button>
       <button id="company-name-save" onclick="saveCompanyName()">💾 SAVE NAME</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ DAILY TARGET GOAL POPUP ══ -->
+<div id="goal-popup-overlay" class="hidden">
+  <div id="goal-popup-box">
+    <div class="gp-title">SET TODAY'S TARGETS</div>
+    <div class="gp-sub" id="gp-date-lbl">Loading date...</div>
+    <label class="gp-field-lbl" style="color:var(--green);">🟢 Low Target — Minimum you want to hit</label>
+    <input class="gp-input" id="gp-low" type="number" min="1" max="999" placeholder="e.g. 12" style="border-color:rgba(52,211,153,0.3);" onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='rgba(52,211,153,0.3)'" onkeydown="if(event.key==='Enter')document.getElementById('gp-high').focus()">
+    <label class="gp-field-lbl" style="color:var(--accent);">🔵 High Target — Stretch goal</label>
+    <input class="gp-input" id="gp-high" type="number" min="1" max="999" placeholder="e.g. 20" style="border-color:rgba(96,165,250,0.3);" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='rgba(96,165,250,0.3)'" onkeydown="if(event.key==='Enter')saveGoalPopup()">
+    <div id="gp-err"></div>
+    <button id="gp-save-btn" onclick="saveGoalPopup()">💾 LOCK IN MY TARGETS</button>
+    <button id="gp-skip-btn" onclick="skipGoalPopup()">Skip for today</button>
   </div>
 </div>
 
@@ -504,6 +802,35 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
     <div id="admin-badge-wrap"></div>
     <button class="logout-btn" onclick="doLogout()">LOGOUT</button>
   </div>
+</div>
+
+<!-- ══ AGENT DAILY TARGET WIDGET ══ -->
+<div id="agent-target-widget">
+  <div class="atw-goal-block">
+    <div class="atw-goal-val" id="atw-low-val" style="color:var(--green);">—</div>
+    <div class="atw-goal-lbl">Low Target</div>
+  </div>
+  <div class="atw-goal-block">
+    <div class="atw-goal-val" id="atw-high-val" style="color:var(--accent);">—</div>
+    <div class="atw-goal-lbl">High Target</div>
+  </div>
+  <div class="atw-goal-block">
+    <div class="atw-goal-val" id="atw-actual-val" style="color:var(--text);">—</div>
+    <div class="atw-goal-lbl">Transfers</div>
+  </div>
+  <div class="atw-progress">
+    <div class="atw-bar-wrap">
+      <div class="atw-bar-fill" id="atw-bar" style="width:0%;background:var(--green);"></div>
+      <div class="atw-marker" id="atw-low-marker" style="left:0%;"></div>
+      <div class="atw-marker" id="atw-high-marker" style="left:0%;"></div>
+    </div>
+    <div class="atw-status" id="atw-status-txt">Set your targets for today</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:5px;">
+    <button class="atw-hit-btn" id="atw-btn-low" onclick="toggleHitTarget('low')">✓ Low Hit</button>
+    <button class="atw-hit-btn hit-high" id="atw-btn-high" onclick="toggleHitTarget('high')">✓ High Hit</button>
+  </div>
+  <button class="atw-edit-btn" onclick="openGoalPopup(true)">✏ Edit Goals</button>
 </div>
 
 <div class="hero">
@@ -571,7 +898,9 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
   <button class="tab-btn t-asep   tab-span-2"         id="tab-asep"       onclick="switchTab('asep')">&#9881;&#65039; A.S.E.P</button>
   <button class="tab-btn t-sunday tab-span-3 sunday-glow" id="tab-sunday" onclick="switchTab('sunday')">&#128197; SUNDAY PROTOCOL</button>
   <button class="tab-btn t-dispo  tab-span-3"         id="tab-dispo"      onclick="switchTab('dispo')">&#9989; DISPO</button>
-  <button class="tab-btn t-lenders tab-span-6"        id="tab-lenders"    onclick="switchTab('lenders')">&#129309; LENDERS &amp; BENEFITS OF A PERSONAL LOAN</button>
+  <button class="tab-btn t-lenders tab-span-3"        id="tab-lenders"    onclick="switchTab('lenders')">&#129309; LENDERS &amp; BENEFITS OF A PERSONAL LOAN</button>
+  <button class="tab-btn t-leaderboard tab-span-3"    id="tab-leaderboard" onclick="switchTab('leaderboard')">&#127942; LEADERBOARD</button>
+  <button class="tab-btn t-leads tab-span-6"          id="tab-leads"       onclick="switchTab('leads')">&#128196; MY LEAD TRACKER</button>
   <button class="admin-tab-btn tab-span-6 admin-only" id="tab-admin"      onclick="switchAdminTab('profiles')">&#9889; ADMIN PANEL</button>
 </div>
 </div>
@@ -1039,6 +1368,7 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
         <button class="adm-tab"        id="atab-monitoring"  onclick="switchAdminTab('monitoring',this)">🎧 Live Monitoring</button>
         <button class="adm-tab"        id="atab-rebuttal"    onclick="switchAdminTab('rebuttal',this)">🧠 Rebuttal Intel</button>
         <button class="adm-tab"        id="atab-weekperf"    onclick="switchAdminTab('weekperf',this)">🏆 Weekly Performance</button>
+        <button class="adm-tab"        id="atab-targetboard" onclick="switchAdminTab('targetboard',this)">🎯 Target Board</button>
       </div>
     </div>
 
@@ -1640,6 +1970,56 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
         </div>
       </div>
     </div>
+
+    <!-- ══ ADMIN TARGET BOARD ══ -->
+    <div id="admin-targetboard" class="admin-section" style="display:none;">
+      <div class="admin-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+          <div class="admin-card-title" style="margin-bottom:0;font-size:0.9rem;">🎯 DAILY TARGET BOARD — <span id="tb-date-lbl" style="color:var(--gold);"></span></div>
+          <button onclick="loadTargetBoard()" style="padding:7px 12px;border-radius:8px;border:none;background:#1a2a45;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:800;letter-spacing:1px;cursor:pointer;">🔄 REFRESH</button>
+        </div>
+
+        <!-- Summary cards -->
+        <div class="tb-summary-grid" id="tb-summary-grid">
+          <div class="tb-sum-card"><div class="tb-sum-val" id="tb-s-set" style="color:var(--accent);">—</div><div class="tb-sum-lbl">Goals Set</div></div>
+          <div class="tb-sum-card"><div class="tb-sum-val" id="tb-s-hitlow" style="color:var(--green);">—</div><div class="tb-sum-lbl">Hit Low</div></div>
+          <div class="tb-sum-card"><div class="tb-sum-val" id="tb-s-hithigh" style="color:var(--accent);">—</div><div class="tb-sum-lbl">Hit High</div></div>
+          <div class="tb-sum-card"><div class="tb-sum-val" id="tb-s-none" style="color:var(--muted);">—</div><div class="tb-sum-lbl">No Goal Set</div></div>
+        </div>
+
+        <!-- Team filter -->
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+          <button id="tb-f-all" onclick="tbSetTeam('all',this)" style="flex:1;padding:10px;border-radius:9px;border:2px solid var(--accent);background:#0b1a38;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-size:0.88rem;font-weight:800;letter-spacing:1.5px;cursor:pointer;">ALL TEAMS</button>
+          <button id="tb-f-bb"  onclick="tbSetTeam('BB',this)"  style="flex:1;padding:10px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.88rem;font-weight:800;letter-spacing:1.5px;cursor:pointer;">🏠 BERBICE</button>
+          <button id="tb-f-pr"  onclick="tbSetTeam('PR',this)"  style="flex:1;padding:10px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.88rem;font-weight:800;letter-spacing:1.5px;cursor:pointer;">🌴 PROVIDENCE</button>
+        </div>
+
+        <!-- Board table -->
+        <div style="overflow-x:auto;">
+          <table class="tb-board-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Agent</th>
+                <th>Team</th>
+                <th>Low Target</th>
+                <th>High Target</th>
+                <th>Transfers</th>
+                <th>Low Progress</th>
+                <th>High Progress</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tb-tbody">
+              <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:28px;font-size:0.85rem;">Click 🎯 Target Board to load</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="font-size:0.62rem;color:var(--muted);text-align:center;margin-top:10px;">Targets set by agents each morning · Transfers pulled from uploaded CSV · Resets daily</div>
+      </div>
+    </div>
+
   </div>
   <div class="tab-page active" id="page-script">
     <div class="sub-tab-row">
@@ -2204,6 +2584,93 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
     </div>
   </div>
 
+  <!-- ══ LEADERBOARD TAB ══ -->
+  <div class="tab-page" id="page-leaderboard">
+    <div style="padding:14px 18px;overflow-y:auto;flex:1;">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+        <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:4px;background:linear-gradient(90deg,#fbbf24,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">🏆 TRANSFER LEADERBOARD</div>
+          <div id="lb-date-lbl" style="font-size:0.58rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:2px;"></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <button onclick="lbSetFilter('all',this)" id="lb-f-all" style="padding:6px 14px;border-radius:8px;border:2px solid var(--accent);background:#0b1a38;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;">ALL</button>
+          <button onclick="lbSetFilter('BB',this)" id="lb-f-bb" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;">🏠 BERB</button>
+          <button onclick="lbSetFilter('PR',this)" id="lb-f-pr" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;">🌴 PROV</button>
+        </div>
+      </div>
+
+      <!-- No data notice -->
+      <div id="lb-no-data" style="display:none;text-align:center;padding:40px 20px;color:var(--muted);">
+        <div style="font-size:2rem;margin-bottom:10px;">📊</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;letter-spacing:2px;color:var(--muted);">NO DATA YET</div>
+        <div style="font-size:0.72rem;margin-top:6px;">Admin uploads the daily CSV and it will appear here automatically.</div>
+      </div>
+
+      <!-- Podium top 3 -->
+      <div id="lb-podium" style="display:none;justify-content:center;align-items:flex-end;gap:10px;margin-bottom:20px;"></div>
+
+      <!-- Rankings list -->
+      <div id="lb-list" style="display:flex;flex-direction:column;gap:7px;"></div>
+    </div>
+  </div>
+
+  <!-- ══ MY LEAD TRACKER TAB ══ -->
+  <div class="tab-page" id="page-leads">
+
+    <!-- Header -->
+    <div class="lt-header">
+      <div>
+        <div class="lt-title">📋 MY LEAD TRACKER</div>
+        <div id="lt-agent-lbl" style="font-size:0.58rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:2px;"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div id="lt-saving" class="lt-saving-indicator">✓ SAVED</div>
+        <button class="lt-new-week-btn" onclick="ltStartNewWeek()">＋ START NEW WEEK</button>
+      </div>
+    </div>
+
+    <!-- Week selector row -->
+    <div id="lt-week-selector" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 18px 4px;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;">
+      <div class="lt-week-label">WEEKS:</div>
+      <div id="lt-week-pills" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="lt-week-stats" id="lt-stats-bar"></div>
+
+    <!-- Table area -->
+    <div class="lt-table-wrap" id="lt-table-wrap">
+      <div class="lt-no-week" id="lt-no-week-msg">
+        <div style="font-size:2rem;margin-bottom:10px;">📁</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;letter-spacing:2px;color:var(--muted);">NO WEEKS YET</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:8px;">Click <strong style="color:var(--green);">+ START NEW WEEK</strong> to begin tracking your leads.</div>
+      </div>
+      <div id="lt-table-container" style="display:none;">
+        <div style="overflow-x:auto;">
+          <table class="lt-table" id="lt-table">
+            <thead>
+              <tr>
+                <th style="min-width:95px;">DATE</th>
+                <th style="min-width:140px;">CLIENT NAME</th>
+                <th style="min-width:90px;">FILE #</th>
+                <th style="min-width:110px;">TELE #</th>
+                <th style="min-width:110px;">OPEN STATUS</th>
+                <th style="min-width:180px;">HISTORY / NOTES</th>
+                <th style="min-width:85px;">DEBT</th>
+                <th style="min-width:120px;">ASSIGNED TO</th>
+                <th style="min-width:110px;">RESULT</th>
+                <th style="min-width:50px;text-align:center;">DEL</th>
+              </tr>
+            </thead>
+            <tbody id="lt-tbody"></tbody>
+          </table>
+        </div>
+        <button class="lt-add-row-btn" onclick="ltAddRow()">＋ ADD LEAD</button>
+      </div>
+    </div>
+
+  </div>
 
 </div>
 
@@ -7379,6 +7846,1090 @@ function searchRebuttals(val){
     matches.map(m=>`<div onclick="loadObjection('${m.key}');document.getElementById('rebuttal-search').value='';document.getElementById('search-results').style.display='none';" style="padding:10px 14px;font-size:0.88rem;color:var(--text);cursor:pointer;border-top:1px solid var(--border);font-weight:600;transition:background 0.1s;" onmouseover="this.style.background='#141e34'" onmouseout="this.style.background=''">${m.label}</div>`).join('');
   }
 }
+
+// ══════════════════════════════════════════════════════════════
+//  DAILY TARGET BOARD — Full Feature
+//  - Goal popup fires on agent login (once per day, skippable)
+//  - Agent target widget shows in rep-bar with live progress
+//  - Admin "Target Board" tab shows all agents with team filters
+//  - All data stored in Firestore: dailyTargets/{agentId}_{date}
+// ══════════════════════════════════════════════════════════════
+
+let tbCurrentTeam = 'all';
+
+// ── Patch switchAdminTab to include targetboard ──
+(function(){
+  const _orig = switchAdminTab;
+  switchAdminTab = function(tab, btn){
+    _orig(tab, btn);
+    // The original function only knows its own list — handle targetboard extra
+    const tbEl = document.getElementById('admin-targetboard');
+    if(!tbEl) return;
+    if(tab === 'targetboard'){
+      tbEl.style.display = '';
+      const b = document.getElementById('atab-targetboard');
+      if(b) b.classList.add('active');
+      loadTargetBoard();
+    } else {
+      tbEl.style.display = 'none';
+      const b = document.getElementById('atab-targetboard');
+      if(b) b.classList.remove('active');
+    }
+  };
+})();
+
+// ── Open goal popup (called on login for agents, or via Edit button) ──
+function openGoalPopup(isEdit){
+  if(!currentUser || currentUser.isAdmin) return;
+  const today = getTodayGY();
+  const lbl = document.getElementById('gp-date-lbl');
+  if(lbl) lbl.textContent = 'Today · ' + new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',timeZone:'America/Guyana'});
+  // Pre-fill if editing existing goals
+  if(isEdit){
+    const lo = document.getElementById('gp-low');
+    const hi = document.getElementById('gp-high');
+    if(lo && currentUser._goalLow)  lo.value = currentUser._goalLow;
+    if(hi && currentUser._goalHigh) hi.value = currentUser._goalHigh;
+  } else {
+    const lo = document.getElementById('gp-low');
+    const hi = document.getElementById('gp-high');
+    if(lo) lo.value = '';
+    if(hi) hi.value = '';
+  }
+  const errEl = document.getElementById('gp-err');
+  if(errEl) errEl.textContent = '';
+  const overlay = document.getElementById('goal-popup-overlay');
+  if(overlay) overlay.classList.remove('hidden');
+  setTimeout(()=>{ const lo=document.getElementById('gp-low'); if(lo) lo.focus(); }, 150);
+}
+
+async function saveGoalPopup(){
+  const loEl = document.getElementById('gp-low');
+  const hiEl = document.getElementById('gp-high');
+  const errEl = document.getElementById('gp-err');
+  const low  = parseInt(loEl ? loEl.value : '');
+  const high = parseInt(hiEl ? hiEl.value : '');
+  if(!low || low < 1)  { if(errEl) errEl.textContent = '⚠ Please enter a low target.'; return; }
+  if(!high || high < 1){ if(errEl) errEl.textContent = '⚠ Please enter a high target.'; return; }
+  if(high < low)       { if(errEl) errEl.textContent = '⚠ High target must be ≥ low target.'; return; }
+  if(errEl) errEl.textContent = '';
+
+  const btn = document.getElementById('gp-save-btn');
+  if(btn){ btn.textContent = 'SAVING...'; btn.disabled = true; }
+
+  const today = getTodayGY();
+  const docId = currentUser.id + '_' + today;
+  try{
+    await db.collection('dailyTargets').doc(docId).set({
+      agentId:   currentUser.id,
+      agentName: currentUser.name,
+      team:      currentUser.team || '',
+      date:      today,
+      low,
+      high,
+      hitLow:    false,
+      hitHigh:   false,
+      savedAt:   firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    currentUser._goalLow  = low;
+    currentUser._goalHigh = high;
+    currentUser._goalDate = today;
+    // Persist in session
+    sessionStorage.setItem('bds_user_'+today, JSON.stringify(currentUser));
+  }catch(e){ console.warn('Goal save error:', e); }
+
+  if(btn){ btn.textContent = '💾 LOCK IN MY TARGETS'; btn.disabled = false; }
+  closeGoalPopup();
+  renderAgentTargetWidget();
+}
+
+function skipGoalPopup(){
+  // Remember skip for this session so we don't re-show
+  if(currentUser) currentUser._goalSkipped = true;
+  closeGoalPopup();
+}
+
+function closeGoalPopup(){
+  const overlay = document.getElementById('goal-popup-overlay');
+  if(overlay) overlay.classList.add('hidden');
+}
+
+// ── Check if popup should appear on login ──
+async function maybeShowGoalPopup(){
+  if(!currentUser || currentUser.isAdmin) return;
+  const today = getTodayGY();
+  // Already set today?
+  try{
+    const snap = await db.collection('dailyTargets').doc(currentUser.id+'_'+today).get();
+    if(snap.exists){
+      const d = snap.data();
+      currentUser._goalLow   = d.low;
+      currentUser._goalHigh  = d.high;
+      currentUser._goalHitLow  = d.hitLow  || false;
+      currentUser._goalHitHigh = d.hitHigh || false;
+      currentUser._goalDate  = today;
+      sessionStorage.setItem('bds_user_'+today, JSON.stringify(currentUser));
+      renderAgentTargetWidget();
+      return; // Already set — don't show popup
+    }
+  }catch(e){}
+  // Not set yet — show popup
+  openGoalPopup(false);
+}
+
+// ── Render the agent target widget in the rep-bar area ──
+function renderAgentTargetWidget(){
+  if(!currentUser || currentUser.isAdmin) return;
+  const widget = document.getElementById('agent-target-widget');
+  if(!widget) return;
+
+  const low    = currentUser._goalLow  || 0;
+  const high   = currentUser._goalHigh || 0;
+  const hitLow = currentUser._goalHitLow  || false;
+  const hitHigh= currentUser._goalHitHigh || false;
+
+  // Get actual transfers from statsData if available
+  let actual = 0;
+  if(typeof statsData !== 'undefined' && statsData.length){
+    const me = statsData.find(r =>
+      r.name && currentUser.name &&
+      (r.name.toLowerCase().trim() === currentUser.name.toLowerCase().trim() ||
+       r.name.toLowerCase().includes(currentUser.name.toLowerCase().split(' ')[0].toLowerCase()))
+    );
+    if(me) actual = me.xfer || 0;
+  }
+  currentUser._goalActual = actual;
+
+  if(!low && !high){
+    // No goals set yet
+    document.getElementById('atw-low-val').textContent  = '—';
+    document.getElementById('atw-high-val').textContent = '—';
+    document.getElementById('atw-actual-val').textContent = actual || '—';
+    document.getElementById('atw-status-txt').textContent = 'Tap ✏ Edit Goals to set your targets';
+    document.getElementById('atw-status-txt').className = 'atw-status';
+    document.getElementById('atw-bar').style.width = '0%';
+    document.getElementById('atw-low-marker').style.left  = '0%';
+    document.getElementById('atw-high-marker').style.left = '0%';
+    widget.classList.add('show');
+    return;
+  }
+
+  document.getElementById('atw-low-val').textContent  = low;
+  document.getElementById('atw-high-val').textContent = high;
+  document.getElementById('atw-actual-val').textContent = actual;
+
+  // Progress bar: scale 0→high*1.1
+  const maxVal = Math.max(high * 1.1, actual * 1.1, 1);
+  const barPct    = Math.min(100, Math.round(actual / maxVal * 100));
+  const lowPct    = Math.min(98, Math.round(low  / maxVal * 100));
+  const highPct   = Math.min(98, Math.round(high / maxVal * 100));
+
+  const bar = document.getElementById('atw-bar');
+  bar.style.width = barPct + '%';
+  if(actual >= high)      bar.style.background = 'var(--accent)';
+  else if(actual >= low)  bar.style.background = 'var(--green)';
+  else                    bar.style.background = 'var(--gold)';
+
+  document.getElementById('atw-low-marker').style.left  = lowPct  + '%';
+  document.getElementById('atw-high-marker').style.left = highPct + '%';
+
+  // Status text
+  const toLow  = Math.max(0, low  - actual);
+  const toHigh = Math.max(0, high - actual);
+  let statusTxt = '', statusClass = 'atw-status';
+  if(actual >= high){
+    statusTxt = '🔥 HIGH TARGET HIT! ' + actual + ' transfers';
+    statusClass += ' on-track';
+  } else if(actual >= low){
+    statusTxt = '✅ Low target hit! ' + toHigh + ' more for high target';
+    statusClass += ' on-track';
+  } else if(toLow <= 3 && toLow > 0){
+    statusTxt = '⚡ Almost there — ' + toLow + ' more for low target';
+    statusClass += ' below';
+  } else if(toLow > 0){
+    statusTxt = toLow + ' more to hit low · ' + toHigh + ' more for high';
+    statusClass += ' below';
+  } else {
+    statusTxt = actual + ' transfers today';
+  }
+  const stEl = document.getElementById('atw-status-txt');
+  stEl.textContent  = statusTxt;
+  stEl.className    = statusClass;
+
+  // Hit buttons
+  const btnL = document.getElementById('atw-btn-low');
+  const btnH = document.getElementById('atw-btn-high');
+  if(btnL){ btnL.classList.toggle('hit', hitLow);  btnL.textContent = hitLow  ? '✓ Low Hit!'  : '✓ Low Hit'; }
+  if(btnH){ btnH.classList.toggle('hit', hitHigh); btnH.textContent = hitHigh ? '✓ High Hit!' : '✓ High Hit'; }
+
+  widget.classList.add('show');
+}
+
+async function toggleHitTarget(type){
+  if(!currentUser || currentUser.isAdmin) return;
+  const today = getTodayGY();
+  const docId = currentUser.id + '_' + today;
+  if(type === 'low'){
+    currentUser._goalHitLow = !currentUser._goalHitLow;
+    try{ await db.collection('dailyTargets').doc(docId).set({hitLow: currentUser._goalHitLow},{merge:true}); }catch(e){}
+  } else {
+    currentUser._goalHitHigh = !currentUser._goalHitHigh;
+    try{ await db.collection('dailyTargets').doc(docId).set({hitHigh: currentUser._goalHitHigh},{merge:true}); }catch(e){}
+  }
+  sessionStorage.setItem('bds_user_'+today, JSON.stringify(currentUser));
+  renderAgentTargetWidget();
+}
+
+// ── Admin: load and render the Target Board ──
+async function loadTargetBoard(){
+  const tbody = document.getElementById('tb-tbody');
+  const dateLbl = document.getElementById('tb-date-lbl');
+  if(!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:28px;">⏳ Loading targets...</td></tr>';
+  const today = getTodayGY();
+  if(dateLbl) dateLbl.textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',timeZone:'America/Guyana'});
+
+  try{
+    const snap = await db.collection('dailyTargets').where('date','==',today).get();
+    const goals = {};
+    snap.forEach(doc=>{ const d=doc.data(); goals[d.agentId] = d; });
+
+    // Build roster list
+    const rosterArr = Object.values(ROSTER || {}).filter(a=>a && a.name);
+    renderTargetBoardTable(rosterArr, goals);
+  }catch(e){
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--red);padding:24px;">Error loading targets: ${e.message}</td></tr>`;
+  }
+}
+
+function renderTargetBoardTable(rosterArr, goals){
+  const tbody = document.getElementById('tb-tbody');
+  if(!tbody) return;
+
+  // Filter by team
+  let agents = rosterArr;
+  if(tbCurrentTeam !== 'all') agents = agents.filter(a => (a.team||'') === tbCurrentTeam);
+  agents = agents.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+
+  // Update summary counters
+  const allGoals = Object.values(goals);
+  const filtered = tbCurrentTeam === 'all' ? allGoals : allGoals.filter(g=>g.team===tbCurrentTeam);
+  const rosterFiltered = tbCurrentTeam==='all' ? rosterArr : rosterArr.filter(a=>a.team===tbCurrentTeam);
+  const goalsSet  = filtered.length;
+  const hitLow    = filtered.filter(g=>g.actual>=g.low||g.hitLow).length;
+  const hitHigh   = filtered.filter(g=>g.actual>=g.high||g.hitHigh).length;
+  const noGoal    = Math.max(0, rosterFiltered.length - goalsSet);
+  const s = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  s('tb-s-set',    goalsSet);
+  s('tb-s-hitlow', hitLow);
+  s('tb-s-hithigh',hitHigh);
+  s('tb-s-none',   noGoal);
+
+  if(!agents.length){
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No agents found for this team.</td></tr>';
+    return;
+  }
+
+  let rows = '';
+  agents.forEach((agent, idx)=>{
+    const uid  = String(agent.userId || '');
+    const goal = goals[uid] || null;
+    const low    = goal ? (goal.low  || 0) : 0;
+    const high   = goal ? (goal.high || 0) : 0;
+    const hitLowF  = goal ? (goal.hitLow  || false) : false;
+    const hitHighF = goal ? (goal.hitHigh || false) : false;
+    const teamLabel = agent.team==='BB' ? '🏠 BB' : agent.team==='PR' ? '🌴 PR' : (agent.team||'—');
+
+    // Get actual from statsData
+    let actual = 0;
+    if(typeof statsData !== 'undefined' && statsData.length){
+      const row = statsData.find(r=>
+        r.name && agent.name &&
+        (r.name.toLowerCase().trim()===agent.name.toLowerCase().trim() ||
+         r.name.toLowerCase().includes(agent.name.toLowerCase().split(' ')[0].toLowerCase()))
+      );
+      if(row) actual = row.xfer || 0;
+    }
+    if(goal) goal.actual = actual;
+
+    // Status pill
+    let statusHtml;
+    if(!low && !high){
+      statusHtml = `<span class="tb-pill tb-pill-none">No goal set</span>`;
+    } else if((actual>=high)||hitHighF){
+      statusHtml = `<span class="tb-pill tb-pill-both">Both Hit ✓</span>`;
+    } else if((actual>=low)||hitLowF){
+      statusHtml = `<span class="tb-pill tb-pill-hit">Low Hit ✓</span>`;
+    } else {
+      const toLow = low ? Math.max(0,low-actual) : '—';
+      statusHtml = `<span class="tb-pill tb-pill-miss">${toLow !== '—' ? '+'+toLow+' to low' : 'In progress'}</span>`;
+    }
+
+    // Progress bars
+    const maxVal = Math.max(high||1, actual, 1);
+    const lowFill  = low  ? Math.min(100,Math.round(Math.min(actual,low)/low*100))   : 0;
+    const highFill = high ? Math.min(100,Math.round(Math.min(actual,high)/high*100)) : 0;
+    const lowColor  = (actual>=low&&low)  ? 'var(--green)' : 'var(--gold)';
+    const highColor = (actual>=high&&high) ? 'var(--accent)': '#3b6fd4';
+
+    rows += `<tr>
+      <td style="color:var(--muted);font-size:0.75rem;">${idx+1}</td>
+      <td style="font-weight:700;">${agent.name||'Unknown'}</td>
+      <td style="font-size:0.75rem;">${teamLabel}</td>
+      <td>
+        ${low ? `<div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--green);">${low}</div>` : '<span style="color:var(--muted);">—</span>'}
+      </td>
+      <td>
+        ${high ? `<div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--accent);">${high}</div>` : '<span style="color:var(--muted);">—</span>'}
+      </td>
+      <td>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:${actual>0?'var(--text)':'var(--muted)'};">${actual}</div>
+      </td>
+      <td style="min-width:80px;">
+        ${low ? `<div class="tb-mini-bar"><div class="tb-mini-fill" style="width:${lowFill}%;background:${lowColor};"></div></div>
+        <div style="font-size:0.6rem;color:var(--muted);margin-top:2px;">${lowFill}%</div>` : '<span style="color:var(--muted);font-size:0.72rem;">—</span>'}
+      </td>
+      <td style="min-width:80px;">
+        ${high ? `<div class="tb-mini-bar"><div class="tb-mini-fill" style="width:${highFill}%;background:${highColor};"></div></div>
+        <div style="font-size:0.6rem;color:var(--muted);margin-top:2px;">${highFill}%</div>` : '<span style="color:var(--muted);font-size:0.72rem;">—</span>'}
+      </td>
+      <td>${statusHtml}</td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = rows || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No agents found.</td></tr>';
+}
+
+function tbSetTeam(team, btn){
+  tbCurrentTeam = team;
+  ['tb-f-all','tb-f-bb','tb-f-pr'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.style.border = '1px solid var(--border)';
+    el.style.background = 'transparent';
+    el.style.color = 'var(--muted)';
+  });
+  if(btn){
+    btn.style.border = '2px solid var(--accent)';
+    btn.style.background = '#0b1a38';
+    btn.style.color = 'var(--accent)';
+  }
+  loadTargetBoard();
+}
+
+// ── Hook into showDashboard to trigger goal popup for agents ──
+const _origShowDashboard = showDashboard;
+showDashboard = function(){
+  _origShowDashboard();
+  if(currentUser && !currentUser.isAdmin){
+    // Small delay so dashboard fully renders first
+    setTimeout(maybeShowGoalPopup, 600);
+  }
+};
+
+// ── Hook into renderStatsTable so widget updates when CSV is uploaded ──
+const _origRenderStatsTable = typeof renderStatsTable === 'function' ? renderStatsTable : null;
+if(_origRenderStatsTable){
+  renderStatsTable = function(){
+    _origRenderStatsTable();
+    // Refresh agent widget with new actual data
+    if(currentUser && !currentUser.isAdmin) renderAgentTargetWidget();
+    // Also refresh leaderboard if it's open
+    const lbPage = document.getElementById('page-leaderboard');
+    if(lbPage && lbPage.classList.contains('active')) renderLeaderboard();
+  };
+}
+
+// ════════════════════════════════════════════
+//  LEADERBOARD
+// ════════════════════════════════════════════
+let lbFilter = 'all';
+
+function lbSetFilter(f, btn){
+  lbFilter = f;
+  ['lb-f-all','lb-f-bb','lb-f-pr'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.style.border = '1px solid var(--border)';
+    el.style.background = 'transparent';
+    el.style.color = 'var(--muted)';
+  });
+  if(btn){
+    btn.style.border = '2px solid var(--accent)';
+    btn.style.background = '#0b1a38';
+    btn.style.color = 'var(--accent)';
+  }
+  renderLeaderboard();
+}
+
+function renderLeaderboard(){
+  // Update date label
+  const dateLbl = document.getElementById('lb-date-lbl');
+  if(dateLbl){
+    dateLbl.textContent = new Date().toLocaleDateString('en-US',{
+      weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:'America/Guyana'
+    }) + ' · Transfer Rankings';
+  }
+
+  const noData  = document.getElementById('lb-no-data');
+  const podium  = document.getElementById('lb-podium');
+  const list    = document.getElementById('lb-list');
+
+  // Try to pull data from statsData (set by admin CSV upload)
+  let data = typeof statsData !== 'undefined' ? [...statsData] : [];
+
+  // Filter by team
+  if(lbFilter !== 'all') data = data.filter(r => r.team === lbFilter);
+
+  // Sort by transfers descending
+  data = data.sort((a,b) => b.xfer - a.xfer).filter(r => r.name);
+
+  if(!data.length){
+    if(noData)  noData.style.display  = 'block';
+    if(podium)  podium.style.display  = 'none';
+    if(list)    list.innerHTML = '';
+    return;
+  }
+
+  if(noData)  noData.style.display  = 'none';
+
+  const maxXfer = data[0] ? data[0].xfer || 1 : 1;
+  const myName  = currentUser && !currentUser.isAdmin ? (currentUser.name||'').toLowerCase().trim() : '';
+
+  // ── PODIUM (top 3) ──
+  if(podium && data.length >= 2){
+    const top = data.slice(0,3);
+    const heights = [120,160,100]; // 2nd, 1st, 3rd
+    const colors  = ['#94a3b8','#fbbf24','#fb923c'];
+    const glow    = ['','0 0 20px rgba(251,191,36,0.5)',''];
+    const order   = data.length >= 3 ? [top[1], top[0], top[2]] : (data.length === 2 ? [top[1], top[0]] : [top[0]]);
+    const podiumIdx = data.length >= 3 ? [1,0,2] : (data.length === 2 ? [1,0] : [0]);
+
+    podium.innerHTML = order.map((agent, i)=>{
+      const realIdx = podiumIdx[i];
+      const h = data.length >= 3 ? heights[i] : (i===1 ? 160 : 120);
+      const c = colors[realIdx] || '#94a3b8';
+      const g = glow[realIdx] || '';
+      const medal = realIdx===0 ? '🥇' : realIdx===1 ? '🥈' : '🥉';
+      return `<div class="lb-podium-slot">
+        <div class="lb-podium-name">${agent.name.split(' ')[0]}</div>
+        <div class="lb-podium-val" style="color:${c};">${agent.xfer} <span style="font-size:0.6rem;font-weight:400;">xfer</span></div>
+        <div class="lb-podium-block" style="height:${h}px;background:linear-gradient(180deg,${c}22,${c}11);border:1px solid ${c}44;box-shadow:${g};">
+          <span>${medal}</span>
+        </div>
+      </div>`;
+    }).join('');
+    podium.style.display = 'flex';
+  } else {
+    if(podium) podium.style.display = 'none';
+  }
+
+  // ── FULL LIST — 3 per row grid ──
+  if(list){
+    list.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:7px;';
+    list.innerHTML = data.map((agent, idx)=>{
+      const rank = idx + 1;
+      const isMe = myName && agent.name.toLowerCase().trim() === myName;
+      const rankClass = rank===1 ? 'gold' : rank===2 ? 'silver' : rank===3 ? 'bronze' : '';
+      const xferColor = rank===1 ? '#fbbf24' : rank===2 ? '#94a3b8' : rank===3 ? '#fb923c' : 'var(--text)';
+      const teamBadgeClass = agent.team === 'BB' ? 'lb-team-bb' : 'lb-team-pr';
+      const teamLabel = agent.team === 'BB' ? '🏠 BERB' : agent.team === 'PR' ? '🌴 PROV' : (agent.team||'');
+      const barPct = maxXfer > 0 ? Math.round(agent.xfer / maxXfer * 100) : 0;
+      const barColor = rank===1 ? '#fbbf24' : rank===2 ? '#94a3b8' : rank===3 ? '#fb923c' : 'var(--accent)';
+
+      // Get status from ROSTER if available
+      let agentStatus = '';
+      if(typeof ROSTER !== 'undefined'){
+        const rAgent = Object.values(ROSTER).find(r => r.name && agent.name &&
+          r.name.toLowerCase().trim() === agent.name.toLowerCase().trim());
+        if(rAgent) agentStatus = rAgent.status || '';
+      }
+
+      return `<div class="lb-card${isMe?' lb-me':''}" style="flex-direction:column;align-items:flex-start;gap:8px;padding:14px 16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;">
+          <div class="lb-rank ${rankClass}" style="font-size:1.2rem;min-width:auto;">${rank<=3 ? (rank===1?'🥇':rank===2?'🥈':'🥉') : String(rank).padStart(2,'0')}</div>
+          <span class="lb-team-badge ${teamBadgeClass}">${teamLabel}</span>
+        </div>
+        <div class="lb-name" style="font-size:1rem;">
+          ${agent.name}${isMe?' <span style="color:var(--gold);font-size:0.62rem;">· YOU</span>':''}
+          ${agentStatus ? `<span class="lb-status">${agentStatus}</span>` : ''}
+        </div>
+        <div style="width:100%;">
+          <div class="lb-bar-wrap" style="width:100%;margin-bottom:6px;">
+            <div class="lb-bar-fill" style="width:${barPct}%;background:${barColor};"></div>
+          </div>
+          <div class="lb-xfer" style="color:${xferColor};font-size:1.8rem;">
+            ${agent.xfer}
+            <span class="lb-xfer-lbl" style="font-size:0.5rem;">XFERS</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ── Hook leaderboard render into switchTab and auto-load data from Firebase ──
+(function(){
+  const _origSwitch = switchTab;
+  switchTab = function(tab){
+    _origSwitch(tab);
+    if(tab === 'leaderboard'){
+      // Render from cached data
+      renderLeaderboard();
+      // Also try to load from Firebase if no data is cached
+      if(typeof statsData !== 'undefined' && !statsData.length){
+        const todayStr = getTodayGY();
+        db.collection('reports').doc(todayStr).get().then(snap=>{
+          if(snap.exists && snap.data().statsJSON){
+            statsData = JSON.parse(snap.data().statsJSON);
+            renderLeaderboard();
+          }
+        }).catch(()=>{});
+      }
+    }
+  };
+})();
+
+// ════════════════════════════════════════════
+//  GOAL POPUP QUOTE — agents can set + edit a personal quote
+//  Stored in Firebase: agentQuotes/{userId}
+// ════════════════════════════════════════════
+
+const DEFAULT_QUOTE = "Enter your number. See it. Vision it. Embrace it. Let it come to life.";
+
+async function loadAgentQuote(){
+  if(!currentUser || currentUser.isAdmin) return;
+  try{
+    const snap = await db.collection('agentQuotes').doc(String(currentUser.id)).get();
+    if(snap.exists && snap.data().quote){
+      currentUser._quote = snap.data().quote;
+    } else {
+      currentUser._quote = DEFAULT_QUOTE;
+    }
+  }catch(e){
+    currentUser._quote = DEFAULT_QUOTE;
+  }
+}
+
+async function saveAgentQuote(){
+  if(!currentUser || currentUser.isAdmin) return;
+  const input = document.getElementById('gp-quote-input');
+  if(!input) return;
+  const q = input.value.trim() || DEFAULT_QUOTE;
+  currentUser._quote = q;
+  try{
+    await db.collection('agentQuotes').doc(String(currentUser.id)).set({
+      quote: q,
+      agentId: currentUser.id,
+      agentName: currentUser.name || '',
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    },{merge:true});
+  }catch(e){}
+}
+
+// Patch maybeShowGoalPopup to also load the quote first
+const _origMaybeShowGoalPopup = maybeShowGoalPopup;
+maybeShowGoalPopup = async function(){
+  await loadAgentQuote();
+  // Inject quote section into popup if not already there
+  injectQuoteSection();
+  await _origMaybeShowGoalPopup();
+};
+
+function injectQuoteSection(){
+  const box = document.getElementById('goal-popup-box');
+  if(!box || document.getElementById('gp-quote-wrap')) return;
+
+  // Build the quote section HTML
+  const quoteWrap = document.createElement('div');
+  quoteWrap.id = 'gp-quote-wrap';
+  quoteWrap.style.cssText = 'margin-top:20px;padding-top:18px;border-top:1px solid #1e2d4a;';
+  quoteWrap.innerHTML = `
+    <div style="font-size:0.55rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+      ✨ YOUR PERSONAL MANTRA
+      <button id="gp-quote-edit-btn" onclick="toggleQuoteEdit()" style="padding:2px 8px;border-radius:5px;border:1px solid rgba(251,191,36,0.3);background:transparent;color:var(--gold);font-family:'Barlow Condensed',sans-serif;font-size:0.6rem;font-weight:800;letter-spacing:1px;cursor:pointer;">EDIT</button>
+    </div>
+    <div id="gp-quote-display" style="font-size:0.82rem;line-height:1.6;color:#cbd5e1;font-style:italic;text-align:center;padding:10px 14px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.15);border-radius:8px;">
+      "${currentUser && currentUser._quote ? currentUser._quote : DEFAULT_QUOTE}"
+    </div>
+    <div id="gp-quote-edit-wrap" style="display:none;margin-top:8px;">
+      <textarea id="gp-quote-input" rows="2" style="width:100%;padding:10px 12px;background:#060b18;border:1.5px solid rgba(251,191,36,0.3);border-radius:8px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.82rem;outline:none;resize:none;line-height:1.5;transition:border-color 0.15s;" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(251,191,36,0.3)'">${currentUser && currentUser._quote ? currentUser._quote : DEFAULT_QUOTE}</textarea>
+      <button onclick="applyQuoteEdit()" style="margin-top:6px;width:100%;padding:9px;border-radius:8px;border:none;background:var(--gold);color:#000;font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:900;letter-spacing:1.5px;cursor:pointer;">💾 SAVE MANTRA</button>
+    </div>
+  `;
+  box.appendChild(quoteWrap);
+}
+
+function toggleQuoteEdit(){
+  const editWrap = document.getElementById('gp-quote-edit-wrap');
+  const display  = document.getElementById('gp-quote-display');
+  const editBtn  = document.getElementById('gp-quote-edit-btn');
+  if(!editWrap) return;
+  const isOpen = editWrap.style.display !== 'none';
+  editWrap.style.display = isOpen ? 'none' : 'block';
+  display.style.display  = isOpen ? 'block' : 'none';
+  if(editBtn) editBtn.textContent = isOpen ? 'EDIT' : 'CANCEL';
+  if(!isOpen){
+    const inp = document.getElementById('gp-quote-input');
+    if(inp && currentUser && currentUser._quote) inp.value = currentUser._quote;
+    setTimeout(()=>{ if(inp) inp.focus(); }, 50);
+  }
+}
+
+async function applyQuoteEdit(){
+  const inp = document.getElementById('gp-quote-input');
+  const display = document.getElementById('gp-quote-display');
+  const editWrap = document.getElementById('gp-quote-edit-wrap');
+  const editBtn  = document.getElementById('gp-quote-edit-btn');
+  if(!inp) return;
+  const q = inp.value.trim() || DEFAULT_QUOTE;
+  await saveAgentQuote();
+  if(display) display.innerHTML = `"${q}"`;
+  if(editWrap) editWrap.style.display = 'none';
+  if(display)  display.style.display  = 'block';
+  if(editBtn)  editBtn.textContent    = 'EDIT';
+}
+
+// Also patch openGoalPopup so quote section shows when manually editing goals
+const _origOpenGoalPopup = openGoalPopup;
+openGoalPopup = function(isEdit){
+  _origOpenGoalPopup(isEdit);
+  // Ensure quote section is injected and updated
+  if(!document.getElementById('gp-quote-wrap')){
+    if(!currentUser._quote) currentUser._quote = DEFAULT_QUOTE;
+    injectQuoteSection();
+  } else {
+    // Update the display with current quote
+    const display = document.getElementById('gp-quote-display');
+    if(display && currentUser && currentUser._quote) display.innerHTML = `"${currentUser._quote}"`;
+    const inp = document.getElementById('gp-quote-input');
+    if(inp && currentUser && currentUser._quote) inp.value = currentUser._quote;
+  }
+};
+
+// ════════════════════════════════════════════════════════════
+//  MY LEAD TRACKER
+//  Firebase path: leadTracker/{agentId}/weeks/{weekId}/leads/{leadId}
+//  Week doc: { weekId, label, startDate, agentId, agentName, createdAt }
+//  Lead doc: { leadId, weekId, agentId, date, clientName, fileNum, teleNum,
+//              openStatus, notes, debt, assignedTo, result, order, updatedAt }
+// ════════════════════════════════════════════════════════════
+
+let ltCurrentWeekId   = null;
+let ltWeeks           = [];   // array of week meta docs sorted by createdAt
+let ltLeads           = {};   // { [leadId]: leadData }
+let ltSaveTimer       = null;
+let ltUnsubscribeLeads = null; // Firestore realtime listener unsubscribe
+
+const LT_STATUS_OPTIONS  = ['Open','Pending','Callback','Transferred','Closed - Won','Closed - Lost','No Contact','Custom...'];
+const LT_RESULT_OPTIONS  = ['—','Transferred','Not Interested','No Answer','Voicemail','Call Back','Wrong Number','Qualified','Declined'];
+
+// ── Called when Leads tab is opened ──
+async function ltInit(){
+  if(!currentUser || currentUser.isAdmin) return;
+
+  const lbl = document.getElementById('lt-agent-lbl');
+  if(lbl) lbl.textContent = currentUser.name + ' · ' + new Date().toLocaleDateString('en-US',{timeZone:'America/Guyana',weekday:'long',month:'long',day:'numeric'});
+
+  await ltLoadWeeks();
+}
+
+// ── Load all weeks for this agent ──
+async function ltLoadWeeks(){
+  if(!currentUser) return;
+  try{
+    const snap = await db.collection('leadTracker')
+      .doc(String(currentUser.id))
+      .collection('weeks')
+      .orderBy('createdAt','asc')
+      .get();
+
+    ltWeeks = [];
+    snap.forEach(doc => ltWeeks.push({id: doc.id, ...doc.data()}));
+
+    ltRenderWeekPills();
+
+    if(ltWeeks.length){
+      // Auto-select the latest week
+      const latest = ltWeeks[ltWeeks.length - 1];
+      ltSelectWeek(latest.id);
+    } else {
+      ltShowNoWeek();
+    }
+  }catch(e){
+    console.warn('LT: could not load weeks', e);
+    ltShowNoWeek();
+  }
+}
+
+// ── Render week pills ──
+function ltRenderWeekPills(){
+  const container = document.getElementById('lt-week-pills');
+  if(!container) return;
+
+  container.innerHTML = ltWeeks.map((w, idx) => {
+    const isActive = w.id === ltCurrentWeekId;
+    return `<div style="display:flex;align-items:center;gap:3px;">
+      <button class="lt-week-pill${isActive?' active':''}" onclick="ltSelectWeek('${w.id}')" id="lt-pill-${w.id}">
+        ${w.label || ('Week '+(idx+1))}
+      </button>
+      <button class="lt-week-pill del-week" onclick="ltDeleteWeek('${w.id}','${(w.label||'Week '+(idx+1)).replace(/'/g,'')}')" title="Delete this week">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Select a week and load its leads ──
+function ltSelectWeek(weekId){
+  ltCurrentWeekId = weekId;
+
+  // Update pill highlights
+  document.querySelectorAll('.lt-week-pill').forEach(p => {
+    p.classList.remove('active');
+  });
+  const activePill = document.getElementById('lt-pill-'+weekId);
+  if(activePill) activePill.classList.add('active');
+
+  // Detach previous listener
+  if(ltUnsubscribeLeads){
+    ltUnsubscribeLeads();
+    ltUnsubscribeLeads = null;
+  }
+
+  ltLeads = {};
+  document.getElementById('lt-no-week-msg').style.display = 'none';
+  document.getElementById('lt-table-container').style.display = 'block';
+
+  // Real-time listener for leads
+  try{
+    ltUnsubscribeLeads = db.collection('leadTracker')
+      .doc(String(currentUser.id))
+      .collection('weeks')
+      .doc(weekId)
+      .collection('leads')
+      .orderBy('order','asc')
+      .onSnapshot(snap => {
+        ltLeads = {};
+        snap.forEach(doc => { ltLeads[doc.id] = {id: doc.id, ...doc.data()}; });
+        ltRenderTable();
+      }, e => console.warn('LT leads listener error', e));
+  }catch(e){
+    console.warn('LT: listener setup error', e);
+    ltRenderTable();
+  }
+}
+
+// ── Show no-week state ──
+function ltShowNoWeek(){
+  document.getElementById('lt-no-week-msg').style.display = 'block';
+  document.getElementById('lt-table-container').style.display = 'none';
+  document.getElementById('lt-stats-bar').innerHTML = '';
+}
+
+// ── Start a new week ──
+async function ltStartNewWeek(){
+  if(!currentUser || currentUser.isAdmin) return;
+
+  const weekNum = ltWeeks.length + 1;
+  const now     = new Date();
+  const dateStr = now.toLocaleDateString('en-US',{timeZone:'America/Guyana',month:'short',day:'numeric'});
+  const label   = 'Week ' + weekNum + ' · ' + dateStr;
+
+  const weekRef = db.collection('leadTracker')
+    .doc(String(currentUser.id))
+    .collection('weeks')
+    .doc(); // auto-ID
+
+  try{
+    await weekRef.set({
+      weekId:    weekRef.id,
+      label,
+      weekNum,
+      startDate: getTodayGY(),
+      agentId:   String(currentUser.id),
+      agentName: currentUser.name || '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    ltWeeks.push({id: weekRef.id, label, weekNum, startDate: getTodayGY()});
+    ltRenderWeekPills();
+    ltSelectWeek(weekRef.id);
+  }catch(e){
+    alert('Could not create new week: ' + e.message);
+  }
+}
+
+// ── Delete a week (with confirm) ──
+async function ltDeleteWeek(weekId, label){
+  if(!currentUser) return;
+  if(!confirm(`Delete "${label}" and ALL its leads? This cannot be undone.`)) return;
+
+  try{
+    // Delete all leads in the week first
+    const leadsSnap = await db.collection('leadTracker')
+      .doc(String(currentUser.id)).collection('weeks')
+      .doc(weekId).collection('leads').get();
+    const batch = db.batch();
+    leadsSnap.forEach(d => batch.delete(d.ref));
+    // Delete the week doc itself
+    batch.delete(db.collection('leadTracker').doc(String(currentUser.id)).collection('weeks').doc(weekId));
+    await batch.commit();
+
+    ltWeeks = ltWeeks.filter(w => w.id !== weekId);
+
+    if(ltCurrentWeekId === weekId){
+      if(ltUnsubscribeLeads){ ltUnsubscribeLeads(); ltUnsubscribeLeads = null; }
+      ltCurrentWeekId = null;
+      ltLeads = {};
+    }
+
+    ltRenderWeekPills();
+
+    if(ltWeeks.length){
+      const latest = ltWeeks[ltWeeks.length-1];
+      ltSelectWeek(latest.id);
+    } else {
+      ltShowNoWeek();
+    }
+  }catch(e){
+    alert('Could not delete week: ' + e.message);
+  }
+}
+
+// ── Add a new lead row ──
+async function ltAddRow(){
+  if(!currentUser || !ltCurrentWeekId) return;
+
+  const today   = getTodayGY();
+  const order   = Object.keys(ltLeads).length;
+  const leadRef = db.collection('leadTracker')
+    .doc(String(currentUser.id)).collection('weeks')
+    .doc(ltCurrentWeekId).collection('leads').doc();
+
+  const newLead = {
+    leadId:      leadRef.id,
+    weekId:      ltCurrentWeekId,
+    agentId:     String(currentUser.id),
+    date:        today,
+    clientName:  '',
+    fileNum:     '',
+    teleNum:     '',
+    openStatus:  'Open',
+    notes:       '',
+    debt:        '',
+    assignedTo:  '',
+    result:      '—',
+    order,
+    updatedAt:   firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try{
+    await leadRef.set(newLead);
+    // Listener will pick this up and re-render
+  }catch(e){
+    alert('Could not add lead: ' + e.message);
+  }
+}
+
+// ── Delete a lead row ──
+async function ltDeleteRow(leadId){
+  if(!currentUser || !ltCurrentWeekId) return;
+  if(!confirm('Delete this lead? This cannot be undone.')) return;
+  try{
+    await db.collection('leadTracker')
+      .doc(String(currentUser.id)).collection('weeks')
+      .doc(ltCurrentWeekId).collection('leads').doc(leadId).delete();
+    // Listener handles re-render
+  }catch(e){
+    alert('Could not delete lead: ' + e.message);
+  }
+}
+
+// ── Save a field on a lead (debounced) ──
+function ltSaveField(leadId, field, value){
+  if(!currentUser || !ltCurrentWeekId) return;
+
+  // Update local cache immediately
+  if(ltLeads[leadId]) ltLeads[leadId][field] = value;
+
+  // Show saving indicator
+  const ind = document.getElementById('lt-saving');
+  if(ind){ ind.textContent = '⏳ SAVING...'; ind.classList.add('show'); }
+
+  clearTimeout(ltSaveTimer);
+  ltSaveTimer = setTimeout(async ()=>{
+    try{
+      await db.collection('leadTracker')
+        .doc(String(currentUser.id)).collection('weeks')
+        .doc(ltCurrentWeekId).collection('leads').doc(leadId)
+        .update({ [field]: value, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      if(ind){ ind.textContent = '✓ SAVED'; setTimeout(()=>{ ind.classList.remove('show'); }, 2000); }
+    }catch(e){
+      console.warn('LT save error', e);
+      if(ind){ ind.textContent = '⚠ SAVE FAILED'; setTimeout(()=>{ ind.classList.remove('show'); }, 3000); }
+    }
+  }, 800);
+}
+
+// ── Render the leads table ──
+function ltRenderTable(){
+  const tbody = document.getElementById('lt-tbody');
+  if(!tbody) return;
+
+  const rows = Object.values(ltLeads).sort((a,b)=>(a.order||0)-(b.order||0));
+
+  if(!rows.length){
+    tbody.innerHTML = `<tr><td colspan="10" class="lt-empty-state">
+      <div style="font-size:1.2rem;margin-bottom:8px;">📭</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;letter-spacing:1px;color:var(--muted);">NO LEADS YET</div>
+      <div style="font-size:0.72rem;margin-top:4px;">Click <strong style="color:var(--green);">+ ADD LEAD</strong> below the table.</div>
+    </td></tr>`;
+    ltRenderStats(rows);
+    return;
+  }
+
+  tbody.innerHTML = rows.map(lead => {
+    const id = lead.id || lead.leadId;
+    const statusClass = ltGetStatusClass(lead.openStatus);
+    const isCustomStatus = lead.openStatus && !LT_STATUS_OPTIONS.slice(0,-1).includes(lead.openStatus);
+    const selectVal = isCustomStatus ? 'Custom...' : (lead.openStatus || 'Open');
+
+    const statusOptions = LT_STATUS_OPTIONS.map(s =>
+      `<option value="${s}"${selectVal===s?' selected':''}>${s}</option>`
+    ).join('');
+
+    const resultOptions = LT_RESULT_OPTIONS.map(r =>
+      `<option value="${r}"${lead.result===r?' selected':''}>${r}</option>`
+    ).join('');
+
+    return `<tr id="lt-row-${id}">
+      <td><input class="lt-cell-input" type="date" value="${lead.date||''}"
+        onchange="ltSaveField('${id}','date',this.value)" style="min-width:110px;"></td>
+      <td><input class="lt-cell-input" type="text" value="${ltEsc(lead.clientName)}"
+        placeholder="Client name..."
+        oninput="ltSaveField('${id}','clientName',this.value)"></td>
+      <td><input class="lt-cell-input" type="text" value="${ltEsc(lead.fileNum)}"
+        placeholder="File #..."
+        oninput="ltSaveField('${id}','fileNum',this.value)"></td>
+      <td><input class="lt-cell-input" type="tel" value="${ltEsc(lead.teleNum)}"
+        placeholder="(000) 000-0000"
+        oninput="ltSaveField('${id}','teleNum',this.value)"></td>
+      <td>
+        <select class="lt-cell-select" onchange="ltStatusSelectChange(this,'${id}')">
+          ${statusOptions}
+        </select>
+        <input class="lt-cell-input" type="text" id="lt-custom-status-${id}"
+          placeholder="Type custom status..."
+          value="${isCustomStatus ? ltEsc(lead.openStatus) : ''}"
+          style="margin-top:4px;display:${isCustomStatus?'block':'none'};"
+          oninput="ltSaveField('${id}','openStatus',this.value)">
+      </td>
+      <td><textarea class="lt-cell-textarea" placeholder="Notes, callbacks, history..."
+        oninput="ltSaveField('${id}','notes',this.value)">${ltEsc(lead.notes)}</textarea></td>
+      <td><input class="lt-cell-input" type="text" value="${ltEsc(lead.debt)}"
+        placeholder="$0"
+        oninput="ltSaveField('${id}','debt',this.value)" style="min-width:75px;"></td>
+      <td><input class="lt-cell-input" type="text" value="${ltEsc(lead.assignedTo)}"
+        placeholder="Assigned to..."
+        oninput="ltSaveField('${id}','assignedTo',this.value)"></td>
+      <td>
+        <select class="lt-cell-select" onchange="ltSaveField('${id}','result',this.value)">
+          ${resultOptions}
+        </select>
+      </td>
+      <td style="text-align:center;">
+        <button class="lt-del-btn" onclick="ltDeleteRow('${id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  ltRenderStats(rows);
+}
+
+// ── Render stats bar ──
+function ltRenderStats(rows){
+  const bar = document.getElementById('lt-stats-bar');
+  if(!bar) return;
+
+  const total       = rows.length;
+  const transferred = rows.filter(r => (r.openStatus||'').toLowerCase().includes('transfer') || (r.result||'').toLowerCase().includes('transfer')).length;
+  const open        = rows.filter(r => r.openStatus === 'Open').length;
+  const closed      = rows.filter(r => (r.openStatus||'').toLowerCase().startsWith('closed')).length;
+
+  bar.innerHTML = `
+    <div class="lt-stat-chip" style="border-color:rgba(96,165,250,0.3);color:var(--accent);">
+      📋 <strong style="color:var(--text);">${total}</strong>&nbsp;Total Leads
+    </div>
+    <div class="lt-stat-chip" style="border-color:rgba(52,211,153,0.3);color:var(--green);">
+      ✅ <strong style="color:var(--text);">${transferred}</strong>&nbsp;Transferred
+    </div>
+    <div class="lt-stat-chip" style="border-color:rgba(251,191,36,0.3);color:var(--gold);">
+      🔓 <strong style="color:var(--text);">${open}</strong>&nbsp;Open
+    </div>
+    <div class="lt-stat-chip" style="border-color:rgba(248,113,113,0.3);color:var(--red);">
+      ✗ <strong style="color:var(--text);">${closed}</strong>&nbsp;Closed
+    </div>
+    <div class="lt-stat-chip" style="border-color:rgba(167,139,250,0.3);color:var(--purple);">
+      📅 Week: <strong style="color:var(--text);">${ltWeeks.find(w=>w.id===ltCurrentWeekId)?.label||'—'}</strong>
+    </div>
+  `;
+}
+
+// ── Handle status select change — show/hide custom input ──
+function ltStatusSelectChange(select, leadId){
+  const val = select.value;
+  const customInput = document.getElementById('lt-custom-status-' + leadId);
+  if(val === 'Custom...'){
+    if(customInput){
+      customInput.style.display = 'block';
+      customInput.focus();
+    }
+    // Don't save "Custom..." to Firebase — wait for text input
+  } else {
+    if(customInput) customInput.style.display = 'none';
+    ltSaveField(leadId, 'openStatus', val);
+  }
+}
+
+// ── Update row background/highlight based on status ──
+function ltUpdateRowStatus(select, leadId){
+  // Optionally tint row in the future
+}
+
+// ── Get CSS class for status pill ──
+function ltGetStatusClass(status){
+  if(!status) return 'lt-status-open';
+  const s = status.toLowerCase();
+  if(s.includes('transfer')) return 'lt-status-transferred';
+  if(s.includes('callback'))  return 'lt-status-callback';
+  if(s.includes('pending'))   return 'lt-status-pending';
+  if(s.startsWith('closed'))  return 'lt-status-closed';
+  return 'lt-status-open';
+}
+
+// ── Escape HTML special chars for input values ──
+function ltEsc(str){
+  if(!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Hook into switchTab to init leads on first open ──
+let ltInited = false;
+(function(){
+  const _origSwitchForLeads = switchTab;
+  switchTab = function(tab){
+    _origSwitchForLeads(tab);
+    if(tab === 'leads'){
+      if(!ltInited){
+        ltInited = true;
+        ltInit();
+      }
+    }
+  };
+})();
+
+// ── Admin cannot see leads tab (leads is agent-only — hide from admin) ──
+// The tab button is always visible but the page is empty for admin (who has no personal leads)
+// We already gate ltInit with !currentUser.isAdmin
 </script>
 <input type="file" id="stats-csv-upload" accept=".csv" style="display:none;" onchange="handleStatsCSV(this)">
 </body>
