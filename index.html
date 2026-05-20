@@ -2594,6 +2594,11 @@ body.is-admin #agent-target-widget{display:none !important;}
           <div id="lb-date-lbl" style="font-size:0.58rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:2px;"></div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <!-- Daily / Weekly mode toggle -->
+          <div style="display:flex;gap:4px;background:#080f1e;border:1px solid var(--border);border-radius:9px;padding:3px;">
+            <button onclick="lbSetMode('daily',this)" id="lb-m-daily" style="padding:5px 13px;border-radius:7px;border:none;background:var(--gold);color:#000;font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:900;letter-spacing:1.5px;cursor:pointer;">📅 DAILY</button>
+            <button onclick="lbSetMode('weekly',this)" id="lb-m-weekly" style="padding:5px 13px;border-radius:7px;border:none;background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:900;letter-spacing:1.5px;cursor:pointer;">📆 WEEKLY</button>
+          </div>
           <button onclick="lbSetFilter('all',this)" id="lb-f-all" style="padding:6px 14px;border-radius:8px;border:2px solid var(--accent);background:#0b1a38;color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;">ALL</button>
           <button onclick="lbSetFilter('BB',this)" id="lb-f-bb" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;">🏠 BERB</button>
           <button onclick="lbSetFilter('PR',this)" id="lb-f-pr" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:800;letter-spacing:1px;cursor:pointer;">🌴 PROV</button>
@@ -8281,6 +8286,27 @@ if(_origRenderStatsTable){
 //  LEADERBOARD
 // ════════════════════════════════════════════
 let lbFilter = 'all';
+let lbMode   = 'daily'; // 'daily' | 'weekly'
+
+function lbSetMode(mode, btn){
+  lbMode = mode;
+  const daily  = document.getElementById('lb-m-daily');
+  const weekly = document.getElementById('lb-m-weekly');
+  if(daily && weekly){
+    if(mode === 'daily'){
+      daily.style.background  = 'var(--gold)';
+      daily.style.color       = '#000';
+      weekly.style.background = 'transparent';
+      weekly.style.color      = 'var(--muted)';
+    } else {
+      weekly.style.background = 'var(--purple)';
+      weekly.style.color      = '#fff';
+      daily.style.background  = 'transparent';
+      daily.style.color       = 'var(--muted)';
+    }
+  }
+  renderLeaderboard();
+}
 
 function lbSetFilter(f, btn){
   lbFilter = f;
@@ -8302,18 +8328,50 @@ function lbSetFilter(f, btn){
 function renderLeaderboard(){
   // Update date label
   const dateLbl = document.getElementById('lb-date-lbl');
+  const isWeekly = lbMode === 'weekly';
+
   if(dateLbl){
-    dateLbl.textContent = new Date().toLocaleDateString('en-US',{
-      weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:'America/Guyana'
-    }) + ' · Transfer Rankings';
+    if(isWeekly){
+      const nowGY = new Date(new Date().toLocaleString('en-US',{timeZone:'America/Guyana'}));
+      const wkStart = getWeekStartGY(nowGY);
+      dateLbl.textContent = 'Week of ' + new Date(wkStart + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' · Weekly Transfer Rankings';
+    } else {
+      dateLbl.textContent = new Date().toLocaleDateString('en-US',{
+        weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:'America/Guyana'
+      }) + ' · Transfer Rankings';
+    }
   }
 
   const noData  = document.getElementById('lb-no-data');
   const podium  = document.getElementById('lb-podium');
   const list    = document.getElementById('lb-list');
 
-  // Try to pull data from statsData (set by admin CSV upload)
-  let data = typeof statsData !== 'undefined' ? [...statsData] : [];
+  let data = [];
+
+  if(isWeekly){
+    // Aggregate xfer per agent across all reports this week
+    const nowGY   = new Date(new Date().toLocaleString('en-US',{timeZone:'America/Guyana'}));
+    const wkStart = getWeekStartGY(nowGY);
+    const history = typeof reportHistory !== 'undefined' ? reportHistory : [];
+    const weekReports = history.filter(r => r.date && r.date >= wkStart && r.statsJSON);
+    const agentMap = {};
+    weekReports.forEach(report => {
+      let rows = [];
+      try { rows = JSON.parse(report.statsJSON); } catch(e){}
+      rows.forEach(r => {
+        if(!r.name) return;
+        const key = r.name.toLowerCase().trim();
+        if(!agentMap[key]){
+          agentMap[key] = { name: r.name, team: r.team, xfer: 0 };
+        }
+        agentMap[key].xfer += (r.xfer || 0);
+      });
+    });
+    data = Object.values(agentMap);
+  } else {
+    // Try to pull data from statsData (set by admin CSV upload)
+    data = typeof statsData !== 'undefined' ? [...statsData] : [];
+  }
 
   // Filter by team
   if(lbFilter !== 'all') data = data.filter(r => r.team === lbFilter);
@@ -8322,7 +8380,13 @@ function renderLeaderboard(){
   data = data.sort((a,b) => b.xfer - a.xfer).filter(r => r.name);
 
   if(!data.length){
-    if(noData)  noData.style.display  = 'block';
+    if(noData){
+      noData.style.display  = 'block';
+      const noDataMsg = noData.querySelector('div:last-child');
+      if(noDataMsg) noDataMsg.textContent = isWeekly
+        ? 'No reports uploaded for this week yet. Admin uploads daily CSVs and they accumulate here.'
+        : 'Admin uploads the daily CSV and it will appear here automatically.';
+    }
     if(podium)  podium.style.display  = 'none';
     if(list)    list.innerHTML = '';
     return;
@@ -8397,7 +8461,7 @@ function renderLeaderboard(){
           </div>
           <div class="lb-xfer" style="color:${xferColor};font-size:1.8rem;">
             ${agent.xfer}
-            <span class="lb-xfer-lbl" style="font-size:0.5rem;">XFERS</span>
+            <span class="lb-xfer-lbl" style="font-size:0.5rem;">${isWeekly ? 'WEEK TOTAL' : 'XFERS'}</span>
           </div>
         </div>
       </div>`;
@@ -8421,6 +8485,13 @@ function renderLeaderboard(){
             statsData = JSON.parse(snap.data().statsJSON);
             renderLeaderboard();
           }
+        }).catch(()=>{});
+      }
+      // Also ensure reportHistory is loaded for weekly mode
+      if(typeof reportHistory !== 'undefined' && !reportHistory.length){
+        db.collection('reports').orderBy('date','desc').limit(7).get().then(snap=>{
+          snap.forEach(doc=>{ const d=doc.data(); if(d.statsJSON) reportHistory.push(d); });
+          if(lbMode === 'weekly') renderLeaderboard();
         }).catch(()=>{});
       }
     }
