@@ -192,6 +192,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .tab-btn.sunday-glow{border-color:rgba(192,132,252,0.6);color:#c084fc;background:#0e0620;box-shadow:0 0 12px rgba(192,132,252,0.2),inset 0 0 8px rgba(192,132,252,0.08);animation:sundayPulse 3s ease-in-out infinite;}
 .tab-btn.sunday-glow.active{animation:none;box-shadow:0 0 18px rgba(192,132,252,0.5);}
 @keyframes sundayPulse{0%,100%{box-shadow:0 0 8px rgba(192,132,252,0.15),inset 0 0 6px rgba(192,132,252,0.05);}50%{box-shadow:0 0 18px rgba(192,132,252,0.4),inset 0 0 10px rgba(192,132,252,0.12);}}
+@keyframes rh-fade-in{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
 .tab-btn.t-dbs.active{background:#0a1a10;border-color:#4ade80;color:#4ade80;box-shadow:0 0 14px rgba(74,222,128,0.25);}
 #tab-lenders.active,.tab-btn.t-lenders.active{background:#0a1224;border-color:#3b82f6;color:#60a5fa;box-shadow:0 0 14px rgba(59,130,246,0.25);}
 .tab-btn.t-lenders{background:#0d1a2e;border-color:#3b82f6;color:#60a5fa;}
@@ -5360,29 +5361,88 @@ async function loadReportHistory(){
     renderReportHistory();
   }catch(e){ console.warn('History load:',e); }
 }
+let _reportHistoryOpen = false;
+function toggleReportHistory(){
+  _reportHistoryOpen = !_reportHistoryOpen;
+  renderReportHistory();
+}
 function renderReportHistory(){
   const el=document.getElementById('report-history');
   if(!el||!reportHistory.length){if(el)el.innerHTML='';return;}
   // Always newest date first
   const sorted = [...reportHistory].sort((a,b)=>b.date.localeCompare(a.date));
-  el.innerHTML='<div style="font-size:0.6rem;font-weight:800;letter-spacing:2px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;">📂 Previous Reports — click to load</div>'
-    +sorted.map((r)=>{
-      const origIdx = reportHistory.indexOf(r);
-      const isActive = r.date === statsDataDate;
-      const isToday  = r.date === getTodayGY();
-      const baseBorder = isToday ? 'var(--green)' : 'var(--border)';
-      const baseBg     = isToday ? 'rgba(52,211,153,0.1)' : 'transparent';
-      const baseColor  = isToday ? 'var(--green)' : 'var(--muted)';
-      return `<button data-report-idx="${origIdx}" onclick="loadReportByIndex(${origIdx})"
-        style="margin:0 4px 4px 0;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;
-        border:1.5px solid ${isActive?'var(--gold)':baseBorder};
-        background:${isActive?'rgba(251,191,36,0.12)':baseBg};
-        color:${isActive?'var(--gold)':baseColor};
-        font-family:Barlow Condensed,sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;
-        box-shadow:${isActive?'0 0 8px rgba(251,191,36,0.3)':'none'};">
-        ${isToday?'⚡ ':isActive?'▶ ':''} ${r.date} <span style="opacity:0.6;">(${r.agentCount||'?'} agents)</span>
-      </button>`;
-    }).join('');
+  const arrow  = _reportHistoryOpen ? '▾' : '▸';
+  const pillsHtml = _reportHistoryOpen
+    ? `<div id="report-history-pills" style="padding:10px 0 4px;animation:rh-fade-in 0.18s ease;">`
+      + sorted.map((r)=>{
+          const origIdx = reportHistory.indexOf(r);
+          const isActive = r.date === statsDataDate;
+          const isToday  = r.date === getTodayGY();
+          const baseBorder = isToday ? 'var(--green)' : 'var(--border)';
+          const baseBg     = isToday ? 'rgba(52,211,153,0.1)' : 'transparent';
+          const baseColor  = isToday ? 'var(--green)' : 'var(--muted)';
+          const dateEsc    = r.date.replace(/'/g,"\\'");
+          return `<span style="display:inline-flex;align-items:center;margin:0 4px 4px 0;
+            border-radius:20px;border:1.5px solid ${isActive?'var(--gold)':baseBorder};
+            background:${isActive?'rgba(251,191,36,0.12)':baseBg};
+            box-shadow:${isActive?'0 0 8px rgba(251,191,36,0.3)':'none'};
+            overflow:hidden;transition:border-color 0.15s;"
+            onmouseenter="this.querySelector('.rh-del-btn').style.opacity='1';this.querySelector('.rh-del-btn').style.maxWidth='28px';"
+            onmouseleave="this.querySelector('.rh-del-btn').style.opacity='0';this.querySelector('.rh-del-btn').style.maxWidth='0';">
+            <button onclick="loadReportByIndex(${origIdx})"
+              style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;
+              background:transparent;border:none;
+              color:${isActive?'var(--gold)':baseColor};
+              font-family:Barlow Condensed,sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;">
+              ${isToday?'⚡ ':isActive?'▶ ':''} ${r.date} <span style="opacity:0.6;">(${r.agentCount||'?'} agents)</span>
+            </button>
+            <button class="rh-del-btn" onclick="event.stopPropagation();deleteReportByDate('${dateEsc}',${origIdx})"
+              style="display:inline-flex;align-items:center;justify-content:center;
+              padding:0 6px;height:100%;background:rgba(248,113,113,0.15);
+              border:none;border-left:1px solid rgba(248,113,113,0.3);
+              color:var(--red);cursor:pointer;font-size:0.75rem;font-weight:900;
+              max-width:0;opacity:0;overflow:hidden;
+              transition:opacity 0.18s,max-width 0.18s;white-space:nowrap;"
+              title="Delete this report">🗑</button>
+          </span>`;
+        }).join('')
+      + `</div>`
+    : '';
+  el.innerHTML=`
+    <div onclick="toggleReportHistory()" style="
+      display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+      font-size:0.6rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;
+      color:var(--muted);padding:5px 10px;border-radius:8px;
+      border:1px solid var(--border);background:rgba(255,255,255,0.02);
+      user-select:none;transition:all 0.15s;margin-bottom:${_reportHistoryOpen?'2px':'0'};"
+      onmouseenter="this.style.borderColor='#3a4a6a';this.style.color='var(--text)';"
+      onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--muted)';">
+      <span style="font-size:0.75rem;transition:transform 0.18s;display:inline-block;">${arrow}</span>
+      📂 Previous Reports — click to ${_reportHistoryOpen?'hide':'show'}
+      <span style="background:rgba(255,255,255,0.06);border-radius:20px;padding:1px 7px;font-size:0.55rem;">${sorted.length}</span>
+    </div>
+    ${pillsHtml}`;
+}
+
+async function deleteReportByDate(date, idx){
+  if(!confirm(`Delete the report for ${date}? This cannot be undone.`)) return;
+  try{
+    await db.collection('reports').doc(date).delete();
+    // Remove from local array (find by date in case indices shifted)
+    const pos = reportHistory.findIndex(r=>r.date===date);
+    if(pos>=0) reportHistory.splice(pos,1);
+    // If we deleted the currently-loaded report, clear the view
+    if(statsDataDate===date){
+      statsData=[]; statsDataDate='';
+      document.getElementById('csv-date-lbl').textContent='';
+      document.getElementById('csv-expiry-lbl').textContent='';
+      renderStatsTable();
+    }
+    renderReportHistory();
+  }catch(e){
+    alert('Failed to delete report: '+e.message);
+    console.error('deleteReportByDate:',e);
+  }
 }
 let compareData     = [];   // second dataset for comparison
 let compareDataDate = '';
