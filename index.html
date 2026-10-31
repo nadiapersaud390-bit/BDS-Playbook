@@ -1053,6 +1053,13 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 .profile-directory-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px;}
 .profile-directory-title{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:900;letter-spacing:1.6px;text-transform:uppercase;color:#dbe8f8;}
 .profile-result-count{padding:4px 8px;border:1px solid #263b5c;border-radius:999px;background:#0b1728;color:#7f94b1;font-size:.56rem;font-weight:900;letter-spacing:.9px;text-transform:uppercase;white-space:nowrap;}
+.profile-duplicate-review{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-top:9px;padding:8px 10px;border:1px solid #243650;border-radius:10px;background:rgba(8,18,32,.72);}
+.profile-duplicate-review.has-duplicates{border-color:rgba(251,191,36,.38);background:rgba(68,48,9,.18);}
+.profile-duplicate-copy{font-size:.59rem;line-height:1.4;color:#8295af;}
+.profile-duplicate-review.has-duplicates .profile-duplicate-copy{color:#f4cf70;}
+.profile-duplicate-toggle{flex:0 0 auto;min-height:30px;padding:0 10px;border:1px solid #324968;border-radius:8px;background:#0b1728;color:#9db4d0;font-family:'Barlow Condensed',sans-serif;font-size:.57rem;font-weight:900;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;}
+.profile-duplicate-toggle:hover:not(:disabled){border-color:#fbbf24;color:#fbd774;background:rgba(251,191,36,.07);}
+.profile-duplicate-toggle:disabled{opacity:.45;cursor:not-allowed;}
 .profile-toolbar{display:grid;grid-template-columns:minmax(0,1fr) 142px;gap:8px;}
 .profile-control{width:100%;min-height:40px;padding:9px 12px;border:1px solid #263a59;border-radius:10px;background:#060d18;color:#e2e8f0;outline:none;font-family:'Nunito',sans-serif;font-size:.75rem;transition:border-color .15s,box-shadow .15s,background .15s;}
 .profile-control:focus{border-color:#4f8ad0;background:#08111f;box-shadow:0 0 0 3px rgba(96,165,250,.07);}
@@ -1062,10 +1069,13 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 .profile-row{display:grid;grid-template-columns:minmax(190px,1.35fr) 90px 106px 82px 34px;gap:8px;align-items:center;min-height:64px;padding:8px 9px;border:1px solid transparent;border-radius:12px;cursor:pointer;transition:background .15s,border-color .15s,transform .15s;margin-bottom:4px;}
 .profile-row:hover{background:#0a1728;border-color:#1b304f;transform:translateX(2px);}
 .profile-row.selected{background:linear-gradient(90deg,rgba(59,130,246,.14),rgba(34,211,238,.035));border-color:#315985;box-shadow:inset 3px 0 0 #60a5fa,0 7px 20px rgba(0,0,0,.12);}
+.profile-row.has-duplicate{border-color:rgba(251,191,36,.16);}
+.profile-row.has-duplicate:hover{border-color:rgba(251,191,36,.38);}
 .profile-agent-cell{display:grid;grid-template-columns:42px minmax(0,1fr);gap:10px;align-items:center;min-width:0;}
 .profile-avatar-sm{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,#12385e,#0a2038);border:1px solid #285781;color:#7bd2ff;font-family:'Barlow Condensed',sans-serif;font-size:.92rem;font-weight:900;letter-spacing:.5px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);}
 .profile-row-name{font-size:.79rem;font-weight:900;color:#edf5ff;line-height:1.22;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .profile-row-meta{font-size:.58rem;color:#667c99;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.profile-duplicate-badge{display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 6px;border:1px solid rgba(251,191,36,.32);border-radius:999px;background:rgba(251,191,36,.07);color:#f4c755;font-size:.46rem;font-weight:900;letter-spacing:.55px;text-transform:uppercase;}
 .profile-dir-center{text-align:center;min-width:0;}
 .profile-dir-shift{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:800;color:#8aa0bd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .profile-tag{display:inline-flex;align-items:center;justify-content:center;min-height:22px;padding:2px 8px;border-radius:999px;font-size:.49rem;font-weight:900;letter-spacing:.8px;text-transform:uppercase;border:1px solid #233451;background:#0a1323;color:#7e91ad;white-space:nowrap;}
@@ -1118,10 +1128,13 @@ body.is-admin #page-admin.admin-page-active{display:flex !important;flex-directi
 .profile-save-btn{min-height:40px;padding:0 16px;border:0;border-radius:10px;background:linear-gradient(90deg,#2563eb,#22d3ee);color:#03121b;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;box-shadow:0 8px 22px rgba(37,99,235,.15);transition:.15s;}.profile-save-btn:hover{filter:brightness(1.08);transform:translateY(-1px)}.profile-save-btn:disabled{opacity:.55;cursor:not-allowed;transform:none;}
 .profile-open-btn{min-height:40px;padding:0 13px;border:1px solid #2b405f;border-radius:10px;background:#0a1424;color:#8fa5c1;font-family:'Barlow Condensed',sans-serif;font-size:.67rem;font-weight:900;letter-spacing:.9px;text-transform:uppercase;cursor:pointer;transition:.15s;}.profile-open-btn:hover{border-color:#a78bfa;color:#c3b5ff;background:rgba(167,139,250,.05)}
 .profile-reset-btn{min-height:40px;padding:0 12px;border:1px solid #283a56;border-radius:10px;background:transparent;color:#71859f;font-family:'Barlow Condensed',sans-serif;font-size:.64rem;font-weight:900;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;}.profile-reset-btn:hover{color:#d6e0ec;border-color:#516885;}
+.profile-delete-btn{min-height:40px;padding:0 12px;border:1px solid rgba(248,113,113,.38);border-radius:10px;background:rgba(127,29,29,.12);color:#f58c8c;font-family:'Barlow Condensed',sans-serif;font-size:.64rem;font-weight:900;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;transition:.15s;}.profile-delete-btn:hover{border-color:#f87171;background:rgba(127,29,29,.23);color:#ffc0c0;}.profile-delete-btn:disabled{opacity:.55;cursor:not-allowed;}
 .profile-new-form{display:none;margin:14px 18px 0;padding:17px;border:1px solid rgba(52,211,153,.22);border-radius:15px;background:linear-gradient(145deg,rgba(5,29,24,.76),rgba(7,16,29,.96));box-shadow:inset 0 1px 0 rgba(255,255,255,.025);}
 .profile-new-form-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:13px;}
 .profile-new-form-title{font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:900;letter-spacing:1.45px;text-transform:uppercase;color:#4ed8a8;}
 .profile-new-form-sub{font-size:.58rem;color:#647b96;margin-top:3px;line-height:1.45;}
+.profile-new-duplicate-warning{display:none;margin:0 0 12px;padding:9px 11px;border:1px solid rgba(251,191,36,.32);border-radius:9px;background:rgba(68,48,9,.18);color:#f4cf70;font-size:.61rem;line-height:1.5;}
+.profile-new-duplicate-warning.show{display:block;}
 .profile-new-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;}
 .profile-new-grid .profile-field.span2{grid-column:span 2;}
 .profile-new-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(52,211,153,.12);}
@@ -3479,10 +3492,11 @@ body:not(.is-admin) .top-tabs .nav-row-admin{display:none!important;}
             </div>
           </div>
           <div class="profile-new-grid">
-            <div class="profile-field span2"><label class="profile-label green">Full Name *</label><input id="nr-name" class="profile-input" type="text" placeholder="e.g. Priya Ramkhelawan" oninput="autoFillYtel()"></div>
-            <div class="profile-field"><label class="profile-label green">Agent / User ID *</label><input id="nr-id" class="profile-input" type="text" inputmode="numeric" placeholder="e.g. 1042"></div>
-            <div class="profile-field"><label class="profile-label purple">Team *</label><select id="nr-team" class="profile-input" onchange="autoFillYtel()"><option value="BB">🏠 Berbice (BB)</option><option value="PR">🌴 Providence (PR)</option></select></div>
-            <div class="profile-field span2"><label class="profile-label cyan">Ytel Name *</label><input id="nr-ytel" class="profile-input" type="text" placeholder="GUYB / GUYP Agent Name"></div>
+            <div id="nr-duplicate-warning" class="profile-new-duplicate-warning" style="grid-column:1/-1;"></div>
+            <div class="profile-field span2"><label class="profile-label green">Full Name *</label><input id="nr-name" class="profile-input" type="text" placeholder="e.g. Priya Ramkhelawan" oninput="autoFillYtel();checkNewProfileDuplicates()"></div>
+            <div class="profile-field"><label class="profile-label green">Agent / User ID *</label><input id="nr-id" class="profile-input" type="text" inputmode="numeric" placeholder="e.g. 1042" oninput="checkNewProfileDuplicates()"></div>
+            <div class="profile-field"><label class="profile-label purple">Team *</label><select id="nr-team" class="profile-input" onchange="autoFillYtel();checkNewProfileDuplicates()"><option value="BB">🏠 Berbice (BB)</option><option value="PR">🌴 Providence (PR)</option></select></div>
+            <div class="profile-field span2"><label class="profile-label cyan">Ytel Name *</label><input id="nr-ytel" class="profile-input" type="text" placeholder="GUYB / GUYP Agent Name" oninput="checkNewProfileDuplicates()"></div>
             <div class="profile-field"><label class="profile-label blue">Shift</label><select id="nr-shift" class="profile-input"><option value="">— Select shift —</option><option value="10:00AM - 7:00PM">10:00AM - 7:00PM</option><option value="11:00am-8:00pm">11:00am-8:00pm</option><option value="11:45am-9:00pm">11:45am-9:00pm</option><option value="13:00pm - 22:00pm">13:00pm - 22:00pm</option></select></div>
             <div class="profile-field"><label class="profile-label green">Lunch</label><input id="nr-lunch" class="profile-input" type="text" placeholder="e.g. 3:30PM-4:00PM"></div>
             <div class="profile-field"><label class="profile-label gold">Break</label><input id="nr-break" class="profile-input" type="text" placeholder="e.g. 2:00PM-2:15PM"></div>
@@ -3508,6 +3522,10 @@ body:not(.is-admin) .top-tabs .nav-row-admin{display:none!important;}
               <div class="profile-toolbar">
                 <input id="profile-search" class="profile-control" type="text" placeholder="🔍 Search by name, ID or Ytel name…" oninput="filterProfileList()">
                 <select id="profile-team-filter" class="profile-control" onchange="filterProfileList()"><option value="all">All Teams</option><option value="BB">🏠 Berbice</option><option value="PR">🌴 Providence</option></select>
+              </div>
+              <div id="profile-duplicate-review" class="profile-duplicate-review">
+                <div id="profile-duplicate-copy" class="profile-duplicate-copy">Checking for duplicate Agent IDs, names, and Ytel names…</div>
+                <button id="profile-duplicate-toggle" class="profile-duplicate-toggle" type="button" onclick="toggleDuplicateProfiles()" disabled>Review Duplicates</button>
               </div>
             </div>
             <div class="profile-directory-columns"><span>Agent</span><span>Team</span><span>Shift</span><span>Status</span><span></span></div>
@@ -3584,6 +3602,7 @@ body:not(.is-admin) .top-tabs .nav-row-admin{display:none!important;}
                 <div class="profile-editor-footer">
                   <div id="pe-save-status" class="profile-save-status">Select a field to make changes.</div>
                   <div class="profile-footer-actions">
+                    <button id="pe-delete-btn" type="button" class="profile-delete-btn" onclick="deleteSelectedAgentProfile()">🗑 Delete Profile</button>
                     <button type="button" class="profile-reset-btn" onclick="resetProfileEditor()">↶ Reset</button>
                     <button type="button" class="profile-open-btn" onclick="openSelectedProfile()">Open Full Profile</button>
                     <button id="pe-save-btn" type="button" class="profile-save-btn" onclick="saveProfileEdits()">💾 Save Changes</button>
@@ -5858,6 +5877,7 @@ const INACTIVE_AGENTS = [
 ];
 
 let ROSTER = {};
+let ROSTER_PROFILE_RECORDS = [];
 let rosterLoaded = false;
 
 // Normalize any team/branch string to canonical 'PR' (Providence) or 'BB' (Berbice)
@@ -5895,6 +5915,7 @@ function rosterAgentFromDoc(doc){
   if(!team) team = 'BB';
 
   return {
+    documentId: String(doc.id || userId),
     userId,
     name,
     ytelName,
@@ -5915,10 +5936,20 @@ function rosterFromSnapshot(snapshot){
   return fresh;
 }
 
+function rosterProfileRecordsFromSnapshot(snapshot){
+  const records=[];
+  snapshot.forEach(doc=>{
+    const agent=rosterAgentFromDoc(doc);
+    if(agent) records.push(agent);
+  });
+  return records;
+}
+
 async function loadRoster() {
   try {
     await ensureFirebaseAuth();
     const snapshot = await db.collection('roster').get();
+    ROSTER_PROFILE_RECORDS = rosterProfileRecordsFromSnapshot(snapshot);
     ROSTER = rosterFromSnapshot(snapshot);
     rosterLoaded = true;
     if(typeof getRosterFingerprint === 'function') rosterPollHash = getRosterFingerprint();
@@ -7975,7 +8006,9 @@ async function loadRepCoach(id){
   }
 }
 let selectedProfileId = null;
+let selectedProfileDocId = null;
 let selectedProfileSnapshot = null;
+let profileDuplicateOnly = false;
 
 function profileInitials(name){
   return String(name||'').trim().split(/\s+/).filter(Boolean).slice(0,2).map(p=>p[0].toUpperCase()).join('') || 'A';
@@ -7984,6 +8017,93 @@ function profileSafe(value){
   return String(value == null ? '' : value)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+function profileRecordDocId(agent){
+  return String(agent?.documentId||agent?.userId||'').trim();
+}
+function profileDirectoryRecords(){
+  if(Array.isArray(ROSTER_PROFILE_RECORDS)&&ROSTER_PROFILE_RECORDS.length) return ROSTER_PROFILE_RECORDS.slice();
+  return Object.values(ROSTER||{}).map(agent=>({...agent,documentId:profileRecordDocId(agent)}));
+}
+function profileDuplicateKey(value){
+  const text=String(value||'');
+  return (typeof text.normalize==='function'?text.normalize('NFKD'):text)
+    .replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+}
+function profileBuildDuplicateInfo(records=profileDirectoryRecords()){
+  const info=new Map();
+  const addGroups=(field,label,keyFor=value=>profileDuplicateKey(value))=>{
+    const groups=new Map();
+    records.forEach(agent=>{
+      const key=keyFor(agent[field]);
+      if(!key) return;
+      if(!groups.has(key)) groups.set(key,[]);
+      groups.get(key).push(agent);
+    });
+    groups.forEach(group=>{
+      if(group.length<2) return;
+      group.forEach(agent=>{
+        const docId=profileRecordDocId(agent);
+        if(!docId) return;
+        const entry=info.get(docId)||{matches:new Map(),reasons:new Set()};
+        group.forEach(other=>{
+          const otherId=profileRecordDocId(other);
+          if(!otherId||otherId===docId) return;
+          entry.matches.set(otherId,other);
+          entry.reasons.add(label);
+        });
+        info.set(docId,entry);
+      });
+    });
+  };
+  addGroups('userId','same agent ID',value=>String(value||'').trim().toLowerCase());
+  addGroups('name','same full name');
+  addGroups('ytelName','same Ytel name');
+  return info;
+}
+function profileGetNewDuplicateMatches(name,ytel,id){
+  const nameKey=profileDuplicateKey(name),ytelKey=profileDuplicateKey(ytel),idKey=String(id||'').trim().toLowerCase();
+  if(!nameKey&&!ytelKey&&!idKey) return [];
+  return profileDirectoryRecords().map(agent=>{
+    const reasons=[];
+    if(idKey&&String(agent.userId||'').trim().toLowerCase()===idKey) reasons.push('same agent ID');
+    if(nameKey&&profileDuplicateKey(agent.name)===nameKey) reasons.push('same full name');
+    if(ytelKey&&profileDuplicateKey(agent.ytelName)===ytelKey) reasons.push('same Ytel name');
+    return reasons.length?{agent,reasons}:null;
+  }).filter(Boolean);
+}
+function checkNewProfileDuplicates(){
+  const warning=document.getElementById('nr-duplicate-warning');
+  if(!warning) return;
+  const name=document.getElementById('nr-name')?.value||'';
+  const ytel=document.getElementById('nr-ytel')?.value||'';
+  const id=document.getElementById('nr-id')?.value||'';
+  const matches=profileGetNewDuplicateMatches(name,ytel,id);
+  if(!matches.length){warning.textContent='';warning.classList.remove('show');return;}
+  const names=matches.slice(0,4).map(({agent})=>`${agent.name||'Unnamed Agent'} (ID ${agent.userId||agent.documentId||'unknown'})`);
+  const more=matches.length>names.length?` and ${matches.length-names.length} more`:'';
+  warning.textContent=`⚠ Possible duplicate found by Agent ID, full name, or Ytel name: ${names.join('; ')}${more}. You can still create the profile after confirming.`;
+  warning.classList.add('show');
+}
+function updateProfileDuplicateReview(info,records){
+  const review=document.getElementById('profile-duplicate-review');
+  const copy=document.getElementById('profile-duplicate-copy');
+  const button=document.getElementById('profile-duplicate-toggle');
+  const duplicated=records.filter(agent=>info.has(profileRecordDocId(agent)));
+  if(!duplicated.length&&profileDuplicateOnly) profileDuplicateOnly=false;
+  if(review) review.classList.toggle('has-duplicates',duplicated.length>0);
+  if(copy) copy.textContent=duplicated.length
+    ? `⚠ ${duplicated.length} profile${duplicated.length===1?'':'s'} match another record by Agent ID, full name, or Ytel name.`
+    : 'No duplicate Agent IDs, names, or Ytel names detected.';
+  if(button){
+    button.disabled=duplicated.length===0&&!profileDuplicateOnly;
+    button.textContent=profileDuplicateOnly?'SHOW ALL PROFILES':`REVIEW DUPLICATES (${duplicated.length})`;
+  }
+}
+function toggleDuplicateProfiles(){
+  profileDuplicateOnly=!profileDuplicateOnly;
+  renderProfileList();
+  document.getElementById('profile-list')?.scrollTo({top:0,behavior:'smooth'});
 }
 function profileNormalizeYtel(name, team, current){
   const cleanName=String(name||'').trim();
@@ -8022,13 +8142,14 @@ function toggleAddRepForm(forceOpen){
   const isOpen=form.style.display!=='none' && getComputedStyle(form).display!=='none';
   const open=typeof forceOpen==='boolean'?forceOpen:!isOpen;
   form.style.display=open?'block':'none';
-  btn.textContent=open?'✕ CANCEL':'＋ ADD AGENT';
+  btn.textContent=open?'✕ CANCEL':'＋ NEW AGENT';
   if(open){
     ['nr-name','nr-id','nr-ytel','nr-lunch','nr-break'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     const shift=document.getElementById('nr-shift'); if(shift) shift.value='';
     const team=document.getElementById('nr-team'); if(team) team.value='BB';
     const status=document.getElementById('nr-status'); if(status) status.value='Agent';
     const msg=document.getElementById('nr-status-msg'); if(msg) msg.textContent='';
+    const warning=document.getElementById('nr-duplicate-warning'); if(warning){warning.textContent='';warning.classList.remove('show');}
     setTimeout(()=>document.getElementById('nr-name')?.focus(),50);
   }
 }
@@ -8053,6 +8174,15 @@ async function saveNewRep(){
   ytel=profileNormalizeYtel(name,team,ytel);
   document.getElementById('nr-ytel').value=ytel;
 
+  const duplicateMatches=profileGetNewDuplicateMatches(name,ytel,idVal);
+  const duplicateId=duplicateMatches.find(match=>match.reasons.includes('same agent ID'));
+  if(duplicateId) return fail(`⚠ Agent / User ID ${idVal} is already assigned to ${duplicateId.agent.name||'another roster profile'} (document ${duplicateId.agent.documentId||duplicateId.agent.userId}).`);
+  if(duplicateMatches.length){
+    const matchSummary=duplicateMatches.slice(0,5).map(({agent,reasons})=>`${agent.name||'Unnamed Agent'} (ID ${agent.userId||agent.documentId||'unknown'}, ${reasons.join(' and ')})`).join('\n');
+    const extra=duplicateMatches.length>5?`\n...and ${duplicateMatches.length-5} more possible match(es).`:'';
+    if(!confirm(`Possible duplicate profile detected.\n\n${matchSummary}${extra}\n\nCreate this profile anyway?`)) return fail('⚠ Profile creation cancelled. Review the possible duplicate first.');
+  }
+
   if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='⏳ Checking Firebase...';}
   if(msgEl){msgEl.style.color='var(--muted)';msgEl.textContent='Checking for an existing profile...';}
   try{
@@ -8070,7 +8200,10 @@ async function saveNewRep(){
     if(msgEl){msgEl.style.color='var(--gold)';msgEl.textContent='Saving new agent profile to Firebase...';}
     await ref.set(payload,{merge:false});
 
-    ROSTER[String(idVal)]={userId:String(idVal),name,team,ytelName:ytel,shift,lunch,brk,status};
+    const createdProfile={documentId:String(idVal),userId:String(idVal),name,team,ytelName:ytel,shift,lunch,brk,status};
+    ROSTER_PROFILE_RECORDS=profileDirectoryRecords().filter(agent=>profileRecordDocId(agent)!==String(idVal));
+    ROSTER_PROFILE_RECORDS.push(createdProfile);
+    ROSTER[String(idVal)]=createdProfile;
     rosterLoaded=true;
     if(typeof getRosterFingerprint==='function') rosterPollHash=getRosterFingerprint();
     if(msgEl){msgEl.style.color='var(--green)';msgEl.textContent='✅ '+name+' was added successfully.';}
@@ -8092,16 +8225,17 @@ async function loadAgentProfiles(){
   updateProfileSummary();
 }
 async function refreshAgentProfiles(){
-  const btn=document.querySelector('#admin-profiles .profile-toolbar .profile-mini-btn');
+  const selectedDocId=selectedProfileDocId;
+  const btn=document.querySelector('#admin-profiles .profile-hub-actions .profile-top-btn:not(.primary)');
   if(btn){btn.disabled=true;btn.textContent='⏳ REFRESHING';}
   await loadRoster();
   renderProfileList();
   updateProfileSummary();
-  if(selectedProfileId && ROSTER[selectedProfileId]) await selectProfile(selectedProfileId,{keepScroll:true});
-  if(btn){btn.disabled=false;btn.textContent='↻ REFRESH';}
+  if(selectedDocId && profileDirectoryRecords().some(agent=>profileRecordDocId(agent)===selectedDocId)) await selectProfile(selectedDocId,{keepScroll:true});
+  if(btn){btn.disabled=false;btn.textContent='↻ REFRESH ROSTER';}
 }
 function updateProfileSummary(){
-  const vals=Object.values(ROSTER||{});
+  const vals=profileDirectoryRecords();
   const total=document.getElementById('profile-total-count');
   const bb=document.getElementById('profile-bb-count');
   const pr=document.getElementById('profile-pr-count');
@@ -8117,10 +8251,14 @@ function renderProfileList(){
   const container=document.getElementById('profile-list');
   if(!container) return;
 
-  const agents=Object.values(ROSTER||{}).filter(a=>{
-    const blob=[a.name,a.userId,a.ytelName,a.shift,a.lunch,a.brk,a.status].join(' ').toLowerCase();
-    return (teamFilter==='all'||a.team===teamFilter) && (!search||blob.includes(search));
-  }).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  const records=profileDirectoryRecords();
+  const duplicateInfo=profileBuildDuplicateInfo(records);
+  updateProfileDuplicateReview(duplicateInfo,records);
+  const agents=records.filter(a=>{
+    const docId=profileRecordDocId(a);
+    const blob=[a.name,a.userId,docId,a.ytelName,a.shift,a.lunch,a.brk,a.status].join(' ').toLowerCase();
+    return (teamFilter==='all'||a.team===teamFilter) && (!profileDuplicateOnly||duplicateInfo.has(docId)) && (!search||blob.includes(search));
+  }).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))||String(a.userId||'').localeCompare(String(b.userId||''))||profileRecordDocId(a).localeCompare(profileRecordDocId(b)));
 
   updateProfileSummary();
   const countEl=document.getElementById('profile-result-count');
@@ -8129,24 +8267,28 @@ function renderProfileList(){
 
   container.innerHTML=agents.map(a=>{
     const uid=String(a.userId||'');
-    const selected=uid===String(selectedProfileId||'');
+    const docId=profileRecordDocId(a);
+    const selected=docId===String(selectedProfileDocId||'');
+    const duplicate=duplicateInfo.get(docId);
     const status=String(a.status||'Agent');
     const statusLow=status.toLowerCase();
     const statusCls=statusLow==='trainee'?'trainee':statusLow==='inactive'?'inactive':'agent';
     const teamLabel=a.team==='PR'?'Providence':'Berbice';
     const teamClass=a.team==='PR'?'pr':'bb';
-    return `<div class="profile-row ${selected?'selected':''}" data-profile-id="${profileSafe(uid)}" onclick="selectProfile(this.dataset.profileId)">
+    const duplicateTitle=duplicate?`${[...duplicate.reasons].join(' and ')} matches ${[...duplicate.matches.values()].map(other=>`${other.name||'Unnamed Agent'} (ID ${other.userId||other.documentId||'unknown'})`).join(', ')}`:'';
+    return `<div class="profile-row ${selected?'selected':''} ${duplicate?'has-duplicate':''}" data-profile-doc-id="${profileSafe(docId)}" onclick="selectProfile(this.dataset.profileDocId)">
       <div class="profile-agent-cell">
         <div class="profile-avatar-sm">${profileSafe(profileInitials(a.name))}</div>
         <div style="min-width:0;">
           <div class="profile-row-name">${profileSafe(a.name)}</div>
-          <div class="profile-row-meta">ID ${profileSafe(uid)}${a.ytelName?' · '+profileSafe(a.ytelName):''}</div>
+          <div class="profile-row-meta">ID ${profileSafe(uid)}${docId!==uid?' · Doc '+profileSafe(docId):''}${a.ytelName?' · '+profileSafe(a.ytelName):''}</div>
+          ${duplicate?`<span class="profile-duplicate-badge" title="${profileSafe(duplicateTitle)}">⚠ POSSIBLE DUPLICATE</span>`:''}
         </div>
       </div>
       <div class="profile-dir-center"><span class="profile-tag ${teamClass}">${profileSafe(teamLabel)}</span></div>
       <div class="profile-dir-center"><div class="profile-dir-shift">${profileSafe(a.shift||'Not set')}</div></div>
       <div class="profile-dir-center"><span class="profile-tag ${statusCls}">${profileSafe(status)}</span></div>
-      <button type="button" class="profile-dir-open" data-id="${profileSafe(uid)}" onclick="event.stopPropagation();selectProfile(this.dataset.id)" title="Edit profile">›</button>
+      <button type="button" class="profile-dir-open" data-profile-doc-id="${profileSafe(docId)}" onclick="event.stopPropagation();selectProfile(this.dataset.profileDocId)" title="Edit profile">›</button>
     </div>`;
   }).join('');
 }
@@ -8175,7 +8317,7 @@ function profileRenderHero(agent){
 }
 
 function profileMarkDirty(){
-  if(!selectedProfileId || !selectedProfileSnapshot) return;
+  if(!selectedProfileDocId || !selectedProfileSnapshot) return;
   const el=document.getElementById('pe-save-status');
   if(el){el.style.color='var(--gold)';el.textContent='● Unsaved changes — click Save Changes to update Firebase.';}
 }
@@ -8192,9 +8334,15 @@ function resetProfileEditor(){
 }
 
 async function selectProfile(userId, options={}){
-  const uid=String(userId||'').trim();
-  if(!uid) return;
+  const requested=String(userId||'').trim();
+  if(!requested) return;
+  const records=profileDirectoryRecords();
+  const cached=records.find(agent=>profileRecordDocId(agent)===requested)||records.find(agent=>String(agent.userId||'')===requested)||null;
+  const docId=profileRecordDocId(cached)||requested;
+  const uid=String(cached?.userId||requested).trim();
+  const fallback=cached||ROSTER[uid]||{};
   selectedProfileId=uid;
+  selectedProfileDocId=docId;
   renderProfileList();
 
   const panel=document.getElementById('profile-edit-panel');
@@ -8206,24 +8354,25 @@ async function selectProfile(userId, options={}){
 
   try{
     await ensureFirebaseAuth();
-    const snap=await db.collection('roster').doc(uid).get();
+    const snap=await db.collection('roster').doc(docId).get();
     if(!snap.exists) throw new Error('This profile no longer exists in Firebase.');
     const raw=snap.data()||{};
     const agent={
       userId:uid,
-      name:String(raw.name||raw.Name||ROSTER[uid]?.name||'').trim(),
-      team:normalizeTeam(raw.team||ROSTER[uid]?.team||'BB'),
-      ytelName:String(raw.ytelName||raw.ytelname||ROSTER[uid]?.ytelName||'').trim(),
-      shift:String(raw.shift||ROSTER[uid]?.shift||'').trim(),
-      lunch:String(raw.lunch||ROSTER[uid]?.lunch||'').trim(),
-      brk:String(raw.brk||raw.break||ROSTER[uid]?.brk||'').trim(),
-      status:String(raw.status||ROSTER[uid]?.status||'Agent').trim()||'Agent'
+      documentId:docId,
+      name:String(raw.name||raw.Name||fallback.name||'').trim(),
+      team:normalizeTeam(raw.team||fallback.team||'BB'),
+      ytelName:String(raw.ytelName||raw.ytelname||fallback.ytelName||'').trim(),
+      shift:String(raw.shift||fallback.shift||'').trim(),
+      lunch:String(raw.lunch||fallback.lunch||'').trim(),
+      brk:String(raw.brk||raw.break||fallback.brk||'').trim(),
+      status:String(raw.status||fallback.status||'Agent').trim()||'Agent'
     };
     selectedProfileSnapshot={...agent};
-    if(agent.status.toLowerCase()!=='inactive') ROSTER[uid]={...agent};
+    if(agent.status.toLowerCase()!=='inactive'&&(!ROSTER[uid]||profileRecordDocId(ROSTER[uid])===docId)) ROSTER[uid]={...agent};
 
     document.getElementById('pe-name').textContent=agent.name||'Unnamed Agent';
-    document.getElementById('pe-meta').textContent=(agent.team==='PR'?'Providence (PR)':'Berbice (BB)')+' · ID '+uid+' · Firebase roster record';
+    document.getElementById('pe-meta').textContent=(agent.team==='PR'?'Providence (PR)':'Berbice (BB)')+' · ID '+uid+(docId!==uid?' · Document '+docId:'')+' · Firebase roster record';
     document.getElementById('pe-full-name').value=agent.name;
     document.getElementById('pe-id').value=uid;
     document.getElementById('pe-team').value=agent.team==='PR'?'PR':'BB';
@@ -8253,10 +8402,44 @@ async function selectProfile(userId, options={}){
 }
 function filterProfileList(){renderProfileList();}
 function closeProfileEdit(){
-  selectedProfileId=null;selectedProfileSnapshot=null;
+  selectedProfileId=null;selectedProfileDocId=null;selectedProfileSnapshot=null;
   const panel=document.getElementById('profile-edit-panel');if(panel)panel.style.display='none';
   const empty=document.getElementById('profile-edit-empty');if(empty)empty.style.display='grid';
   renderProfileList();
+}
+async function deleteSelectedAgentProfile(){
+  if(!currentUser?.isAdmin) return alert('Administrator access is required to delete an agent profile.');
+  if(!selectedProfileId||!selectedProfileDocId) return alert('Select an agent profile first.');
+  const uid=String(selectedProfileId);
+  const docId=String(selectedProfileDocId);
+  const name=String(document.getElementById('pe-full-name')?.value||selectedProfileSnapshot?.name||'this agent').trim();
+  const ok=confirm(`Delete the roster profile for ${name} (ID ${uid})?\n\nThis removes the selected profile record from the live roster. Attendance, reports and other historical records will remain.`);
+  if(!ok) return;
+  const button=document.getElementById('pe-delete-btn');
+  const statusEl=document.getElementById('pe-save-status');
+  if(button){button.disabled=true;button.textContent='⏳ DELETING';}
+  if(statusEl){statusEl.style.color='var(--muted)';statusEl.textContent='Removing profile from Firebase roster...';}
+  try{
+    await ensureFirebaseAuth();
+    await db.collection('roster').doc(docId).delete();
+    ROSTER_PROFILE_RECORDS=profileDirectoryRecords().filter(agent=>profileRecordDocId(agent)!==docId);
+    const replacement=ROSTER_PROFILE_RECORDS.find(agent=>String(agent.userId||'')===uid);
+    if(profileRecordDocId(ROSTER[uid])===docId||!replacement){
+      if(replacement) ROSTER[uid]={...replacement};
+      else delete ROSTER[uid];
+    }
+    if(typeof getRosterFingerprint==='function') rosterPollHash=getRosterFingerprint();
+    selectedProfileId=null;selectedProfileDocId=null;selectedProfileSnapshot=null;
+    const panel=document.getElementById('profile-edit-panel');if(panel)panel.style.display='none';
+    const empty=document.getElementById('profile-edit-empty');if(empty)empty.style.display='grid';
+    renderProfileList();updateProfileSummary();
+    alert(`${name}'s roster profile was deleted. Historical records were kept.`);
+  }catch(error){
+    console.error('Agent profile delete failed:',error);
+    if(statusEl){statusEl.style.color='var(--red)';statusEl.textContent='❌ Could not delete profile: '+(error.message||error);}
+  }finally{
+    if(button){button.disabled=false;button.textContent='🗑 Delete Profile';}
+  }
 }
 function openRepProfileById(userId){
   const uid=String(userId||'').trim();
@@ -8312,6 +8495,7 @@ async function syncProfileLiveViews(uid, previous, updated){
 async function saveProfileEdits(){
   if(!selectedProfileId) return;
   const uid=String(selectedProfileId);
+  const docId=String(selectedProfileDocId||uid);
   const statusEl=document.getElementById('pe-save-status');
   const saveBtn=document.getElementById('pe-save-btn');
   const previous=selectedProfileSnapshot || ROSTER[uid] || {};
@@ -8355,11 +8539,24 @@ async function saveProfileEdits(){
     if(updated.team!==previous.team){
       payload.teamOverride=true;payload.teamSource='admin-profile';payload.teamUpdatedAt=now;
     }
-    await db.collection('roster').doc(uid).set(payload,{merge:true});
+    await db.collection('roster').doc(docId).set(payload,{merge:true});
 
-    if(updated.status.toLowerCase()==='inactive') delete ROSTER[uid];
-    else ROSTER[uid]={...updated};
-    selectedProfileSnapshot={...updated};
+    const updatedRecord={...updated,documentId:docId};
+    if(updated.status.toLowerCase()==='inactive'){
+      ROSTER_PROFILE_RECORDS=profileDirectoryRecords().filter(agent=>profileRecordDocId(agent)!==docId);
+      if(profileRecordDocId(ROSTER[uid])===docId){
+        const replacement=ROSTER_PROFILE_RECORDS.find(agent=>String(agent.userId||'')===uid);
+        if(replacement) ROSTER[uid]={...replacement};
+        else delete ROSTER[uid];
+      }
+    }else{
+      const existingIndex=profileDirectoryRecords().findIndex(agent=>profileRecordDocId(agent)===docId);
+      ROSTER_PROFILE_RECORDS=profileDirectoryRecords();
+      if(existingIndex>=0) ROSTER_PROFILE_RECORDS[existingIndex]=updatedRecord;
+      else ROSTER_PROFILE_RECORDS.push(updatedRecord);
+      if(!ROSTER[uid]||profileRecordDocId(ROSTER[uid])===docId) ROSTER[uid]={...updatedRecord};
+    }
+    selectedProfileSnapshot={...updatedRecord};
     if(typeof getRosterFingerprint==='function') rosterPollHash=getRosterFingerprint();
 
     await syncProfileLiveViews(uid,previous,updated);
@@ -8376,7 +8573,7 @@ async function saveProfileEdits(){
     statusEl.style.color='var(--green)';statusEl.textContent='✅ Saved: '+changed.join(', ')+'. Firebase and live dashboard views are synchronized.';
     renderProfileList();updateProfileSummary();
     document.getElementById('pe-name').textContent=updated.name;
-    document.getElementById('pe-meta').textContent=(updated.team==='PR'?'Providence (PR)':'Berbice (BB)')+' · ID '+uid+' · Saved to Firebase';
+    document.getElementById('pe-meta').textContent=(updated.team==='PR'?'Providence (PR)':'Berbice (BB)')+' · ID '+uid+(docId!==uid?' · Document '+docId:'')+' · Saved to Firebase';
     profileRenderHero(updated);
     if(updated.status.toLowerCase()==='inactive') setTimeout(()=>closeProfileEdit(),900);
   }catch(e){
